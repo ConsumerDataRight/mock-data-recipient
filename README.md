@@ -4,7 +4,7 @@
 [![Conformance Test Suite 3.2](https://img.shields.io/badge/Conformance%20Test%20Suite-v3.2-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients)
 [![made-with-dotnet](https://img.shields.io/badge/Made%20with-.NET-1f425Ff.svg)](https://dotnet.microsoft.com/)
 [![made-with-csharp](https://img.shields.io/badge/Made%20with-C%23-1f425Ff.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
-[![MIT License](https://img.shields.io/github/license/ConsumerDataRight/mock-data-recpient)](./LICENSE)
+[![MIT License](https://img.shields.io/github/license/ConsumerDataRight/mock-data-recipient)](./LICENSE)
 [![Pull Requests Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 # Consumer Data Right - Mock Data Recipient
