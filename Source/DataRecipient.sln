@@ -1,0 +1,68 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Web", "CDR.DataRecipient.Web\CDR.DataRecipient.Web.csproj", "{83AAC80E-D102-4DB9-9BF7-80CDBFC833DC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.SDK", "CDR.DataRecipient.SDK\CDR.DataRecipient.SDK.csproj", "{55AD141E-5AC7-43AA-AE1F-CA85FC644EDE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient", "CDR.DataRecipient\CDR.DataRecipient.csproj", "{F4F7FD1E-3A58-49F8-8039-39EE0553F845}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.IntegrationTests", "CDR.DataRecipient.IntegrationTests\CDR.DataRecipient.IntegrationTests.csproj", "{9055ADF8-152F-4FDE-B951-C2F225B12084}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56CFBFDE-5522-4AC1-9592-C74FB04EADF6}"
+	ProjectSection(SolutionItems) = preProject
+		docker-compose.yml = docker-compose.yml
+		Dockerfile = Dockerfile
+		supervisord.conf = supervisord.conf
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Repository.SQLite", "CDR.DataRecipient.Repository.SQLite\CDR.DataRecipient.Repository.SQLite.csproj", "{468788C3-0C9D-4508-8408-BFE15EC18636}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Repository.SQLite.UnitTests", "CDR.DataRecipient.Repository.SQLite.UnitTests\CDR.DataRecipient.Repository.SQLite.UnitTests.csproj", "{8850DADC-3DE2-47FD-B178-1E804D872FFF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.E2ETests", "CDR.DataRecipient.E2ETests\CDR.DataRecipient.E2ETests.csproj", "{B12C2074-2FF3-4693-A465-6BFA586241FB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{83AAC80E-D102-4DB9-9BF7-80CDBFC833DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83AAC80E-D102-4DB9-9BF7-80CDBFC833DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83AAC80E-D102-4DB9-9BF7-80CDBFC833DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83AAC80E-D102-4DB9-9BF7-80CDBFC833DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55AD141E-5AC7-43AA-AE1F-CA85FC644EDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55AD141E-5AC7-43AA-AE1F-CA85FC644EDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55AD141E-5AC7-43AA-AE1F-CA85FC644EDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55AD141E-5AC7-43AA-AE1F-CA85FC644EDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4F7FD1E-3A58-49F8-8039-39EE0553F845}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4F7FD1E-3A58-49F8-8039-39EE0553F845}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4F7FD1E-3A58-49F8-8039-39EE0553F845}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4F7FD1E-3A58-49F8-8039-39EE0553F845}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9055ADF8-152F-4FDE-B951-C2F225B12084}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9055ADF8-152F-4FDE-B951-C2F225B12084}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9055ADF8-152F-4FDE-B951-C2F225B12084}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9055ADF8-152F-4FDE-B951-C2F225B12084}.Release|Any CPU.Build.0 = Release|Any CPU
+		{468788C3-0C9D-4508-8408-BFE15EC18636}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{468788C3-0C9D-4508-8408-BFE15EC18636}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{468788C3-0C9D-4508-8408-BFE15EC18636}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{468788C3-0C9D-4508-8408-BFE15EC18636}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8850DADC-3DE2-47FD-B178-1E804D872FFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8850DADC-3DE2-47FD-B178-1E804D872FFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8850DADC-3DE2-47FD-B178-1E804D872FFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8850DADC-3DE2-47FD-B178-1E804D872FFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B12C2074-2FF3-4693-A465-6BFA586241FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B12C2074-2FF3-4693-A465-6BFA586241FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B12C2074-2FF3-4693-A465-6BFA586241FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B12C2074-2FF3-4693-A465-6BFA586241FB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {04A0366C-D2E6-406F-A6B9-A405D04613D9}
+	EndGlobalSection
+EndGlobal

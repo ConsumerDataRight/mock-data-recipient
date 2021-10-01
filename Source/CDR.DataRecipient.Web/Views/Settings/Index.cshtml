@@ -1,0 +1,25 @@
+﻿@{
+    ViewData["Title"] = "Settings";
+}
+@model SettingsModel
+ 
+<h2>Settings</h2>
+
+<p>
+<strong>Note:</strong> these settings are maintained in the <em>appsettings.json</em> file.
+</p>
+
+<dl class="row">
+    @foreach (var setting in Model.ConfigurationSettings)
+    {
+        <dt class="col-3">@setting.Key.Replace(":", " - ")</dt>
+        <dd class="col-9">@Html.Raw(setting.Value)</dd>
+    }
+</dl>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('settings');
+        setTopMenuItem('settings');
+    </script>
+}

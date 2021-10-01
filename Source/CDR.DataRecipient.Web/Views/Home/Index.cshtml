@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = "Home";
+}
+
+<h2>Welcome to the Mock Data Recipient</h2>
+
+<p>
+    You can use the Mock Data Recipient to test interactions with the Mock Register and the Mock Data Holder.
+</p>
+<p>
+    A Mock Register and Mock Data Holder are provided by the ACCC and can be found in <a href="https://github.com/ConsumerDataRight" target="_blank">GitHub</a>.
+</p>
+<p>
+    Consult the documentation on how to download and run the Mock Register and Mock Data Holder.  It is expected that these mock solutions are running for this Mock Data Recipient to work.
+</p>
+<p>
+    However, if you would like to test your own implementations via this Mock Data Recipient, then please modify the <a href="~/settings" target="_blank">configuration</a> or the <a href="https://github.com/ConsumerDataRight/mock-register" target="_blank">Mock Register</a> metadata to point to the appropriate endpoint/s.
+</p>
+<p>
+    <h3>Running the provided mock solutions</h3>
+    <div class="code">
+        <pre>
+docker run -d -h mock-register -p 7000:7000 -p 7001:7001 -p 7006:7006 --name mock-register consumerdataright/mock-register
+</pre>
+        <pre>
+docker run -d -h mock-data-holder -p 8000:8000 -p 8001:8001 -p 8002:8002 -p 8003:8003 -p 8004:8004 -p 8005:8005 --name mock-data-holder consumerdataright/mock-data-holder
+</pre>
+    </div>
+</p>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('home');
+    </script>
+}
+
+

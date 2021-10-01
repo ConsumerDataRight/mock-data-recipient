@@ -1,0 +1,96 @@
+﻿@{
+    ViewData["Title"] = "Private Key JWT Generator";
+}
+@model PrivateKeyJwtModel
+
+<h2>Private Key JWT Generator</h2>
+
+<p>
+    This page allows a private key JWT client assertion to be generated.
+</p>
+
+<div class="card">
+    <h5 class="card-header">Generate Private Key JWT</h5>
+    <div class="card-body">
+        <div class="card-text">
+            @using (Html.BeginForm())
+            {
+            <div class="form">
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.Issuer, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.TextBoxFor(m => m.Issuer, new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.Audience, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.TextBoxFor(m => m.Audience, new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.ExpiryMinutes, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.TextBoxFor(m => m.ExpiryMinutes, new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.Jti, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.TextBoxFor(m => m.Jti, new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.PrivateKey, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.TextAreaFor(m => m.PrivateKey, new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3 buttons">
+                    <div class="col-sm-10 offset-sm-2">
+                        <input name="generate-jwt" type="submit" value="Generate" class="btn btn-primary" />
+                    </div>
+                </div>
+            </div>
+            }
+        </div>
+        <div class="results">
+            @if (!string.IsNullOrEmpty(Model.ClientAssertion))
+            {
+                <h4>Client Assertion:</h4>
+                <div class="code">
+                    @Model.ClientAssertion
+                </div>
+                <p>
+                    <a href="https://jwt.io?token=@Model.ClientAssertion" target="_blank" class="btn btn-primary">View Decoded</a>
+                </p>
+            }
+
+            @if (Model.ClientAssertionClaims != null)
+            {
+                <h4>Client Assertion Claims:</h4>
+                <dl>
+                    @foreach (var claim in Model.ClientAssertionClaims)
+                    {
+                        <dt>@claim.Type</dt>
+                        <dd>@claim.Value</dd>
+                    }
+                </dl>
+            }
+        </div>
+    </div>
+    <div class="card-footer">
+        <small class="text-muted">@Model.Messages</small>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('private-key-jwt');
+    </script>
+}

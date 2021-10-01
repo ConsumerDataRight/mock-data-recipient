@@ -1,0 +1,96 @@
+﻿@{
+    ViewData["Title"] = "Data Holders";
+}
+@model DataHoldersModel
+
+<h2>Discover Data Holders</h2>
+
+<p>
+    This page provides a way to view the data holders that are currently stored (in memory) at the data recipient.  The data holder metdata can be refreshed by calling the Register.
+</p>
+
+<div class="row">
+
+    <div class="col-sm-7">
+        <div class="card h-100">
+            <h5 class="card-header">Refresh Data Holders</h5>
+            <div class="card-body">
+                <h5 class="card-title">Call the Register to retrieve the Data Holder Brands</h5>
+                <div class="card-text">
+                    <div class="code">
+                        <code>
+                            @Html.DisplayFor(x => x.RefreshRequest)
+                        </code>
+                    </div>
+                    @using (Html.BeginForm())
+                    {
+                        <div class="form">
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.Version, new { @class = "col-sm-2 col-form-label" })
+                                <div class="col-sm-10">
+                                    @Html.TextBoxFor(m => m.Version, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3 buttons">
+                                <div class="col-sm-10 offset-sm-2">
+                                    <input name="refresh" type="submit" value="Refresh" class="btn btn-primary" />
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">@Model.Messages</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-5">
+
+        <div class="card h-100">
+            <h5 class="card-header">Current Data Holders</h5>
+            <div class="card-body" style="max-height: 400px; overflow-y: scroll;">
+                <p class="card-text">
+                    @if (@Model.DataHolders.Count() > 0)
+                    {
+                        <table class="table table-striped table-hover table-bordered">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Legal Entity</th>
+                                    <th scope="col">Brand</th>
+                                    <th scope="col">Active</th>
+                                </tr>
+                            </thead>
+                            @foreach (var dh in Model.DataHolders)
+                            {
+                                <tr>
+                                    <td>@dh.LegalEntity.LegalEntityName (@dh.LegalEntity.LegalEntityId)</td>
+                                    <td>@dh.BrandName (@dh.DataHolderBrandId)</td>
+                                    <td>@(dh.Status == "ACTIVE" ? "Yes" : "No")</td>
+                                </tr>
+                            }
+                        </table>
+                    }
+                    else
+                    {
+                        <div>No data holders found.</div>
+                    }
+                </p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <span>Data holders: <strong>@Model.DataHolders.Count()</strong></span>
+                </small>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('data-holders');
+    </script>
+}

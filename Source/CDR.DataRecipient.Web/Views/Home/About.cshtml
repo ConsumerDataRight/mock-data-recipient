@@ -1,0 +1,33 @@
+﻿@{
+    ViewData["Title"] = "About";
+}
+@using System.Reflection
+@using System.Linq 
+
+@{ 
+    var osPlatform = System.Runtime.InteropServices.RuntimeInformation.OSDescription;
+    var targetFramework = Assembly.GetEntryAssembly().GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>().FrameworkName;
+    var fileVersion = Assembly.GetEntryAssembly().GetName().Version;
+    var version = Assembly.GetEntryAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
+}
+<h2>About</h2>
+
+<dl class="row">
+    <dt class="col-2">Product:</dt>
+    <dd class="col-10">Mock Data Recipient</dd>
+    <dt class="col-2">Version:</dt>
+    <dd class="col-10">@version</dd>
+    <dt class="col-2">File version:</dt>
+    <dd class="col-10">@fileVersion</dd>
+    <dt class="col-2">Runtime:</dt>
+    <dd class="col-10">@targetFramework</dd>
+    <dt class="col-2">OS Platform:</dt>
+    <dd class="col-10">@osPlatform</dd>
+</dl>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('about');
+        setTopMenuItem('about');
+    </script>
+}

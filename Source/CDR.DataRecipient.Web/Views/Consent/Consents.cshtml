@@ -1,0 +1,223 @@
+﻿@{
+    ViewData["Title"] = "Consents";
+}
+@model ConsentsModel
+
+<h2>Consents</h2>
+
+<p>
+    This page allows you to manage the existing consent arrangements that have been collected via the Mock Data Recipient.
+</p>
+
+<div class="card h-100">
+    <h5 class="card-header">Existing Consent Arrangements</h5>
+    <div class="card-body">
+        <div class="card-text">
+            @if (Model.ConsentArrangements != null && Model.ConsentArrangements.Any())
+            {
+                <table class="table table-striped table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>CDR Arrangement ID</th>
+                            <th>Client ID</th>
+                            <th>Scope</th>
+                            <th>Expires In</th>
+                            <th>Sharing Duration</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    @foreach (var arrangement in Model.ConsentArrangements)
+                    {
+                        <tr>
+                            <td class="align-top">@arrangement.CdrArrangementId</td>
+                            <td class="align-top">@arrangement.ClientId</td>
+                            <td class="align-top">@arrangement.Scope</td>
+                            <td class="align-top">@arrangement.ExpiresIn</td>
+                            <td class="align-top">@arrangement.SharingDuration</td>
+                            <td class="align-top">@arrangement.CreatedOn.ToString("s")</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button id="btnActions" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Actions
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="btnActions">
+                                        <li>
+                                            <a href="#" title="View ID Token" data-bs-toggle="modal" data-bs-target="#modal-token" class="dropdown-item" data-val="@arrangement.IdToken">View ID Token</a>
+                                        </li>
+                                        <li>
+                                            <a href="#" title="View Access Token" data-bs-toggle="modal" data-bs-target="#modal-token" class="dropdown-item" data-val="@arrangement.AccessToken">View Access Token</a>
+                                        </li>
+                                        @if (!string.IsNullOrEmpty(arrangement.RefreshToken))
+                                        {
+                                            <li>
+                                                <a href="#" title="View Refresh Token" data-bs-toggle="modal" data-bs-target="#modal-token" class="dropdown-item" data-val="@arrangement.RefreshToken">View Refresh Token</a>
+                                            </li>
+                                        }
+
+                                        <li class="hr">
+                                            <a href="~/consent/userinfo/@arrangement.CdrArrangementId" title="User Info" data-title="User Info" class="dropdown-item arrangement-info">UserInfo</a>
+                                        </li>
+
+                                        @if (!string.IsNullOrEmpty(arrangement.RefreshToken))
+                                        {
+                                            <li>
+                                                <a href="~/consent/introspection/@arrangement.CdrArrangementId" data-title="Introspection" class="dropdown-item arrangement-info">Introspect</a>
+                                            </li>
+                                            <li>
+                                                <a href="~/consent/refresh/@arrangement.CdrArrangementId" data-title="Refresh Access Token" class="dropdown-item arrangement-action">Refresh Access Token</a>
+                                            </li>
+                                        }
+
+                                        <li class="hr">
+                                            <a href="~/consent/revoke/@arrangement.CdrArrangementId" data-title="Revoke Arrangement" class="dropdown-item arrangement-action">Revoke Arrangement</a>
+                                        </li>
+                                        <li>
+                                            <a href="~/consent/revoke-token/@arrangement.CdrArrangementId?tokenType=access_token" title="Revoke Access Token" data-title="Revoke Access Token" class="dropdown-item arrangement-action">Revoke Access Token</a>
+                                        </li>
+                                        @if (!string.IsNullOrEmpty(arrangement.RefreshToken))
+                                        {
+                                            <li>
+                                                <a href="~/consent/revoke-token/@arrangement.CdrArrangementId?tokenType=refresh_token" title="Revoke Refresh Token" data-title="Revoke Refresh Token" class="dropdown-item arrangement-action">Revoke Refresh Token</a>
+                                            </li>
+                                        }
+
+                                        <li class="hr">
+                                            <a href="~/consent/consents/@arrangement.CdrArrangementId" data-type="DELETE" data-title="Delete Arrangement" class="dropdown-item arrangement-action">Delete (local)</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </table>
+            }
+            else
+            {
+                <p>
+                    No existing consent arrangements found.
+                </p>
+            }
+        </div>
+    </div>
+    <div class="card-footer">
+        <small class="text-muted">@Model.Messages</small>
+    </div>
+</div>
+
+<div id="modal-token" class="modal" tabindex="-1">
+    <div class="modal-dialog  modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Token Contents</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body wrap">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-info" class="modal" tabindex="-1">
+    <div class="modal-dialog  modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Info</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body wrap">
+                <div class="modal-statusCode"></div>
+                <div class="modal-messages">Loading...</div>
+                <pre class="modal-payload"></pre>
+            </div>
+            <div class="modal-footer">
+                <a href="~/consent/consents" class="btn btn-primary btn-refresh-page" style="display: none;">Refresh Page</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('consents');
+
+        var modalToken = document.getElementById('modal-token');
+        modalToken.addEventListener('show.bs.modal', function (event) {
+            var link = $(event.relatedTarget);
+            var contents = link.data("val");
+            $('#modal-token .modal-body').html(contents);
+        });
+
+        var modalInfo = new bootstrap.Modal(document.getElementById('modal-info'), {
+            keyboard: false
+        });
+
+        document.getElementById('modal-info').addEventListener('hide.bs.modal', function (event) {
+            $('#modal-info .modal-body .modal-statusCode').html("");
+            $('#modal-info .modal-body .modal-messages').html("Loading...");
+            $('#modal-info .modal-body .modal-payload').html("");
+        });
+
+        $('.arrangement-info').click(function () {
+            var title = $(this).data("title");
+            $('#modal-info .modal-title').html(title);
+            modalInfo.show();
+
+            $.ajax({
+                url: this.href,
+                type: 'GET',
+                success: function (result) {
+                    var obj = JSON.parse(result.payload);
+
+                    $('#modal-info .modal-body .modal-statusCode').html(obj.StatusCode);
+                    $('#modal-info .modal-body .modal-messages').html(obj.Message);
+
+                    if (obj.StatusCode == 200) {
+                        $('#modal-info .modal-body .modal-payload').html(JSON.stringify(obj.Data, null, 2));
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    $('#modal-info .modal-body .modal-messages').html(xhr.responseJSON.messages);
+                }
+            });
+
+            return false;
+        });
+
+        $('.arrangement-action').click(function () {
+            var title = $(this).data("title");
+            var type = $(this).data("type") ?? "GET";
+            $('#modal-info .modal-title').html(title);
+            modalInfo.show();
+
+            $.ajax({
+                url: this.href,
+                type: type,
+                success: function (result) {
+                    $('#modal-info .modal-body .modal-statusCode').html(result.statusCode);
+                    $('#modal-info .modal-body .modal-messages').html(result.messages ?? "");
+                    $('#modal-info .modal-body .modal-payload').html("");
+
+                    if (result.payload) {
+                        var obj = JSON.parse(result.payload);
+                        $('#modal-info .modal-body .modal-payload').html(JSON.stringify(obj, null, 2));
+                    }
+
+                    if (result.statusCode == 200 || result.statusCode == 204)
+                        $('#modal-info .modal-footer .btn-refresh-page').show();
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    $('#modal-info .modal-body .modal-messages').html(xhr.responseJSON.message);
+                }
+            });
+
+            return false;
+        });
+    </script>
+}

@@ -1,0 +1,77 @@
+﻿@{
+    ViewData["Title"] = "SSA";
+}
+@model SsaModel
+
+<h2>Get Software Statement Assertion</h2>
+
+<p>
+    This page allows the data recipient to retrieve a Software Statement Assertion (SSA) from the Register.
+</p>
+
+<div class="card">
+    <h5 class="card-header">Get SSA</h5>
+    <div class="card-body">
+        <h5 class="card-title">Call the Register to retrieve an SSA</h5>
+        <div class="card-text">
+            <div class="code">
+                <code>
+                    @Html.DisplayFor(x => x.SSARequest)
+                </code>
+            </div>
+
+            @using (Html.BeginForm())
+            {
+                <div class="form">
+                    <div class="row mb-3">
+                        @Html.LabelFor(m => m.Version, new { @class = "col-sm-2 col-form-label" })
+                        <div class="col-sm-10">
+                            @Html.TextBoxFor(m => m.Version, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        @Html.LabelFor(m => m.BrandId, new { @class = "col-sm-2 col-form-label" })
+                        <div class="col-sm-10">
+                            @Html.TextBoxFor(m => m.BrandId, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        @Html.LabelFor(m => m.SoftwareProductId, new { @class = "col-sm-2 col-form-label" })
+                        <div class="col-sm-10">
+                            @Html.TextBoxFor(m => m.SoftwareProductId, new { @class = "form-control" })
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 buttons">
+                        <div class="col-sm-10 offset-sm-2">
+                            <input name="get-ssa" type="submit" value="Get SSA" class="btn btn-primary" />
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="results">
+            @if (!string.IsNullOrEmpty(Model.SSA))
+            {
+                <h4>SSA:</h4>
+                <div class="code">
+                    @Model.SSA
+                </div>
+                <p>
+                    <a href="https://jwt.io?token=@Model.SSA" target="_blank" class="btn btn-primary">View Decoded</a>
+                </p>
+            }
+        </div>
+    </div>
+    <div class="card-footer">
+        <small class="text-muted">@Model.Messages</small>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('ssa');
+    </script>
+}

@@ -1,0 +1,267 @@
+﻿@{
+    ViewData["Title"] = "Dynamic Client Registration";
+}
+@using CDR.DataRecipient.SDK.Extensions
+@model DynamicClientRegistrationModel
+
+<h2>Dynamic Client Registration</h2>
+
+<p>
+    Perform a Dynamic Client Registration (DCR) to a Data Holder Brand.
+</p>
+
+<div class="row">
+    <div class="col-sm-7">
+        <div class="card">
+            <h5 class="card-header">@Model.TransactionType Client Registration</h5>
+            <div class="card-body">
+                <div class="card-text">
+                    @using (Html.BeginForm())
+                    {
+                        <div class="form-small">
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.DataHolderBrandId, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.DropDownListFor(m => m.DataHolderBrandId, Model.DataHolderBrands, "Select Data Holder Brand...", new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.ClientId, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @{
+                                        var options = new Dictionary<string, object>();
+                                        options.Add("class", "form-control");
+                                        if (Model.TransactionType == "Update")
+                                        {
+                                            options.Add("readonly", "readonly");
+                                        }
+                                    }
+                                    @Html.TextBoxFor(m => m.ClientId, options)
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.SoftwareProductId, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.SoftwareProductId, new { @class = "form-control", @readonly = "readonly" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.RedirectUris, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.RedirectUris, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.TokenEndpointAuthSigningAlg, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.TokenEndpointAuthSigningAlg, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.TokenEndpointAuthMethod, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.TokenEndpointAuthMethod, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.GrantTypes, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.GrantTypes, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.ResponseTypes, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.ResponseTypes, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.ApplicationType, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.ApplicationType, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.IdTokenSignedResponseAlg, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.IdTokenSignedResponseAlg, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.IdTokenEncryptedResponseAlg, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.IdTokenEncryptedResponseAlg, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.IdTokenEncryptedResponseEnc, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.IdTokenEncryptedResponseEnc, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                @Html.LabelFor(m => m.RequestObjectSigningAlg, new { @class = "col-sm-3 col-form-label" })
+                                <div class="col-sm-9">
+                                    @Html.TextBoxFor(m => m.RequestObjectSigningAlg, new { @class = "form-control" })
+                                </div>
+                            </div>
+
+                            <div class="row mb-3 buttons">
+                                <div class="col-sm-9 offset-sm-3">
+                                    <input name="register" type="submit" value="Register" class="btn btn-primary" />
+                                    <a href="~/dcr" class="btn btn-secondary" title="Cancel">Cancel</a>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    @Model.Messages
+
+                    @if (!string.IsNullOrEmpty(Model.ResponsePayload))
+                    {
+                        var json = Model.ResponsePayload.ToPrettyJson();
+
+                        <br />
+                        <pre>@Html.Raw(json)</pre>
+                    }
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-5">
+
+        <div id="registrations" class="card">
+            <h5 class="card-header">Current Registrations</h5>
+            <div class="card-body" style="max-height: 400px; overflow-y: scroll;">
+                <p class="card-text">
+                    @if (@Model.Registrations.Count() > 0)
+                    {
+                        <table class="table table-sm table-striped table-hover table-bordered">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Client ID</th>
+                                    <th scope="col">DH Brand ID</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            @foreach (var reg in Model.Registrations)
+                            {
+                                <tr id="@reg.ClientId">
+                                    <td>
+                                        <a href="~/dcr?clientId=@reg.ClientId">@reg.ClientId</a>
+                                    </td>
+                                    <td>@reg.DataHolderBrandId</td>
+                                    <td>
+                                        <a href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId" target="_blank">View</a>
+                                        <a href="/dcr/registrations/@reg.ClientId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId">Delete</a>
+                                    </td>
+                                </tr>
+                            }
+                        </table>
+                    }
+                    else
+                    {
+                        <div>No existing registrations found.</div>
+                    }
+                </p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    <span>Registrations: <strong>@Model.Registrations.Count()</strong></span>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="model-registration" class="modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-messages"></div>
+                <pre id="modal-payload"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('model-registration'), {
+                keyboard: false
+            });
+
+            $('#registrations .view').click(function () {
+                // Get the registration.
+                $.ajax({
+                    url: this.href,
+                    type: 'GET',
+                    success: function (result) {
+                        modal.show();
+                        $('#modal-messages').html(result.messages);
+
+                        var obj = JSON.parse(result.payload);
+                        $('#modal-payload').html(JSON.stringify(obj, null, 2));
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        modal.show();
+                        $('#modal-messages').html(xhr.responseJSON.messages);
+                    }
+                });
+
+                return false;
+            });
+        });
+
+        $(document).ready(function () {
+            $('#registrations .delete').click(function () {
+                var clientId = $(this).data('id');
+
+                // Post the delete to the endpoint.
+                $.ajax({
+                    url: this.href,
+                    type: 'DELETE',
+                    statusCode: {
+                        204: function () {
+                            window.location = "/dcr";
+                        }
+                    },
+                    success: function (result) {
+                        window.location = "/dcr";
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        alert(xhr.responseJSON.messages);
+                    }
+                });
+
+                return false;
+            });
+        });
+
+        setSidebarMenuItem('dcr');
+    </script>
+}

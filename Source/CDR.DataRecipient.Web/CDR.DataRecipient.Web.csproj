@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+		<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+		<UserSecretsId>e18cd40c-c7d1-4df4-8448-82de536a628c</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<AssemblyVersion>0.0.1.0</AssemblyVersion>
+		<FileVersion>0.0.1.0</FileVersion>
+		<Version>0.0.1-Beta</Version>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.11.1" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.13" />
+		<PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
+		<PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
+		<PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
+		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.1.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="Certificates\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\CDR.DataRecipient.Repository.SQLite\CDR.DataRecipient.Repository.SQLite.csproj" />
+	  <ProjectReference Include="..\CDR.DataRecipient.SDK\CDR.DataRecipient.SDK.csproj" />
+	  <ProjectReference Include="..\CDR.DataRecipient\CDR.DataRecipient.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Certificates\ca.crt">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Certificates\client-additional.pfx">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Certificates\client.pfx">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Certificates\jwks.pfx">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Certificates\mock-data-recipient.pfx">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
+</Project>

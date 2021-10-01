@@ -1,0 +1,86 @@
+﻿@{
+    ViewData["Title"] = "Pushed Authorisation Request";
+}
+@model ParModel
+
+<h2>Pushed Authorisation Request (PAR)</h2>
+
+<p>
+    This page allows the data recipient to commence the PAR process with a selected data holder.  The outcome of this process will be an access token that can then be used for consumer data sharing.
+</p>
+<p>
+    <strong>Note:</strong> an existing CDR Arrangement can also be updated through the PAR process.  Select an existing CDR Arrangement from the list to start this process.
+</p>
+
+<div class="card">
+    <h5 class="card-header">Initiate PAR with the selected Data Holder</h5>
+    <div class="card-body">
+        <div class="card-text">
+
+            @using (Html.BeginForm())
+            {
+            <div class="form">
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.ClientId, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.DropDownListFor(m => m.ClientId, Model.RegistrationListItems, "Select registration...", new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.CdrArrangementId, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.DropDownListFor(m => m.CdrArrangementId, Model.ConsentArrangementListItems, "Select consent arrangement...", new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.SharingDuration, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.TextBoxFor(m => m.SharingDuration, new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    @Html.LabelFor(m => m.Scope, new { @class = "col-sm-2 col-form-label" })
+                    <div class="col-sm-10">
+                        @Html.TextBoxFor(m => m.Scope, new { @class = "form-control" })
+                    </div>
+                </div>
+
+                <div class="row mb-3 buttons">
+                    <div class="col-sm-10 offset-sm-2">
+                        <input name="get-auth-uri" type="submit" value="Initiate PAR" class="btn btn-primary" />
+                    </div>
+                </div>
+            </div>
+            }
+
+        </div>
+        <p class="results">
+            @if (!string.IsNullOrEmpty(Model.AuthorisationUri))
+            {
+                <a href="@Model.AuthorisationUri">@Model.AuthorisationUri</a>
+            }
+
+            @if (Model.PushedAuthorisation != null)
+            {
+                <dl>
+                    <dt>request_uri</dt>
+                    <dd>@Model.PushedAuthorisation.RequestUri</dd>
+                    <dt>expires_in</dt>
+                    <dd>@Model.PushedAuthorisation.ExpiresIn</dd>
+                </dl>
+            }
+        </p>
+    </div>
+    <div class="card-footer">
+        <small class="text-muted">@Model.Messages</small>
+    </div>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('par');
+    </script>
+}

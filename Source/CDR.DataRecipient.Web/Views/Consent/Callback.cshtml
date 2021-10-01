@@ -1,0 +1,50 @@
+﻿@{
+    ViewData["Title"] = "Consent and Authorisation";
+}
+@model TokenModel
+
+<h2>Consent and Authorisation - Callback</h2>
+
+<p>
+    @if (Model.TokenResponse != null && Model.TokenResponse.IsSuccessful)
+    {
+        <dl>
+            <dt>Id Token:</dt>
+            <dd>@Model.TokenResponse.Data.IdToken</dd>
+            <dt>Access Token:</dt>
+            <dd>@Model.TokenResponse.Data.AccessToken</dd>
+
+            @if (!string.IsNullOrEmpty(Model.TokenResponse.Data.RefreshToken))
+            {
+                <dt>Refresh Token:</dt>
+                <dd>@Model.TokenResponse.Data.RefreshToken</dd>
+            }
+
+            <dt>Expires In:</dt>
+            <dd>@Model.TokenResponse.Data.ExpiresIn</dd>
+            <dt>Scope:</dt>
+            <dd>@Model.TokenResponse.Data.Scope</dd>
+            <dt>Token Type:</dt>
+            <dd>@Model.TokenResponse.Data.TokenType</dd>
+            <dt>CDR Arrangement Id:</dt>
+            <dd>@Model.TokenResponse.Data.CdrArrangementId</dd>
+        </dl>
+    }
+    else
+    {
+        <strong>Could not retrieve token from Data Holder</strong>
+        <div>@Model.Messages</div>
+        <ul>
+            @foreach (var error in Model.ErrorList.Errors)
+            {
+                <li>@error.Title (@error.Code): @error.Detail</li>
+            }
+        </ul>
+    }
+</p>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('consent');
+    </script>
+}

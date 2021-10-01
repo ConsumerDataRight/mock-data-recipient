@@ -1,0 +1,58 @@
+﻿using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using CDR.DataRecipient.SDK.Extensions;
+using CDR.DataRecipient.SDK.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+
+namespace CDR.DataRecipient.SDK.Services.Tokens
+{
+    public class AccessTokenService : BaseService, IAccessTokenService
+    {
+        public AccessTokenService(
+            IConfiguration config,
+            ILogger<AccessTokenService> logger) : base(config, logger)
+        {
+        }
+
+        public async Task<Response<Token>> GetAccessToken(
+            string tokenEndpoint,
+            string clientId,
+            X509Certificate2 clientCertificate,
+            X509Certificate2 signingCertificate,
+            string scope,
+            string redirectUri = null,
+            string code = null,
+            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS)
+        {
+            var tokenResponse = new Response<Token>();
+
+            _logger.LogDebug($"Request received to {nameof(AccessTokenService)}.{nameof(GetAccessToken)}.");
+
+            // Setup the http client.
+            var client = GetHttpClient(clientCertificate);
+
+            _logger.LogDebug($"Requesting access token from: {tokenEndpoint}.  Software Product ID: {clientId}.  Client Certificate: {clientCertificate.Thumbprint}");
+
+            // Make the request to the token endpoint.
+            var response = await client.SendPrivateKeyJwtRequest(tokenEndpoint, clientId, signingCertificate, scope, redirectUri, code, grantType);
+            var body = await response.Content.ReadAsStringAsync();
+
+            _logger.LogDebug($"Access Token Response: {response.StatusCode}.  Body: {body}");
+
+            tokenResponse.StatusCode = response.StatusCode;
+
+            if (response.IsSuccessStatusCode)
+            {
+                tokenResponse.Data = Newtonsoft.Json.JsonConvert.DeserializeObject<Token>(body);
+            }
+            else
+            {
+                tokenResponse.Message = body;
+            }
+
+            return tokenResponse;
+        }
+    }
+}

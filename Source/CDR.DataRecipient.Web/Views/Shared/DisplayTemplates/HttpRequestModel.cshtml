@@ -1,0 +1,51 @@
+﻿@model CDR.DataRecipient.Web.Models.HttpRequestModel
+
+<div>
+    @Model.Method @Model.Url
+
+    @if (Model.QueryParameters.Any())
+    {
+        var i = 0;
+        foreach (var q in Model.QueryParameters)
+        {
+            var op = i == 0 ? "?" : "&";
+            <br />@Html.Raw("&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;")
+            @op<span>@q.Key</span>@Html.Raw("=")<span>@q.Value</span>
+
+            i++;
+        }
+    }
+</div>
+
+<br />
+<div>
+    @if (Model.RequiresAccessToken)
+    {
+        <div>
+            <span>Authorization:</span>
+            <span>{access_token}</span>
+        </div>
+    }
+
+    @if (Model.SupportsVersion)
+    {
+        <div>
+            <span>x-v:</span>
+            <span>{version}</span>
+        </div>
+    }
+
+    @if (Model.Headers.Any())
+    {
+        var i = 0;
+        foreach (var q in Model.Headers)
+        {
+            <div>
+                <span>@q.Key:</span>
+                <span>@q.Value</span>
+            </div>
+
+            i++;
+        }
+    }
+</div>
