@@ -36,18 +36,63 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
+      with:
+        path: ./mock-data-recipient
+
+    - uses: actions/checkout@v2
+      with:
+        repository: ConsumerDataRight/mock-register
+        ref: ${{ github.ref }}
+        path: ./mock-register
     
+    - uses: actions/checkout@v2
+      with:
+        repository: ConsumerDataRight/mock-data-holder
+        ref: ${{ github.ref }}
+        path: ./mock-data-holder
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 5.0.x
     
     - name: Restore dependencies
-      run: dotnet restore ${{ github.workspace }}\Source\DataRecipient.sln
+      run: |
+        dotnet restore ${{ github.workspace }}\mock-data-recipient\Source\DataRecipient.sln
+        dotnet restore ${{ github.workspace }}\mock-data-holder\Source\DataHolder.sln
+        dotnet restore ${{ github.workspace }}\mock-register\Source\Register.sln
       
     - name: Build
-      run: dotnet build ${{ github.workspace }}\Source\DataRecipient.sln --configuration ${{ env.buildConfiguration }}
+      run: |
+        dotnet build ${{ github.workspace }}\mock-data-recipient\Source\DataRecipient.sln --configuration ${{ env.buildConfiguration }}
+        dotnet build ${{ github.workspace }}\mock-data-holder\Source\DataHolder.sln --configuration ${{ env.buildConfiguration }}
+        dotnet build ${{ github.workspace }}\mock-register\Source\Register.sln --configuration ${{ env.buildConfiguration }}
       
+    - name: Create CDR folder
+      run: |
+        echo ${{ github.workspace }}
+        
+        Write-Host "Creating the temporary CDR directory which holds the logs and database file..."
+        New-Item -ItemType Directory -Path ${{ github.workspace }}\cdr -Force
+      shell: powershell
+
+    - name: Set AEST timezone
+      run: |
+        cd ${{ github.workspace }}
+        tzutil /s "AUS Eastern Standard Time"
+      shell: powershell
+
+    - name: Install certificates
+      run: |
+        $PlainPassword = "#M0ckCDRCA#" 
+        $SecurePassword = $PlainPassword | ConvertTo-SecureString -AsPlainText -Force     
+        Import-PfxCertificate -Password $SecurePassword -FilePath "mock-data-holder/CertificateManagement/mtls/ca.pfx" -CertStoreLocation Cert:\LocalMachine\Root
+
+        $PlainPassword = "#M0ckDataHolder#" 
+        $SecurePassword = $PlainPassword | ConvertTo-SecureString -AsPlainText -Force      
+        Import-PfxCertificate -Password $SecurePassword -FilePath "mock-data-holder/CertificateManagement/tls/mock-data-holder.pfx" -CertStoreLocation Cert:\LocalMachine\Root
+      shell: powershell
+
     - name: Unit Tests
       run: |
-        dotnet test ${{ github.workspace }}\Source\CDR.DataRecipient.Repository.SQLite.UnitTests\bin\Release\net5.0\CDR.DataRecipient.Repository.SQLite.UnitTests.dll
+        ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.Repository.SQLite.UnitTests\bin\Release\net5.0\CDR.DataRecipient.Repository.SQLite.UnitTests.dll
