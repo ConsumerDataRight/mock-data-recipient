@@ -33,7 +33,7 @@ env:
 jobs:
   build-and-test:
     runs-on: windows-latest
-    
+
     steps:
     - name: Checkout Data Recipient
       uses: actions/checkout@v2
@@ -99,3 +99,67 @@ jobs:
     - name: Unit Tests
       run: |
         ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.Repository.SQLite.UnitTests\bin\Release\net5.0\CDR.DataRecipient.Repository.SQLite.UnitTests.dll
+
+    - name: Delete Unit Test DB
+      run: |
+        cd ${{ github.workspace }}\cdr
+        Remove-Item -Path ${{ github.workspace }}\cdr\mdh.db -Force
+      shell: powershell
+
+    - name: Integration Tests
+      run: |
+        echo ${{ github.workspace }}
+        
+        Write-Host "Running the register..."
+        cd ${{ github.workspace }}\mock-register\Source\CDR.Register.API.Gateway.TLS
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.Register.API.Gateway.TLS.${{ env.runEnvironment }}"
+        
+        cd ${{ github.workspace }}\mock-register\Source\CDR.Register.API.Gateway.mTLS
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.Register.API.Gateway.mTLS.${{ env.runEnvironment }}"
+        
+        cd ${{ github.workspace }}\mock-register\Source\CDR.Register.Admin.API
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.Register.Admin.API.${{ env.runEnvironment }}"
+        
+        cd ${{ github.workspace }}\mock-register\Source\CDR.Register.Discovery.API
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.Register.Discovery.API.${{ env.runEnvironment }}"
+        
+        cd ${{ github.workspace }}\mock-register\Source\CDR.Register.SSA.API
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.Register.SSA.API.${{ env.runEnvironment }}"
+        
+        cd ${{ github.workspace }}\mock-register\Source\CDR.Register.Status.API
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.Register.Status.API.${{ env.runEnvironment }}"
+        
+        cd ${{ github.workspace }}\mock-register\Source\CDR.Register.IdentityServer
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.Register.IdentityServer.${{ env.runEnvironment }}"
+        
+        Write-Host "Running the data holder..."
+        cd ${{ github.workspace }}\mock-data-holder\Source\CDR.DataHolder.Manage.API
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.DataHolder.Manage.API.${{ env.runEnvironment }}"
+
+        cd ${{ github.workspace }}\mock-data-holder\Source\CDR.DataHolder.Resource.API
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.DataHolder.Resource.API.${{ env.runEnvironment }}"
+
+        cd ${{ github.workspace }}\mock-data-holder\Source\CDR.DataHolder.Public.API
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.DataHolder.Public.API.${{ env.runEnvironment }}"
+
+        cd ${{ github.workspace }}\mock-data-holder\Source\CDR.DataHolder.IdentityServer
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.DataHolder.IdentityServer.${{ env.runEnvironment }}"
+
+        cd ${{ github.workspace }}\mock-data-holder\Source\CDR.DataHolder.API.Gateway.mTLS
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.DataHolder.API.Gateway.mTLS.${{ env.runEnvironment }}"
+
+        Write-Host "Running the data recipient..."
+        cd ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.Web
+        Start-Process dotnet -ArgumentList "run -v m -c ${{ env.buildConfiguration }} --launch-profile CDR.DataRecipient.Web.${{ env.runEnvironment }}"
+
+        Write-Host "Sleeping for 30 seconds to allow solutions to startup..."
+        Start-Sleep -s 30
+
+        Write-Host "Listing contents of ${{ github.workspace }}\cdr directory..."
+        cd ${{ github.workspace }}\cdr
+        dir
+
+        Write-Host "Running the integration tests..."
+        cd ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests
+        ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-holder\Source\CDR.DataRecipient.IntegrationTests\bin\Release\net5.0\CDR.DataRecipient.IntegrationTests.dll --settings ${{ github.workspace }}\mock-data-holder\Source\CDR.DataHolder.IntegrationTests\integration.runsettings
+      shell: powershell
