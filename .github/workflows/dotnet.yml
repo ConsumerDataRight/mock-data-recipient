@@ -114,17 +114,26 @@ jobs:
       run: |
         ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.Repository.SQLite.UnitTests\bin\Release\net5.0\CDR.DataRecipient.Repository.SQLite.UnitTests.dll --logger "trx;verbosity=detailed;logfilename=repository-sqlite.trx" --results-directory ${{ github.workspace }}\cdr\test-results\unit-tests
 
-    - name: Archive unit test artifacts
+    - name: Archive Unit Test results
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: unit-test-results
+        path: ${{ github.workspace }}\cdr\test-results
+
+    - name: Archive Unit Test logs/dbs
       uses: actions/upload-artifact@v2
       if: always()
       with:
         name: unit-test-artifacts
-        path: ${{ github.workspace }}\cdr
+        path: |
+          ${{ github.workspace }}\cdr\Logs
+          ${{ github.workspace }}\cdr\*.db
 
     - name: Delete Unit Test DB
       run: |
         cd ${{ github.workspace }}\cdr
-        Remove-Item -Path ${{ github.workspace }}\cdr\mdr.db -Force
+        Remove-Item -Path ${{ github.workspace }}\cdr\* -Recurse -Force
       shell: powershell
 
     - name: Integration Tests
@@ -199,9 +208,18 @@ jobs:
         ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests\bin\Release\net5.0\CDR.DataRecipient.IntegrationTests.dll --settings ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests\integration.runsettings --logger "trx;verbosity=detailed;logfilename=mdr-integration.trx" --results-directory ${{ github.workspace }}\cdr\test-results\integration-tests
       shell: powershell
 
-    - name: Archive integration test artifacts
+    - name: Archive integration test results
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: integration-test-results
+        path: ${{ github.workspace }}\cdr\test-results
+
+    - name: Archive integration test logs/dbs
       uses: actions/upload-artifact@v2
       if: always()
       with:
         name: integration-test-artifacts
-        path: ${{ github.workspace }}\cdr
+        path: | 
+          ${{ github.workspace }}\cdr\Logs
+          ${{ github.workspace }}\cdr\*.db
