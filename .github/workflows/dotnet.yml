@@ -112,7 +112,7 @@ jobs:
 
     - name: Unit Tests
       run: |
-        ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.Repository.SQLite.UnitTests\bin\Release\net5.0\CDR.DataRecipient.Repository.SQLite.UnitTests.dll --logger "trx;verbosity=detailed;logfilename=repository-sqlite.trx" --results-directory ${{ github.workspace }}\cdr\test-results\unit-tests
+        ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.Repository.SQLite.UnitTests\bin\Release\net5.0\CDR.DataRecipient.Repository.SQLite.UnitTests.dll --logger "trx;verbosity=detailed;logfilename=repository-sqlite.trx" --results-directory ${{ github.workspace }}\cdr\test-results
 
     - name: Archive Unit Test results
       uses: actions/upload-artifact@v2
@@ -205,7 +205,7 @@ jobs:
 
         Write-Host "Running the integration tests..."
         cd ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests
-        ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests\bin\Release\net5.0\CDR.DataRecipient.IntegrationTests.dll --settings ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests\integration.runsettings --logger "trx;verbosity=detailed;logfilename=mdr-integration.trx" --results-directory ${{ github.workspace }}\cdr\test-results\integration-tests
+        ($env:ASPNETCORE_ENVIRONMENT="${{ env.runEnvironment }}") | dotnet test ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests\bin\Release\net5.0\CDR.DataRecipient.IntegrationTests.dll --settings ${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests\integration.runsettings --logger "trx;verbosity=detailed;logfilename=mdr-integration.trx" --results-directory ${{ github.workspace }}\cdr\test-results
       shell: powershell
 
     - name: Archive integration test results
