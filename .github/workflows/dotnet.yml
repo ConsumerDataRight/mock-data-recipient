@@ -130,7 +130,7 @@ jobs:
           ${{ github.workspace }}\cdr\Logs
           ${{ github.workspace }}\cdr\*.db
 
-    - name: Delete Unit Test DB
+    - name: Delete Unit Test Data
       run: |
         cd ${{ github.workspace }}\cdr
         Remove-Item -Path ${{ github.workspace }}\cdr\* -Recurse -Force
