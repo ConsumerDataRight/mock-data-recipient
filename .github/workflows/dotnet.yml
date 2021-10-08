@@ -78,6 +78,13 @@ jobs:
         dotnet build ${{ github.workspace }}\mock-data-holder\Source\DataHolder.sln --configuration ${{ env.buildConfiguration }}
         dotnet build ${{ github.workspace }}\mock-register\Source\Register.sln --configuration ${{ env.buildConfiguration }}
       
+    - name: Patch Register Seed Data
+      run: |
+        Write-Host "Overwriting seed-data.json for the Register with a version that has been patched to use the MDR endpoints."
+        Copy-Item -Path "${{ github.workspace }}\mock-data-recipient\Source\CDR.DataRecipient.IntegrationTests\ForPipeline\seed-data.json" -Destination "${{ github.workspace }}\mock-register\Source\CDR.Register.Admin.API\Data" -Force
+        Get-Content "${{ github.workspace }}\mock-register\Source\CDR.Register.Admin.API\Data\seed-data.json"
+      shell: powershell
+
     - name: Create CDR folder
       run: |
         echo ${{ github.workspace }}
