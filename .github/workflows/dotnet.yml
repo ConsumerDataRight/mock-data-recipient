@@ -36,10 +36,7 @@ jobs:
     runs-on: windows-latest
 
     ## NOTE: This workflow needs to also checkout the Mock Register, and Mock Data Holder for testing.
-    ##  If you are running this action on a fork, ensure you fork the ConsumerDataRight/mock-register and ConsumerDataRight/mock-data-holder repos as well.
-    ##  Also make sure you have a branch of the same name within your fork of the mock-register and mock-data-holder repos.
-    ##  The below steps assume that all repos can be checked out under the same repo owner and branch as the one triggering this action.
-    ##  TODO: Not sure this will work in a PR, have a think about how we should handle that case.
+    ##  This workflow will checkout the ConsumerDataRight/mock-register and ConsumerDataRight/mock-data-holder projects
 
     steps:
     - name: Checkout Data Recipient
@@ -47,18 +44,36 @@ jobs:
       with:
         path: ./mock-data-recipient
 
-    - name: Checkout Register
+    - name: Checkout Register (Main Branch)
       uses: actions/checkout@v2
+      if: ${{ github.ref == 'refs/heads/main' }}
       with:
-        repository: ${{ github.repository_owner }}/mock-register
-        ref: ${{ github.ref }}
+        repository: ConsumerDataRight/mock-register
+        ref: main
         path: ./mock-register
-    
-    - name: Checkout Data Holder
+
+    - name: Checkout Register (Develop Branch)
       uses: actions/checkout@v2
+      if: ${{ github.ref != 'refs/heads/main' }}
       with:
-        repository: ${{ github.repository_owner }}/mock-data-holder
-        ref: ${{ github.ref }}
+        repository: ConsumerDataRight/mock-register
+        ref: develop
+        path: ./mock-register
+
+    - name: Checkout Data Holder (Main Branch)
+      uses: actions/checkout@v2
+      if: ${{ github.ref == 'refs/heads/main' }}
+      with:
+        repository: ConsumerDataRight/mock-data-holder
+        ref: main
+        path: ./mock-data-holder
+
+    - name: Checkout Data Holder (Develop Branch)
+      uses: actions/checkout@v2
+      if: ${{ github.ref != 'refs/heads/main' }}
+      with:
+        repository: ConsumerDataRight/mock-data-holder
+        ref: develop
         path: ./mock-data-holder
 
     - name: Setup .NET
