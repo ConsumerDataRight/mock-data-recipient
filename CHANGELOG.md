@@ -12,8 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Dependabot config.
 
 ### Changed
-- Minor changes to pipeline appsettings files to support GitHub Actions.
-- Removed JDK setup step from SonarCloud GitHub Action. 
+- Minor changes to pipeline appsettings files to support GitHub Actions. 
 
 
 ## [0.1.0] - 2021-10-01
