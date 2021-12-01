@@ -1,0 +1,74 @@
+# Start APIs
+
+steps:
+  - task: CmdLine@2
+    displayName: Run Register projects
+    condition: always()    
+    inputs:
+      script: |
+        echo Starting CDR.Register.API.Gateway.mTLS      
+        cd $(Build.SourcesDirectory)\sb-mock-register\Source\CDR.Register.API.Gateway.mTLS      
+        start /B dotnet run CDR.Register.API.Gateway.mTLS.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.Register.API.Gateway.mTLS.Pipeline
+
+        echo Starting CDR.Register.API.Gateway.TLS      
+        cd $(Build.SourcesDirectory)\sb-mock-register\Source\CDR.Register.API.Gateway.TLS      
+        start /B dotnet run CDR.Register.API.Gateway.TLS.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.Register.API.Gateway.TLS.Pipeline
+
+        echo Starting CDR.Register.IdentityServer      
+        cd $(Build.SourcesDirectory)\sb-mock-register\Source\CDR.Register.IdentityServer
+        start /B dotnet run CDR.Register.IdentityServer.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.Register.IdentityServer.Pipeline
+
+        echo Starting CDR.Register.Discovery.API      
+        cd $(Build.SourcesDirectory)\sb-mock-register\Source\CDR.Register.Discovery.API      
+        start /B dotnet run CDR.Register.Discovery.API.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.Register.Discovery.API.Pipeline
+
+        echo Starting CDR.Register.SSA.API      
+        cd $(Build.SourcesDirectory)\sb-mock-register\Source\CDR.Register.SSA.API      
+        start /B dotnet run CDR.Register.SSA.API.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.Register.SSA.API.Pipeline
+
+        echo Starting CDR.Register.Status.API      
+        cd $(Build.SourcesDirectory)\sb-mock-register\Source\CDR.Register.Status.API      
+        start /B dotnet run CDR.Register.Status.API.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.Register.Status.API.Pipeline
+
+        echo Starting CDR.Register.Admin.API      
+        cd $(Build.SourcesDirectory)\sb-mock-register\Source\CDR.Register.Admin.API      
+        start /B dotnet run CDR.Register.Admin.API.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.Register.Admin.API.Pipeline
+
+        cd $(Build.SourcesDirectory)
+
+  - task: CmdLine@2
+    displayName: Run DH projects
+    condition: always()    
+    inputs:
+      script: |
+        echo Starting CDR.DataHolder.API.Gateway.mTLS
+        cd $(Build.SourcesDirectory)\sb-mock-data-holder\Source\CDR.DataHolder.API.Gateway.mTLS
+        start /B dotnet run CDR.DataHolder.API.Gateway.mTLS.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.DataHolder.API.Gateway.mTLS.Pipeline
+
+        echo Starting CDR.DataHolder.IdentityServer
+        cd $(Build.SourcesDirectory)\sb-mock-data-holder\Source\CDR.DataHolder.IdentityServer
+        start /B dotnet run CDR.DataHolder.IdentityServer.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.DataHolder.IdentityServer.Pipeline
+
+        echo Starting CDR.DataHolder.Resource.API
+        cd $(Build.SourcesDirectory)\sb-mock-data-holder\Source\CDR.DataHolder.Resource.API
+        start /B dotnet run CDR.DataHolder.Resource.API.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.DataHolder.Resource.API.Pipeline
+
+        echo Starting CDR.DataHolder.Manage.API
+        cd $(Build.SourcesDirectory)\sb-mock-data-holder\Source\CDR.DataHolder.Manage.API
+        start /B dotnet run CDR.DataHolder.Manage.API.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.DataHolder.Manage.API.Pipeline
+
+        echo Starting CDR.DataHolder.Public.API
+        cd $(Build.SourcesDirectory)\sb-mock-data-holder\Source\CDR.DataHolder.Public.API
+        start /B dotnet run CDR.DataHolder.Public.API.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.DataHolder.Public.API.Pipeline
+
+        cd $(Build.SourcesDirectory)
+
+  - task: CmdLine@2
+    displayName: Run DR projects
+    condition: always()    
+    inputs:
+      script: |
+        cd $(Build.SourcesDirectory)\sb-mock-data-recipient\source\CDR.DataRecipient.Web      
+        start /B dotnet run CDR.DataRecipient.Web.csproj --no-build --no-restore --configuration=Release --launch-profile CDR.DataRecipient.Web.Pipeline      
+
+        cd $(Build.SourcesDirectory)

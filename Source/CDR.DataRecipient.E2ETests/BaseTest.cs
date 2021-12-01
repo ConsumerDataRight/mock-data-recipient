@@ -1,10 +1,15 @@
+// #define TEST_DEBUG_MODE
+
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Xunit;
 
 #nullable enable
@@ -16,6 +21,8 @@ namespace CDR.DataRecipient.E2ETests
     [TestCaseOrderer("CDR.DataRecipient.E2ETests.XUnit.Orderers.AlphabeticalOrderer", "CDR.DataRecipient.E2ETests")]
     public class BaseTest
     {
+        public bool CreateMedia { get; set; } = true;
+
         // URL of the web UI
         protected const string WEB_URL = "https://localhost:9001";
 
@@ -32,6 +39,10 @@ namespace CDR.DataRecipient.E2ETests
         // Media folder (for videos and screenshots)
         static public string MEDIAFOLDER => Configuration["MediaFolder"]
             ?? throw new Exception($"{nameof(MEDIAFOLDER)} - configuration setting not found");
+
+        // Dataholder - Access token lifetime seconds
+        static public string ACCESSTOKENLIFETIMESECONDS => Configuration["DataHolder:AccessTokenLifetimeSeconds"]
+            ?? throw new Exception($"{nameof(ACCESSTOKENLIFETIMESECONDS)} - configuration setting not found");
 
         static private IConfigurationRoot? configuration;
         static protected IConfigurationRoot Configuration
@@ -52,8 +63,10 @@ namespace CDR.DataRecipient.E2ETests
         }
 
         protected delegate Task TestDelegate(IPage page);
-        protected static async Task TestAsync(string testName, TestDelegate testDelegate)
+        protected async Task TestAsync(string testName, TestDelegate testDelegate) //, bool? CreateMedia = true)
         {
+            _testName = testName;
+
             static void DeleteFile(string filename)
             {
                 if (File.Exists(filename))
@@ -62,10 +75,13 @@ namespace CDR.DataRecipient.E2ETests
                 }
             }
 
-            // Remove video/screens if they exist
-            DeleteFile($"{MEDIAFOLDER}/{testName}.webm");
-            DeleteFile($"{MEDIAFOLDER}/{testName}.png");
-            DeleteFile($"{MEDIAFOLDER}/{testName}-exception.png");
+            if (CreateMedia == true)
+            {
+                // Remove video/screens if they exist
+                DeleteFile($"{MEDIAFOLDER}/{testName}.webm");
+                DeleteFile($"{MEDIAFOLDER}/{testName}.png");
+                DeleteFile($"{MEDIAFOLDER}/{testName}-exception.png");
+            }
 
             // Setup Playwright
             using var playwright = await Playwright.CreateAsync();
@@ -73,28 +89,26 @@ namespace CDR.DataRecipient.E2ETests
             // Setup browser
             await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                // Headless = false,
-                // SlowMo = 250,
+                SlowMo = 250,
+#if TEST_DEBUG_MODE                
+                Headless = false,
+                Timeout = 5000 // DEBUG - 5 seconds
+#endif                
             });
 
             // Setup browser context
             var context = await browser.NewContextAsync(new BrowserNewContextOptions
             {
                 IgnoreHTTPSErrors = true,
-                RecordVideoDir = $"{MEDIAFOLDER}",
-                // RecordVideoSize = new RecordVideoSize() { Width = 640, Height = 480 }
+                RecordVideoDir = CreateMedia == true ? $"{MEDIAFOLDER}" : null,
 
-                // ScreenSize = new ScreenSize
-                // {
-                //     Width = 1024,
-                //     Height = 1600,
-                // },
-
+#if !TEST_DEBUG_MODE
                 ViewportSize = new ViewportSize
                 {
                     Width = 1200,
                     Height = 1600
                 }
+#endif              
             });
 
             string? videoPath = null;
@@ -106,9 +120,12 @@ namespace CDR.DataRecipient.E2ETests
                     page.Close += async (_, page) =>
                     {
                         // Page is closed, so save videoPath
-                        if (page.Video != null)
+                        if (CreateMedia == true)
                         {
-                            videoPath = await page.Video.PathAsync();
+                            if (page.Video != null)
+                            {
+                                videoPath = await page.Video.PathAsync();
+                            }
                         }
                     };
 
@@ -117,16 +134,13 @@ namespace CDR.DataRecipient.E2ETests
                         await testDelegate(page);
                     }
                 }
-                // catch
-                // {
-                //     // Save a screenshot if exception is thrown
-                //     await ScreenshotAsync(page, $"{testName}-exception");
-                //     throw;
-                // }
                 finally
                 {
                     // Save a screenshot
-                    await ScreenshotAsync(page, $"{testName}");
+                    if (CreateMedia == true)
+                    {
+                        await ScreenshotAsync(page, "");
+                    }
                 }
             }
             finally
@@ -137,52 +151,86 @@ namespace CDR.DataRecipient.E2ETests
                 await context.CloseAsync();
 
                 // Rename video file
-                if (videoPath != null)
+                if (CreateMedia == true)
                 {
-                    File.Move(videoPath, $"{MEDIAFOLDER}/{testName}.webm");
+                    if (videoPath != null)
+                    {
+                        File.Move(videoPath, $"{MEDIAFOLDER}/{testName}.webm");
+                    }
                 }
 
                 await browser.CloseAsync();
             }
         }
 
-        protected static async Task ScreenshotAsync(IPage page, string name)
+        private string? _testName;
+        public async Task ScreenshotAsync(IPage page, string name)
         {
-            await page.ScreenshotAsync(new PageScreenshotOptions { Path = $"{MEDIAFOLDER}/{name}.png" });
+            await page.ScreenshotAsync(new PageScreenshotOptions { Path = $"{MEDIAFOLDER}/{_testName}{name}.png" });
         }
 
-        // Assert text content exists
-        protected static async Task Assert_TextContentAsync(IPage page, string selector, string because = "")
+        protected static string? StripJsonProperty(string? json, string propertyName)
         {
-            string? found = null;
-            try
-            {
-                found = await page.TextContentAsync(selector, new PageTextContentOptions
-                {
-                    Timeout = 1000
-                });
-            }
-            catch (System.TimeoutException)
-            {
-                found.Should().Be(selector, because);
-                throw;
-            }
+            if (String.IsNullOrEmpty(json))
+                return json;
+
+            return Regex.Replace(json, @$"""{propertyName}"".*", "");
         }
 
-        // Assert click
-        protected static async Task Assert_ClickAsync(IPage page, string selector, string because = "")
+        protected static void Assert_Json(string? expectedJson, string? actualJson)
         {
-            try
+            static object? Deserialize(string json)
             {
-                await page.ClickAsync(selector, new PageClickOptions
-                {
-                    // Timeout = 1000
-                });
+                try { return JsonConvert.DeserializeObject<object>(json); }
+                catch { return null; }
             }
-            catch (System.TimeoutException)
+
+            static bool JsonCompare(string json, string jsonToCompare)
             {
-                // found.Should().Be(selector, because);
-                throw;
+                var jsonToken = JToken.Parse(json);
+                var jsonToCompareToken = JToken.Parse(jsonToCompare);
+                return JToken.DeepEquals(jsonToken, jsonToCompareToken);
+            }
+
+            expectedJson.Should().NotBeNullOrEmpty();
+            actualJson.Should().NotBeNullOrEmpty(expectedJson == null ? "" : $"expected {expectedJson}");
+
+            if (string.IsNullOrEmpty(expectedJson) || string.IsNullOrEmpty(actualJson))
+                return;
+
+            object? expectedObject = Deserialize(expectedJson);
+            expectedObject.Should().NotBeNull($"Error deserializing expected json - '{expectedJson}'");
+
+            object? actualObject = Deserialize(actualJson);
+            actualObject.Should().NotBeNull($"Error deserializing actual json - '{actualJson}'");
+
+            var expectedJsonNormalised = JsonConvert.SerializeObject(expectedObject);
+            var actualJsonNormalised = JsonConvert.SerializeObject(actualObject);
+
+            JsonCompare(actualJson, expectedJson).Should().BeTrue(
+                $"\r\nExpected json:\r\n{expectedJsonNormalised}\r\nActual Json:\r\n{actualJsonNormalised}\r\n"
+            );
+        }
+
+        protected const string ASSERT_JSON2_ANYVALUE = "***ANYVALUE***";
+        protected static void Assert_Json2(string? actualJson, (string name, string? value)[] expected)
+        {
+            actualJson.Should().NotBeNullOrEmpty();
+            if (actualJson == null)
+                return;
+
+            var root = JToken.Parse(actualJson);
+
+            foreach ((var name, var value) in expected)
+            {
+                // Assert that json property exists
+                root[name].Should().NotBeNull($"Missing property '{name}'");
+
+                // Assert that value matches
+                if (value != ASSERT_JSON2_ANYVALUE)
+                {
+                    root.Value<string>(name).Should().Be(value, $"Property '{name}' should be '{value}'");
+                }
             }
         }
     }
