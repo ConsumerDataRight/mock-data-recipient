@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - GitHub Actions Workflow for Build, Unit Test, and Integration Test project. 
 - GitHub Issue config with supporting links to CDR related information. 
-- GitHub Dependabot config.
 
 ### Changed
 - Minor changes to pipeline appsettings files to support GitHub Actions. 
