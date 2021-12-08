@@ -52,7 +52,7 @@ docker pull consumerdataright/mock-data-recipient
 #### Run the Mock Recipient container
 
 ```
-docker run -d -h mock-cdr-data-recipient -p 9001:9001 --name mock-cdr-data-recipient consumerdataright/mock-data-recipient
+docker run -d -h mock-data-recipient -p 9001:9001 --name mock-data-recipient consumerdataright/mock-data-recipient
 ```
 
 #### Certificate Management

@@ -1,0 +1,187 @@
+resources:
+  repositories:
+    - repository: MockRegister
+      type: git
+      name: sb-mock-register
+      ref: develop     
+    - repository: MockDataHolder
+      type: git
+      name: sb-mock-data-holder
+      ref: develop
+
+trigger:
+  - develop  
+
+pool:
+  vmImage: windows-2019
+
+steps:
+
+# Checkout
+- checkout: MockRegister
+- checkout: MockDataHolder
+- checkout: self
+
+# Restore
+- task: DotNetCoreCLI@2
+  displayName: Restore
+  inputs:
+    command: restore
+    projects: "**/*.csproj"
+
+# Build    
+- task: DotNetCoreCLI@2
+  displayName: Build
+  inputs:
+    command: "build"
+    arguments: "--configuration Release"
+    projects: "**/*.csproj"
+
+# Patch register seed data
+- task: CmdLine@2
+  displayName: Patch Register seed data
+  inputs:
+    script: |
+      @echo Overwriting seed-data.json for the Register with a version that has been patched to use the MDR endpoints.
+      @echo Copying sb-mock-data-recipient\source\cdr.datarecipient.integrationtests\forpipeline\seed-data.json to sb-mock-register\source\cdr.register.admin.api\data
+      cd $(Build.SourcesDirectory)
+      copy sb-mock-data-recipient\source\cdr.datarecipient.integrationtests\forpipeline\seed-data.json sb-mock-register\source\cdr.register.admin.api\data
+      type sb-mock-register\source\cdr.register.admin.api\data\seed-data.json
+
+# Set timezone to AEST      
+- task: CmdLine@2
+  displayName: Set AEST timezone
+  inputs:
+    script: |
+      cd $(Build.SourcesDirectory)
+      tzutil /s "AUS Eastern Standard Time"
+
+# Install certificates      
+- task: PowerShell@2
+  displayName: Install certificates
+  inputs:
+    targetType: "inline"
+    script: |
+      $PlainPassword = "#M0ckCDRCA#" 
+      $SecurePassword = $PlainPassword | ConvertTo-SecureString -AsPlainText -Force     
+      Import-PfxCertificate -Password $SecurePassword -FilePath "sb-mock-data-holder/CertificateManagement/mtls/ca.pfx" -CertStoreLocation Cert:\LocalMachine\Root
+
+      $PlainPassword = "#M0ckDataHolder#" 
+      $SecurePassword = $PlainPassword | ConvertTo-SecureString -AsPlainText -Force      
+      Import-PfxCertificate -Password $SecurePassword -FilePath "sb-mock-data-holder/CertificateManagement/tls/mock-data-holder.pfx" -CertStoreLocation Cert:\LocalMachine\Root
+
+# # Update hosts file
+# - task: PowerShell@2
+#   displayName: Update hosts file
+#   inputs:
+#     targetType: "inline"
+#     script: |
+#       Add-Content C:\Windows\System32\drivers\etc\hosts "`n127.0.0.1 mock-register"
+#       Add-Content C:\Windows\System32\drivers\etc\hosts "`n127.0.0.1 mock-data-holder"
+#       Add-Content C:\Windows\System32\drivers\etc\hosts "`n127.0.0.1 mock-data-recipient"
+#       ipconfig /displaydns        
+
+# Create CDR folder for unit tests
+- task: CmdLine@2
+  displayName: Create CDR folder
+  inputs:
+    script: |
+      mkdir D:\\a\\mock-data-recipient\\mock-data-recipient\\cdr              
+
+# Run unit tests      
+- task: VSTest@2
+  displayName: Unit Tests
+  inputs:
+    testSelector: "testAssemblies"
+    testAssemblyVer2: |
+      **\*DataRecipient*UnitTests*.dll
+      !**\*TestAdapter.dll
+      !**\obj\**
+      !**/ref/**
+    searchFolder: "$(System.DefaultWorkingDirectory)"
+
+# Delete unit test db file    
+- task: CmdLine@2
+  displayName: Delete unit test db file
+  inputs:
+    script: |
+      cd D:\\a\\mock-data-recipient\\mock-data-recipient\\cdr
+      del /Q mdr.db 
+
+# Start APIs
+- template: Pipeline/start-apis.yml
+
+# Run integration tests
+- task: VSTest@2
+  displayName: Integration Tests
+  inputs:
+    runSettingsFile: $(Build.SourcesDirectory)\sb-mock-data-recipient\source\CDR.DataRecipient.IntegrationTests\integration.runsettings
+    testSelector: "testAssemblies"
+    testAssemblyVer2: |
+      **\*DataRecipient*IntegrationTests*.dll
+      !**\*TestAdapter.dll
+      !**\obj\**
+      !**/ref/**
+    searchFolder: "$(System.DefaultWorkingDirectory)"
+
+# Stop APIs and copy artifacts for integration tests
+- template: templates/stop-apis.yml
+- template: templates/copy-artifacts.yml
+  parameters:
+    name: Integration Tests
+
+# Delete artifacts and restart APIs in preparation for E2E tests
+- task: PowerShell@2
+  displayName: Delete integration test artifacts
+  condition: always()    
+  inputs:
+    targetType: "inline"
+    script: |
+      remove-item D:\a\mock-register\mock-register\cdr\*.* -recurse
+      remove-item D:\a\mock-data-holder\mock-data-holder\cdr\*.* -recurse
+      remove-item D:\a\mock-data-recipient\mock-data-recipient\cdr\*.* -recurse
+- template: templates/start-apis.yml
+
+# Install Playwright dotnet tool
+- task: PowerShell@2
+  displayName: Install Playwright dotnet tool
+  condition: always()        
+  inputs:
+    targetType: "inline"
+    script: |
+      dotnet tool install --global Microsoft.Playwright.CLI
+
+# Install Playwright browsers
+- task: PowerShell@2
+  displayName: Install Playwright browsers
+  condition: always()    
+  inputs:
+    targetType: "inline"
+    script: |
+      playwright -p $(Build.SourcesDirectory)\sb-mock-data-recipient\source\CDR.DataRecipient.E2ETests install
+
+# Start E2E tests
+- task: VSTest@2
+  displayName: E2E Tests
+  condition: always()  
+  inputs:
+    runSettingsFile: $(Build.SourcesDirectory)\sb-mock-data-recipient\source\CDR.DataRecipient.E2ETests\e2e.runsettings
+    testSelector: "testAssemblies"
+    testAssemblyVer2: |
+      **\*DataRecipient*E2ETests*.dll
+      !**\*TestAdapter.dll
+      !**\obj\**
+      !**/ref/**
+    searchFolder: "$(System.DefaultWorkingDirectory)"           
+
+# Stop APIs and copy artifacts for e2e-tests
+- template: templates/stop-apis.yml  
+- template: templates/copy-artifacts.yml
+  parameters:
+    name: E2E Tests
+
+# Publish artifacts
+- publish: $(Build.SourcesDirectory)\Publish
+  displayName: Publish artifacts
+  condition: always()
+  artifact: Mock-Data-Recipient Build $(Build.BuildNumber)
