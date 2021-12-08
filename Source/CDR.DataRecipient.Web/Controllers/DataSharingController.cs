@@ -69,7 +69,8 @@ namespace CDR.DataRecipient.Web.Controllers
             // Replace the host and base path in the CDS swagger file to point to the mock data recipient proxy endpoint
             // in order to proxy all swagger requests via the mock data recipient.
             var json = JObject.Parse(cdsSwaggerJson);
-            json["host"] = new Uri(sp.RecipientBaseUri).Host;
+            Uri uri = new Uri(sp.RecipientBaseUri);
+            json["host"] = $"{uri.Host}:{uri.Port}";
             json["basePath"] = "/data-sharing/proxy/cds-au/v1";
 
             // Return the updated swagger file.
