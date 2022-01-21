@@ -65,7 +65,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("request", request);
-            formFields.Add("response_type", "code id_token");
+            formFields.Add("response_type", "code");
 
             var response = await client.SendPrivateKeyJwtRequest(
                 parEndpoint,
@@ -99,14 +99,14 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             int? sharingDuration = 0,
             string cdrArrangementId = null,
-            string responseMode = "form_post")
+            string responseMode = "query")
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestJwt)}.");
 
             // Build the list of claims to include in the authorisation request jwt.
             var authorisationRequestClaims = new Dictionary<string, object>
             {
-                { "response_type", "code id_token" },
+                { "response_type", "code" },
                 { "client_id", clientId },
                 { "redirect_uri", redirectUri },
                 { "response_mode", responseMode},
@@ -136,9 +136,9 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             return config.AuthorizationEndpoint
                 .AppendQueryString("client_id", clientId)
-                .AppendQueryString("response_type", "code id_token")
+                .AppendQueryString("response_type", "code")
                 .AppendQueryString("scope", scope)
-                .AppendQueryString("response_mode", "form_post")
+                .AppendQueryString("response_mode", "query")
                 .AppendQueryString("request", jwt);
         }
 
@@ -155,7 +155,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             return config.AuthorizationEndpoint
                 .AppendQueryString("client_id", clientId)
-                .AppendQueryString("response_type", "code id_token")
+                .AppendQueryString("response_type", "code")
                 .AppendQueryString("scope", scope)
                 .AppendQueryString("response_mode", "fragment")
                 .AppendQueryString("request_uri", requestUri);

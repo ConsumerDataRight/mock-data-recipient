@@ -167,7 +167,7 @@ namespace CDR.DataRecipient.Web.Controllers
             model.TokenEndpointAuthSigningAlg = sp.DefaultSigningAlgorithm;
             model.TokenEndpointAuthMethod = "private_key_jwt";
             model.GrantTypes = "client_credentials,authorization_code,refresh_token";
-            model.ResponseTypes = "code id_token";
+            model.ResponseTypes = "code,token";
             model.ApplicationType = "web";
             model.IdTokenSignedResponseAlg = sp.DefaultSigningAlgorithm;
             model.IdTokenEncryptedResponseAlg = "RSA-OAEP";
@@ -398,7 +398,9 @@ namespace CDR.DataRecipient.Web.Controllers
                 expires: DateTime.UtcNow.AddMinutes(5),
                 signingCredentials: new X509SigningCredentials(sp.SigningCertificate.X509Certificate, SecurityAlgorithms.RsaSsaPssSha256));
 
+
             var tokenHandler = new JwtSecurityTokenHandler();
+
             return tokenHandler.WriteToken(jwt);
         }
     }
