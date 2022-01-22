@@ -33,14 +33,16 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             string clientId,
             string tokenType,
-            string token);
+            string token,
+            string accessToken);
 
         Task<Response<Introspection>> Introspect(
             string introspectionEndpoint, 
             X509Certificate2 clientCertificate,
             X509Certificate2 signingCertificate,
             string clientId,
-            string refreshToken);
+            string refreshToken,
+            string accessToken);
 
         Task<Response<UserInfo>> UserInfo(
             string userInfoEndpoint,
@@ -52,7 +54,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 clientCertificate,
             X509Certificate2 signingCertificate,
             string clientId,
-            string cdrArrangementId);
+            string cdrArrangementId,
+            string accessToken);
 
         Task<Response<PushedAuthorisation>> PushedAuthorisationRequest(
             string parEndpoint,

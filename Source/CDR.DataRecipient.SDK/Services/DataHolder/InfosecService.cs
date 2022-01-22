@@ -225,14 +225,15 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             string clientId,
             string tokenType,
-            string token)
+            string token,
+            string accessToken)
         {
             var revocationResponse = new Response();
 
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(RevokeToken)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = GetHttpClient(clientCertificate, accessToken, null);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("token", token);
@@ -262,14 +263,15 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 clientCertificate,
             X509Certificate2 signingCertificate,
             string clientId,
-            string refreshToken)
+            string refreshToken,
+            string accessToken)
         {
             var introspectionResponse = new Response<Introspection>();
 
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(Introspect)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = GetHttpClient(clientCertificate, accessToken, null);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("token", refreshToken);
@@ -329,14 +331,15 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 clientCertificate,
             X509Certificate2 signingCertificate,
             string clientId,
-            string cdrArrangementId)
+            string cdrArrangementId, 
+            string accessToken)
         {
             var revocationResponse = new Response();
 
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(RevokeCdrArrangement)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = GetHttpClient(clientCertificate, accessToken, null);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("cdr_arrangement_id", cdrArrangementId);

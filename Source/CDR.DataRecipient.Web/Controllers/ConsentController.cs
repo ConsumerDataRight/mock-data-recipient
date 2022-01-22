@@ -363,7 +363,8 @@ namespace CDR.DataRecipient.Web.Controllers
                 sp.ClientCertificate.X509Certificate,
                 sp.SigningCertificate.X509Certificate,
                 arrangement.ClientId,
-                arrangement.CdrArrangementId);
+                arrangement.CdrArrangementId,
+                arrangement.AccessToken);
 
             // The consent has been revoked, so remove from the local repository.
             if (revocation.IsSuccessful)
@@ -409,7 +410,8 @@ namespace CDR.DataRecipient.Web.Controllers
                 sp.ClientCertificate.X509Certificate,
                 sp.SigningCertificate.X509Certificate,
                 arrangement.ClientId,
-                arrangement.RefreshToken);
+                arrangement.RefreshToken,
+                arrangement.AccessToken);
 
             return new ResponseModel()
             {
@@ -508,7 +510,8 @@ namespace CDR.DataRecipient.Web.Controllers
                 sp.SigningCertificate.X509Certificate,
                 arrangement.ClientId,
                 tokenType,
-                tokenType.Equals(TokenTypes.ACCESS_TOKEN, StringComparison.OrdinalIgnoreCase) ? arrangement.AccessToken : arrangement.RefreshToken);
+                tokenType.Equals(TokenTypes.ACCESS_TOKEN, StringComparison.OrdinalIgnoreCase) ? arrangement.AccessToken : arrangement.RefreshToken,
+                arrangement.AccessToken);
 
             return new ResponseModel()
             {
