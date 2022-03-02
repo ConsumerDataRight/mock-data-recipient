@@ -157,7 +157,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 .AppendQueryString("client_id", clientId)
                 .AppendQueryString("response_type", "code")
                 .AppendQueryString("scope", scope)
-                .AppendQueryString("response_mode", "fragment")
+                .AppendQueryString("response_mode", "query")
                 .AppendQueryString("request_uri", requestUri);
         }
 
