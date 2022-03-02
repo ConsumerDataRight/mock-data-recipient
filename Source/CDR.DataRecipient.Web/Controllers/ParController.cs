@@ -91,7 +91,7 @@ namespace CDR.DataRecipient.Web.Controllers
                     sp.SigningCertificate.X509Certificate,
                     model.SharingDuration,
                     model.CdrArrangementId,
-                    "query");
+                    "form_post");
 
                 var parResponse = await _dhInfoSecService.PushedAuthorisationRequest(
                     dhConfig.PushedAuthorizationRequestEndpoint,

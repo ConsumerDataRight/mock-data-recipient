@@ -92,6 +92,6 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             int? sharingDuration = 0,
             string cdrArrangementId = null,
-            string responseMode = "query");
+            string responseMode = "form_post");
     }
 }

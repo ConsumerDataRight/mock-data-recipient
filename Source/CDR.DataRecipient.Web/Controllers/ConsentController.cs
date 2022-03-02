@@ -118,14 +118,15 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Callback()
         {
             var model = new TokenModel();
-            var isSuccessful = this.Request.Method.Equals("get", StringComparison.OrdinalIgnoreCase) && this.Request.Query != null && this.Request.Query.ContainsKey("code");
-
+            var isSuccessful = this.Request.Method.Equals("post", StringComparison.OrdinalIgnoreCase) && this.Request.Form != null && this.Request.Form.ContainsKey("id_token");
+            
             if (isSuccessful)
             {
                 var sp = _config.GetSoftwareProductConfig();
-                var authCode = this.Request.Query["code"].ToString();
-                var state = this.Request.Query["state"].ToString();
-                var nonce = this.Request.Query["nonce"].ToString();
+                var idToken = this.Request.Form["id_token"].ToString();
+                var authCode = this.Request.Form["code"].ToString();
+                var state = this.Request.Form["state"].ToString();
+                var nonce = this.Request.Form["nonce"].ToString();
 
                 var authState = _cache.Get<AuthorisationState>(state);
 
