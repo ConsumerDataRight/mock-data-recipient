@@ -131,7 +131,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 var authState = _cache.Get<AuthorisationState>(state);
 
                 // Request a token from the data holder.
-                var tokenEndpoint = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri)).TokenEndpoint;
+                var tokenEndpoint = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri)).MtlsEndpointAliases.TokenEndpoint;
                 model.TokenResponse = await _dhInfosecService.GetAccessToken(
                     tokenEndpoint,
                     authState.ClientId,
@@ -319,7 +319,7 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Call the DH to refresh the access token.
-            var tokenEndpoint = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(arrangement.DataHolderBrandId)).TokenEndpoint;
+            var tokenEndpoint = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(arrangement.DataHolderBrandId)).MtlsEndpointAliases.TokenEndpoint;
             var tokenResponse = await _dhInfosecService.RefreshAccessToken(
                 tokenEndpoint,
                 sp.ClientCertificate.X509Certificate,
