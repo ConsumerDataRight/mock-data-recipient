@@ -72,6 +72,9 @@ namespace CDR.DataRecipient.Web.Controllers
             Uri uri = new Uri(sp.RecipientBaseUri);
             json["host"] = $"{uri.Host}:{uri.Port}";
             json["basePath"] = "/data-sharing/proxy/cds-au/v1";
+            json["servers"] = new JArray( new JObject{
+                ["url"] = $"{sp.RecipientBaseUri}/data-sharing/proxy/cds-au/v1"
+            });
 
             // Return the updated swagger file.
             Response.ContentType = "application/json";
