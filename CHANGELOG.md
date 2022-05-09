@@ -6,8 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2021-05-09
 ### Fixed
-- Banking API swagger in data sharing not displaying. [Issue 30}](https://github.com/ConsumerDataRight/mock-data-recipient/issues/30)
+- Banking API swagger in data sharing not displaying. [Issue 30](https://github.com/ConsumerDataRight/mock-data-recipient/issues/30)
 
 ## [0.1.1] - 2021-12-07
 ### Added
