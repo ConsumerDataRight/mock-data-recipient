@@ -12,21 +12,21 @@
 
 <div class="row">
     <div class="col-sm-7">
-        <div class="card">
-            <h5 class="card-header">@Model.TransactionType Client Registration</h5>
+        <div id="dcr-create" class="card">
+            <h5 id="dcr-create-header" class="card-header">@Model.TransactionType Client Registration</h5>
             <div class="card-body">
                 <div class="card-text">
                     @using (Html.BeginForm())
                     {
                         <div class="form-small">
-                            <div class="row mb-3">
+                            <div id="dcr-create-dataHolderBrandId" class="row mb-3">
                                 @Html.LabelFor(m => m.DataHolderBrandId, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.DropDownListFor(m => m.DataHolderBrandId, Model.DataHolderBrands, "Select Data Holder Brand...", new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-clientId" class="row mb-3">
                                 @Html.LabelFor(m => m.ClientId, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @{
@@ -41,77 +41,77 @@
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-softwareProductId" class="row mb-3">
                                 @Html.LabelFor(m => m.SoftwareProductId, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.SoftwareProductId, new { @class = "form-control", @readonly = "readonly" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-redirectUris" class="row mb-3">
                                 @Html.LabelFor(m => m.RedirectUris, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.RedirectUris, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-tokenEndpointAuthSigningAlg" class="row mb-3">
                                 @Html.LabelFor(m => m.TokenEndpointAuthSigningAlg, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.TokenEndpointAuthSigningAlg, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-tokenEndpointAuthMethod" class="row mb-3">
                                 @Html.LabelFor(m => m.TokenEndpointAuthMethod, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.TokenEndpointAuthMethod, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-grantTypes" class="row mb-3">
                                 @Html.LabelFor(m => m.GrantTypes, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.GrantTypes, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-responseTypes" class="row mb-3">
                                 @Html.LabelFor(m => m.ResponseTypes, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.ResponseTypes, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-applicationType" class="row mb-3">
                                 @Html.LabelFor(m => m.ApplicationType, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.ApplicationType, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-idTokenSignedResponseAlg" class="row mb-3">
                                 @Html.LabelFor(m => m.IdTokenSignedResponseAlg, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.IdTokenSignedResponseAlg, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-idTokenEncryptedResponseAlg" class="row mb-3">
                                 @Html.LabelFor(m => m.IdTokenEncryptedResponseAlg, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.IdTokenEncryptedResponseAlg, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-idTokenEncryptedResponseEnc" class="row mb-3">
                                 @Html.LabelFor(m => m.IdTokenEncryptedResponseEnc, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.IdTokenEncryptedResponseEnc, new { @class = "form-control" })
                                 </div>
                             </div>
 
-                            <div class="row mb-3">
+                            <div id="dcr-create-requestObjectSigningAlg" class="row mb-3">
                                 @Html.LabelFor(m => m.RequestObjectSigningAlg, new { @class = "col-sm-3 col-form-label" })
                                 <div class="col-sm-9">
                                     @Html.TextBoxFor(m => m.RequestObjectSigningAlg, new { @class = "form-control" })
@@ -120,8 +120,8 @@
 
                             <div class="row mb-3 buttons">
                                 <div class="col-sm-9 offset-sm-3">
-                                    <input name="register" type="submit" value="Register" class="btn btn-primary" />
-                                    <a href="~/dcr" class="btn btn-secondary" title="Cancel">Cancel</a>
+                                    <input id="dcr-create-btnRegister" name="register" type="submit" value="Register" class="btn btn-primary" />
+                                    <a id="dcr-create-btnCancel" href="~/dcr" class="btn btn-secondary" title="Cancel">Cancel</a>
                                 </div>
                             </div>
                         </div>
@@ -129,7 +129,7 @@
                 </div>
             </div>
             <div class="card-footer">
-                <small class="text-muted">
+                <small id="dcr-create-message" class="text-muted">
                     @Model.Messages
 
                     @if (!string.IsNullOrEmpty(Model.ResponsePayload))
@@ -145,14 +145,13 @@
     </div>
 
     <div class="col-sm-5">
-
-        <div id="registrations" class="card">
-            <h5 class="card-header">Current Registrations</h5>
+        <div id="dcr-current" class="card">
+            <h5 id="dcr-current-header" class="card-header">Current Registrations</h5>
             <div class="card-body" style="max-height: 400px; overflow-y: scroll;">
                 <p class="card-text">
                     @if (@Model.Registrations.Count() > 0)
                     {
-                        <table class="table table-sm table-striped table-hover table-bordered">
+                        <table id="dcr-current-table" class="table table-sm table-striped table-hover table-bordered">
                             <thead>
                                 <tr>
                                     <th scope="col">Client ID</th>
@@ -164,12 +163,12 @@
                             {
                                 <tr id="@reg.ClientId">
                                     <td>
-                                        <a href="~/dcr?clientId=@reg.ClientId">@reg.ClientId</a>
+                                        <a id="dcr-current-clientLink_@reg.ClientId" href="~/dcr?clientId=@reg.ClientId">@reg.ClientId</a>
                                     </td>
                                     <td>@reg.DataHolderBrandId</td>
                                     <td>
-                                        <a href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId" target="_blank">View</a>
-                                        <a href="/dcr/registrations/@reg.ClientId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId">Delete</a>
+                                        <a id="dcr-current-btnView_@reg.ClientId" href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId" target="_blank">View</a>
+                                        <a id="dcr-current-btnDelete_@reg.ClientId" href="/dcr/registrations/@reg.ClientId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId">Delete</a>
                                     </td>
                                 </tr>
                             }
@@ -177,12 +176,12 @@
                     }
                     else
                     {
-                        <div>No existing registrations found.</div>
+                        <div id="dcr-current-noDataMessage">No existing registrations found.</div>
                     }
                 </p>
             </div>
             <div class="card-footer">
-                <small class="text-muted">
+                <small id="dcr-current-count" class="text-muted">
                     <span>Registrations: <strong>@Model.Registrations.Count()</strong></span>
                 </small>
             </div>
@@ -194,15 +193,15 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Registration</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 id="dcr-modal-title" class="modal-title">Registration</h5>
+                <button id="dcr-modal-iconClose" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
+            <div id="dcr-modal-body" class="modal-body">
                 <div id="modal-messages"></div>
                 <pre id="modal-payload"></pre>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button id="dcr-modal-btnClose" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
