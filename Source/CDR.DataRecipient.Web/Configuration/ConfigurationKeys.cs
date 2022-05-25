@@ -2,6 +2,8 @@
 {
     public static class ConfigurationKeys
     {
+        public const string ALLOW_SPECIFIC_ORIGINS = "AllowSpecificOrigins";
+
         public const string REGISTER = "MockDataRecipient:Register";
         public const string REGISTER_TLS_BASE_URI = "MockDataRecipient:Register:tlsBaseUri";
         public const string REGISTER_MTLS_BASE_URI = "MockDataRecipient:Register:mtlsBaseUri";
@@ -19,5 +21,7 @@
         public const string DEFAULT_DATA_HOLDER_JWKS_URI = "MockDataRecipient:DataHolder:jwksUri";
         
         public const string DEFAULT_PAGE_SIZE = "MockDataRecipient:Paging:DefaultPageSize";
+
+        public const string CDR_ARRANGEMENT_AS_JWT_ONLY = "MockDataRecipient:Arrangement:UseJwtOnly";
     }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CDR.DataRecipient.SDK.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,5 +15,6 @@ namespace CDR.DataRecipient.Web.Models
         public string Scope { get; set; }
         public int? SharingDuration { get; set; }
         public string RedirectUri { get; set; }
+        public Pkce Pkce { get; set; }
     }
 }

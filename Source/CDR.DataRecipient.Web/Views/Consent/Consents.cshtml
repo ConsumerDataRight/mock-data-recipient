@@ -1,9 +1,21 @@
 ﻿@{
     ViewData["Title"] = "Consents";
+    string name = Context.User.GetUserName();
 }
+@using CDR.DataRecipient.Web.Extensions
+@using Microsoft.AspNetCore.Http
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration _config
 @model ConsentsModel
 
-<h2>Consents</h2>
+@if (string.IsNullOrEmpty(name))
+{
+    <h2>Consents</h2>
+}
+else
+{
+    <h2>@(name) - Consents</h2>
+}
 
 <p>
     This page allows you to manage the existing consent arrangements that have been collected via the Mock Data Recipient.
@@ -16,15 +28,16 @@
             @if (Model.ConsentArrangements != null && Model.ConsentArrangements.Any())
             {
                 <table class="table table-striped table-bordered table-sm">
+                    <caption>CDR Arrangements</caption>
                     <thead>
                         <tr>
-                            <th>CDR Arrangement ID</th>
-                            <th>Client ID</th>
-                            <th>Scope</th>
-                            <th>Expires In</th>
-                            <th>Sharing Duration</th>
-                            <th>Created</th>
-                            <th>Actions</th>
+                            <th scope="col">CDR Arrangement ID</th>
+                            <th scope="col">Client ID</th>
+                            <th scope="col">Scope</th>
+                            <th scope="col">Expires In</th>
+                            <th scope="col">Sharing Duration</th>
+                            <th scope="col">Created</th>
+                            <th scope="col">Actions</th>
                         </tr>
                     </thead>
 

@@ -1,5 +1,0 @@
-{
-    Microsoft.IdentityModel.Tokens.JsonWebKey, Use: 'sig', Kid: '73AEFCAF807652A46E3316DB47E905E7B72652B2', Kty: 'RSA', InternalId: 'ljDBpDqefCrHnn-5NWO-bn_8MXqFIDA86ddY5v0trcw'.
-}
-
-"73AEFCAF807652A46E3316DB47E905E7B72652B2"

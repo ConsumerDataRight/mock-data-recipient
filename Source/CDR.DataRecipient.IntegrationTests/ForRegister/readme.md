@@ -1,1 +1,0 @@
-This files in this folder need replace the corresponding files in the OSR for Mock Register.

@@ -37,7 +37,10 @@
         <ul>
             @foreach (var error in Model.ErrorList.Errors)
             {
-                <li>@error.Title (@error.Code): @error.Detail</li>
+                @if (!string.IsNullOrEmpty(@error.Title))
+                {
+                    <li>@error.Title (@error.Code): @error.Detail</li>    
+                }                
             }
         </ul>
     }

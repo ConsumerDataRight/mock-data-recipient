@@ -8,7 +8,7 @@ namespace CDR.DataRecipient.Web.Models
         public string Messages { get; set; }
         public SDK.Models.ErrorList ErrorList { get; set; }
 
-        public BaseModel()
+        protected BaseModel()
         {
             this.ErrorList = new SDK.Models.ErrorList();
         }

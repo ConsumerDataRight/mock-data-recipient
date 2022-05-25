@@ -1,0 +1,44 @@
+# Dockerfile for E2E tests
+
+# Playwright needs Ubuntu so the dependancies install, hence we use "-focal" image (ie Ubuntu)
+FROM mcr.microsoft.com/dotnet/sdk:6.0-focal AS build
+
+###############################################################################
+# Install Playwright
+###############################################################################
+# Install Playwright tool
+RUN dotnet tool install --global Microsoft.Playwright.CLI
+
+# Create sample app so that can run "playwright install" and "playwright install-deps"
+RUN dotnet new console -n PlaywrightSetup
+WORKDIR /PlaywrightSetup
+RUN dotnet add package Microsoft.Playwright
+RUN dotnet build
+
+# Install playwright dependancies
+RUN /root/.dotnet/tools/playwright install
+RUN /root/.dotnet/tools/playwright install-deps 
+
+###############################################################################
+# Build E2E tests
+###############################################################################
+WORKDIR /src
+
+# Default ASPNETCORE_ENVIRONMENT to Release
+ENV ASPNETCORE_ENVIRONMENT=Release
+
+# Copy source
+COPY . ./
+
+# Install developer certificate
+RUN dotnet dev-certs https 
+
+# Run tests
+WORKDIR /src/CDR.DataRecipient.E2ETests
+RUN dotnet build --configuration Release
+
+# Install playwright dependancies - for some reason need to do this in addition to the first time above 
+RUN /root/.dotnet/tools/playwright install
+
+ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--logger", "trx;verbosity=detailed;LogFileName=results.trx", "-r", "/testresults"]
+# ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--filter", "AC04_DynamicClientRegistration", "--logger", "trx;verbosity=detailed;LogFileName=results.trx", "-r", "/testresults"]

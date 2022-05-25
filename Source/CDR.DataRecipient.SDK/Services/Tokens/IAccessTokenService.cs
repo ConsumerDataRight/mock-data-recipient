@@ -14,6 +14,7 @@ namespace CDR.DataRecipient.SDK.Services.Tokens
             string scope,
             string redirectUri = null,
             string code = null,
-            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS);
+            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS,
+            Pkce pkce = null);
     }
 }

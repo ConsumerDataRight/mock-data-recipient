@@ -34,7 +34,7 @@ namespace CDR.DataRecipient.IntegrationTests
 			var apiCall = new Infrastructure.API
 			{
 				HttpMethod = HttpMethod.Get,
-				URL = $"https://localhost:9001/jwks",
+				URL = $"https://{HOSTNAME_DATARECIPIENT}:9001/jwks",
 			};
 
             // Act

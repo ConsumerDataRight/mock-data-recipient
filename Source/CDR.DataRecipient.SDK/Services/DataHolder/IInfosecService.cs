@@ -16,7 +16,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string scope = "cdr:registration",
             string redirectUri = null,
             string code = null,
-            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS);
+            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS,
+            Pkce pkce = null);
 
         Task<Response<Token>> RefreshAccessToken(
             string tokenEndpoint,
@@ -59,8 +60,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 clientCertificate,
             X509Certificate2 signingCertificate,
             string clientId,
-            string request,
-            string scope);
+            string request);
 
         Task<string> BuildAuthorisationRequestUri(
             string infosecBaseUri,
@@ -70,13 +70,13 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string state,
             string nonce,
             X509Certificate2 signingCertificate,
-            int? sharingDuration = 0);
+            int? sharingDuration = 0,
+            Pkce pkce = null);
 
         Task<string> BuildAuthorisationRequestUri(
             string infosecBaseUri,
             string clientId,
             X509Certificate2 signingCertificate,
-            string scope,
             string requestUri);
 
         string BuildAuthorisationRequestJwt(
@@ -89,6 +89,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             int? sharingDuration = 0,
             string cdrArrangementId = null,
-            string responseMode = "form_post");
+            string responseMode = "form_post",
+            Pkce pkce = null);
+
+        Pkce CreatePkceData();
+
     }
 }

@@ -22,9 +22,14 @@ namespace CDR.DataRecipient.Web.Models
         [Display(Name = "Sharing Duration")]
         public int? SharingDuration { get; set; }
 
+        public string RedirectUris { get; set; }
+
         [Display(Name = "Scope")]
         [Required]
         public string Scope { get; set; }
+
+        [Display(Name = "Use PKCE")]
+        public bool UsePkce { get; set; }
 
         public IEnumerable<SelectListItem> RegistrationListItems { get; set; }
 

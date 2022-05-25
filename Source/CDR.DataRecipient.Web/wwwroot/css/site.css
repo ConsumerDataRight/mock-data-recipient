@@ -43,9 +43,6 @@ main {
     list-style: none;
 }
 
-    #sidebar ul li {
-    }
-
         #sidebar ul li a:before {
             content: "—";
         }
@@ -93,6 +90,10 @@ li.hr {
     border-top: solid 1px #e5e5e5;
 }
 
+em.highlight {
+    background: #f5f5f5;
+}
+
 .code {
     background: #f5f5f5;
     padding: 10px;
@@ -122,4 +123,10 @@ input[type="submit"] {
 
 .wrap {
     word-wrap: break-word;
+}
+
+.alert .alert-heading {
+    font-size: 1.5em;
+    margin: 5px 0;
+    border: none;
 }

@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# temp folders
+**/_temp/
+
 # VS Code
 **/.vscode/
 
@@ -55,7 +58,6 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-**/Properties/launchSettings.json
 
 # StyleCop
 StyleCopReport.xml
@@ -331,3 +333,8 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+Source/CDR.DataRecipient.Web/_healthcheck_ready
+
+# Sonarqube
+.sonarqube

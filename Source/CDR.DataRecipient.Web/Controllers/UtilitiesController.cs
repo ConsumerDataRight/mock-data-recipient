@@ -1,14 +1,16 @@
-﻿using CDR.DataRecipient.Web.Models;
+﻿using CDR.DataRecipient.SDK.Extensions;
+using CDR.DataRecipient.SDK.Register;
+using CDR.DataRecipient.Web.Configuration;
+using CDR.DataRecipient.Web.Filters;
+using CDR.DataRecipient.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using CDR.DataRecipient.Web.Configuration;
-using CDR.DataRecipient.SDK.Extensions;
 using System;
-using CDR.DataRecipient.SDK.Register;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
+    [Authorize]
     [Route("utilities")]
     public class UtilitiesController : Controller
     {
@@ -43,19 +45,17 @@ RIj2P/wtcJRnuztcszBJsnt7NQ==
 -----END PRIVATE KEY-----
 ";
 
-        private readonly ILogger<UtilitiesController> _logger;
         private readonly IConfiguration _config;
 
         public UtilitiesController(
-            IConfiguration config,
-            ILogger<UtilitiesController> logger)
+            IConfiguration config)
         {
-            _logger = logger;
             _config = config;
         }
 
         [HttpGet]
         [Route("id-token")]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult IdToken()
         {
             var model = new IdTokenModel();
@@ -64,6 +64,7 @@ RIj2P/wtcJRnuztcszBJsnt7NQ==
 
         [HttpPost]
         [Route("id-token")]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult IdToken(IdTokenModel model)
         {
             var sp = _config.GetSoftwareProductConfig();
@@ -73,14 +74,22 @@ RIj2P/wtcJRnuztcszBJsnt7NQ==
                 return View(model);
             }
 
-            model.IdTokenDecrypted = model.IdTokenEncrypted.DecryptIdToken(sp.SigningCertificate.X509Certificate);
-            model.IdTokenClaims = model.IdTokenDecrypted.GetTokenClaims();
+            try
+            {
+                model.IdTokenDecrypted = model.IdTokenEncrypted.DecryptIdToken(sp.SigningCertificate.X509Certificate);
+                model.IdTokenClaims = model.IdTokenDecrypted.GetTokenClaims();
+            }
+            catch (Exception)
+            {
+                model.Messages = "Invalid ID Token";
+            }
 
             return View(model);
         }
 
         [HttpGet]
         [Route("private-key-jwt")]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult PrivateKeyJwt()
         {
             var model = new PrivateKeyJwtModel();
@@ -90,9 +99,9 @@ RIj2P/wtcJRnuztcszBJsnt7NQ==
 
         [HttpPost]
         [Route("private-key-jwt")]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult PrivateKeyJwt(PrivateKeyJwtModel model)
         {
-            var sp = _config.GetSoftwareProductConfig();
             var privateKeyFormatted = FormatPrivateKey(model.PrivateKey);
             var privateKeyJwt = new PrivateKeyJwt(privateKeyFormatted);
             model.ClientAssertion = privateKeyJwt.Generate(model.Issuer, model.Audience, model.Jti, model.ExpiryMinutes);
@@ -106,7 +115,7 @@ RIj2P/wtcJRnuztcszBJsnt7NQ==
         /// </summary>
         /// <param name="privateKey">Raw private key</param>
         /// <returns></returns>
-        private string FormatPrivateKey(string privateKey)
+        private static string FormatPrivateKey(string privateKey)
         {
             return privateKey
                 .Replace("-----BEGIN PRIVATE KEY-----", "")

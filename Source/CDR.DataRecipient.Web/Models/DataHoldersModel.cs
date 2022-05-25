@@ -1,7 +1,7 @@
-﻿using System;
+﻿using CDR.DataRecipient.SDK.Enumerations;
+using CDR.DataRecipient.SDK.Models;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using CDR.DataRecipient.SDK.Models;
 
 namespace CDR.DataRecipient.Web.Models
 {
@@ -15,6 +15,8 @@ namespace CDR.DataRecipient.Web.Models
         public HttpRequestModel RefreshRequest { get; set; }
 
         public string Messages { get; set; }
+
+        public Industry Industry { get; set; }
 
         public DataHoldersModel()
         {

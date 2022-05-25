@@ -6,8 +6,8 @@ namespace CDR.DataRecipient.Web.Models
 	{
         public ErrorModel()
         {
-            Meta = new object();
-            Detail = string.Empty;
+            Meta = null;
+            Detail = "";
         }
 
         public ErrorModel(string code, string title, string description) : this()
