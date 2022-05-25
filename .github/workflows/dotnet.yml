@@ -93,35 +93,10 @@ jobs:
       run: |
         docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile --tag mock-data-recipient:latest
 
-    # Build mock-data-recipient-unit-tests image
-    - name: Build the mock-data-recipient-unit-tests image
-      run: |
-        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.unit-tests --tag mock-data-recipient-unit-tests:latest
-
     # Build mock-data-recipient-integration-tests image
     - name: Build the mock-data-recipient-integration-tests image
       run: |
         docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.integration-tests --tag mock-data-recipient-integration-tests:latest
-
-    # Build mock-data-recipient-e2e-tests image
-    - name: Build the mock-data-recipient-e2e-tests image
-      run: |
-        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.e2e-tests --tag mock-data-recipient-e2e-tests:latest
-
-    # List docker images
-    - name: List Docker images
-      run: |
-        docker images
-
-    # Run unit tests
-    - name: Run unit tests
-      run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
-
-    # Remove unit tests
-    - name: Remove unit tests
-      run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' down
 
     # Run integration tests
     - name: Run integration tests
@@ -133,6 +108,16 @@ jobs:
       run: |
         docker-compose -f './mock-data-recipient/Source/docker-compose.IntegrationTests.yml' down
 
+    # List docker images
+    - name: List Docker images
+      run: |
+        docker images
+
+    # Build mock-data-recipient-e2e-tests image
+    - name: Build the mock-data-recipient-e2e-tests image
+      run: |
+        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.e2e-tests --tag mock-data-recipient-e2e-tests:latest
+
     # Run e2e tests
     - name: Run e2e tests
       run: |
@@ -142,3 +127,19 @@ jobs:
     - name: Remove e2e tests
       run: |
         docker-compose -f './mock-data-recipient/Source/docker-compose.E2ETests.yml' down
+        
+    # Build mock-data-recipient-unit-tests image
+    - name: Build the mock-data-recipient-unit-tests image
+      run: |
+        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.unit-tests --tag mock-data-recipient-unit-tests:latest
+        
+    # Run unit tests
+    - name: Run unit tests
+      run: |
+        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
+
+    # Remove unit tests
+    - name: Remove unit tests
+      run: |
+        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' down
+
