@@ -59,7 +59,7 @@ jobs:
         repository: ConsumerDataRight/mock-register
         ref: develop
         path: ./mock-register
-		
+
     - name: Checkout Data Holder (Main Branch)
       uses: actions/checkout@v2
       if: ${{ github.ref == 'refs/heads/main' }}
@@ -75,7 +75,7 @@ jobs:
         repository: ConsumerDataRight/mock-data-holder
         ref: develop
         path: ./mock-data-holder
-		
+
     - name: Checkout Data Holder Energy (Main Branch)
       uses: actions/checkout@v2
       if: ${{ github.ref == 'refs/heads/main' }}
@@ -134,7 +134,7 @@ jobs:
     - name: Build the mock-data-recipient-e2e-tests image
       run: |
         docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.e2e-tests --tag mock-data-recipient-e2e-tests:latest
-		
+
     # List docker images
     - name: List Docker images
       run: |
@@ -187,7 +187,7 @@ jobs:
         name: Integration Tests
         path: './mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults/*.trx'
         reporter: dotnet-trx
-		
+
     # Publish E2E Test Results
     - name: Publish E2E Test Report
       uses: dorny/test-reporter@v1
@@ -211,5 +211,5 @@ jobs:
         path: | 
           ./mock-register/Source/_temp/mock-register/tmp
           ./mock-data-holder/Source/_temp/mock-data-holder/tmp
-		  ./mock-data-holder-energy/Source/_temp/mock-data-holder-energy/tmp
-		  ./mock-data-recipient/Source/_temp/mock-data-recipient/tmp
+          ./mock-data-holder-energy/Source/_temp/mock-data-holder-energy/tmp
+          ./mock-data-recipient/Source/_temp/mock-data-recipient/tmp
