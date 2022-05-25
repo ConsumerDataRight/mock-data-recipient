@@ -70,7 +70,9 @@ services:
       mssql:
         condition: service_healthy
       mock-register:
-        condition: service_healthy             
+        condition: service_healthy
+      mock-data-holder:
+        condition: service_healthy
 
   mock-data-recipient:
     container_name: mock-data-recipient
@@ -87,16 +89,10 @@ services:
       - "./_temp/mock-data-recipient/tmp:/tmp"      
     healthcheck:
       test: test -f /app/web/_healthcheck_ready || exit 1
-      timeout: 5s
-      interval: 5s
-      retries: 100
+      timeout: 10s
+      interval: 30s
+      retries: 20
     depends_on:
-      mssql:
-        condition: service_healthy        
-      mock-register:
-        condition: service_healthy
-      mock-data-holder:
-        condition: service_healthy
       mock-data-holder-energy:
         condition: service_healthy
 
@@ -112,14 +108,6 @@ services:
       - "./_temp/mock-data-recipient-integration-tests/tmp:/tmp"   
       - "./_temp/mock-data-recipient-integration-tests/testresults:/testresults"
     depends_on:
-      mssql:
-        condition: service_healthy
-      mock-register:
-        condition: service_healthy
-      mock-data-holder:
-        condition: service_healthy
-      mock-data-holder-energy:
-        condition: service_healthy
       mock-data-recipient:
         condition: service_healthy
 
