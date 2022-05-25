@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31129.286
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Web", "CDR.DataRecipient.Web\CDR.DataRecipient.Web.csproj", "{83AAC80E-D102-4DB9-9BF7-80CDBFC833DC}"
 EndProject
@@ -13,16 +13,28 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Integrati
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56CFBFDE-5522-4AC1-9592-C74FB04EADF6}"
 	ProjectSection(SolutionItems) = preProject
-		docker-compose.yml = docker-compose.yml
+		.dockerignore = .dockerignore
+		docker-compose.E2ETests.yml = docker-compose.E2ETests.yml
+		docker-compose.IntegrationTests.yml = docker-compose.IntegrationTests.yml
+		docker-compose.UnitTests.yml = docker-compose.UnitTests.yml
 		Dockerfile = Dockerfile
+		Dockerfile.container = Dockerfile.container
+		Dockerfile.e2e-tests = Dockerfile.e2e-tests
+		Dockerfile.integration-tests = Dockerfile.integration-tests
+		Dockerfile.unit-tests = Dockerfile.unit-tests
+		run-e2e-tests.ps1 = run-e2e-tests.ps1
+		run-integration-tests.ps1 = run-integration-tests.ps1
+		run-unit-tests.ps1 = run-unit-tests.ps1
 		supervisord.conf = supervisord.conf
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Repository.SQLite", "CDR.DataRecipient.Repository.SQLite\CDR.DataRecipient.Repository.SQLite.csproj", "{468788C3-0C9D-4508-8408-BFE15EC18636}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Repository.SQL", "CDR.DataRecipient.Repository.SQL\CDR.DataRecipient.Repository.SQL.csproj", "{468788C3-0C9D-4508-8408-BFE15EC18636}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Repository.SQLite.UnitTests", "CDR.DataRecipient.Repository.SQLite.UnitTests\CDR.DataRecipient.Repository.SQLite.UnitTests.csproj", "{8850DADC-3DE2-47FD-B178-1E804D872FFF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.Repository.SQL.UnitTests", "CDR.DataRecipient.Repository.SQL.UnitTests\CDR.DataRecipient.Repository.SQL.UnitTests.csproj", "{8850DADC-3DE2-47FD-B178-1E804D872FFF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CDR.DataRecipient.E2ETests", "CDR.DataRecipient.E2ETests\CDR.DataRecipient.E2ETests.csproj", "{B12C2074-2FF3-4693-A465-6BFA586241FB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{D8F9A30A-AD71-4D76-8294-C358C2614DCF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +73,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9055ADF8-152F-4FDE-B951-C2F225B12084} = {D8F9A30A-AD71-4D76-8294-C358C2614DCF}
+		{8850DADC-3DE2-47FD-B178-1E804D872FFF} = {D8F9A30A-AD71-4D76-8294-C358C2614DCF}
+		{B12C2074-2FF3-4693-A465-6BFA586241FB} = {D8F9A30A-AD71-4D76-8294-C358C2614DCF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {04A0366C-D2E6-406F-A6B9-A405D04613D9}

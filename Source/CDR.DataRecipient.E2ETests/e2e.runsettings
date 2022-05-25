@@ -2,6 +2,6 @@
 <!-- File name extension must be .runsettings -->
 <RunSettings>
   <EnvironmentVariables>
-    <ASPNETCORE_ENVIRONMENT>Pipeline</ASPNETCORE_ENVIRONMENT>
+    <ASPNETCORE_ENVIRONMENT>Release</ASPNETCORE_ENVIRONMENT>
   </EnvironmentVariables>
 </RunSettings>

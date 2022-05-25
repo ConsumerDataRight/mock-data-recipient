@@ -1,7 +1,11 @@
-﻿@{
+﻿@using CDR.DataRecipient.Web.Features
+@using Microsoft.FeatureManagement
+@{
     ViewData["Title"] = "ID Token Helper";
+	var linkToExternalJwt = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.LinkToExternalJwt));
 }
 @model IdTokenModel
+@inject IFeatureManager _featureManager
 
 <h2>ID Token Helper</h2>
 
@@ -38,9 +42,12 @@
                 <div class="code">
                     @Model.IdTokenDecrypted
                 </div>
-                <p>
-                    <a href="https://jwt.io?token=@Model.IdTokenDecrypted" target="_blank" class="btn btn-primary">View Decoded</a>
-                </p>
+                @if (linkToExternalJwt)
+                {
+                    <p>
+                        <a href="https://jwt.io?token=@Model.IdTokenDecrypted" target="_blank" rel="noopener" class="btn btn-primary">View Decoded</a>
+                    </p>
+                }
             }
 
             @if (Model.IdTokenClaims != null)
@@ -62,7 +69,7 @@
 </div>
 
 @section Scripts {
-    <script type="text/javascript">
-        setSidebarMenuItem('id-token');
-    </script>
+<script type="text/javascript">
+    setSidebarMenuItem('id-token');
+</script>
 }

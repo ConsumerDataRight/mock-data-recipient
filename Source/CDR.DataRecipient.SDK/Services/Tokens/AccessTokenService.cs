@@ -24,7 +24,8 @@ namespace CDR.DataRecipient.SDK.Services.Tokens
             string scope,
             string redirectUri = null,
             string code = null,
-            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS)
+            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS,
+            Pkce pkce = null)
         {
             var tokenResponse = new Response<Token>();
 
@@ -33,13 +34,23 @@ namespace CDR.DataRecipient.SDK.Services.Tokens
             // Setup the http client.
             var client = GetHttpClient(clientCertificate);
 
-            _logger.LogDebug($"Requesting access token from: {tokenEndpoint}.  Software Product ID: {clientId}.  Client Certificate: {clientCertificate.Thumbprint}");
+            _logger.LogDebug("Requesting access token from: {tokenEndpoint}.  Software Product ID: {clientId}.  Client Certificate: {thumbprint}", tokenEndpoint, clientId, clientCertificate.Thumbprint);
 
             // Make the request to the token endpoint.
-            var response = await client.SendPrivateKeyJwtRequest(tokenEndpoint, clientId, signingCertificate, scope, redirectUri, code, grantType);
+            var response = await client.SendPrivateKeyJwtRequest(
+                tokenEndpoint, 
+                signingCertificate,
+                clientId,
+                clientId,
+                scope, 
+                redirectUri, 
+                code, 
+                grantType,
+                pkce: pkce);
+
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug($"Access Token Response: {response.StatusCode}.  Body: {body}");
+            _logger.LogDebug("Access Token Response: {statusCode}.  Body: {body}", response.StatusCode, body);
 
             tokenResponse.StatusCode = response.StatusCode;
 

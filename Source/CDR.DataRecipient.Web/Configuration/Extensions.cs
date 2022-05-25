@@ -1,22 +1,27 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using CDR.DataRecipient.SDK;
+using CDR.DataRecipient.Web.Models;
+using Microsoft.Extensions.Configuration;
+using System;
 
 namespace CDR.DataRecipient.Web.Configuration
 {
     public static class Extensions
     {
-        public static Models.Register GetRegisterConfig(this IConfiguration config, string key = ConfigurationKeys.REGISTER)
+        public static Models.Register GetRegisterConfig(
+            this IConfiguration config,
+            string key = ConfigurationKeys.REGISTER)
         {
             var register = new Models.Register();
             config.GetSection(key).Bind(register);
 
             if (string.IsNullOrEmpty(register.GetDataHolderBrandsEndpoint))
             {
-                register.GetDataHolderBrandsEndpoint = $"{register.MtlsBaseUri.TrimEnd('/')}/cdr-register/v1/banking/data-holders/brands";
+                register.GetDataHolderBrandsEndpoint = register.MtlsBaseUri.TrimEnd('/') + "/cdr-register/v1/{industry}/data-holders/brands";
             }
 
             if (string.IsNullOrEmpty(register.GetSsaEndpoint))
             {
-                register.GetSsaEndpoint = register.MtlsBaseUri.TrimEnd('/') + "/cdr-register/v1/banking/data-recipients/brands/{brandId}/software-products/{softwareProductId}/ssa";
+                register.GetSsaEndpoint = register.MtlsBaseUri.TrimEnd('/') + "/cdr-register/v1/{industry}/data-recipients/brands/{brandId}/software-products/{softwareProductId}/ssa";
             }
 
             return register;
@@ -45,6 +50,11 @@ namespace CDR.DataRecipient.Web.Configuration
             }
 
             return null;
+        }
+
+        public static bool CdrArrangementAsJwtOnly(this IConfiguration config)
+        {
+            return config.GetValue<bool>(ConfigurationKeys.CDR_ARRANGEMENT_AS_JWT_ONLY, false);
         }
     }
 }
