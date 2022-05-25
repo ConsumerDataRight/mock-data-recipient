@@ -46,37 +46,37 @@ jobs:
 
     - name: Pull Mock Register Image (main)
       if: ${{ github.ref == 'refs/heads/main' }}
-      run:
+      run: |
         docker pull consumerdataright/mock-register:main
         docker image tag consumerdataright/mock-register:main mock-register:latest
 
     - name: Pull Mock Register Image (develop)
       if: ${{ github.ref != 'refs/heads/main' }}
-      run:
+      run: |
         docker pull consumerdataright/mock-register:develop
         docker image tag consumerdataright/mock-register:develop mock-register:latest
 
     - name: Pull Mock Data Holder Image (main)
       if: ${{ github.ref == 'refs/heads/main' }}
-      run:
+      run: |
         docker pull consumerdataright/mock-data-holder:main
         docker image tag consumerdataright/mock-data-holder:main mock-data-holder:latest
 
     - name: Pull Mock Data Holder Image (develop)
       if: ${{ github.ref != 'refs/heads/main' }}
-      run:
+      run: |
         docker pull consumerdataright/mock-data-holder:develop
         docker image tag consumerdataright/mock-data-holder:develop mock-data-holder:latest
 
     - name: Pull Mock Data Holder Energy Image (main)
       if: ${{ github.ref == 'refs/heads/main' }}
-      run:
+      run: |
         docker pull consumerdataright/mock-data-holder-energy:main
         docker image tag consumerdataright/mock-data-holder-energy:main mock-data-holder-energy:latest
 
     - name: Pull Mock Data Holder Energy Image (develop)
       if: ${{ github.ref != 'refs/heads/main' }}
-      run:
+      run: |
         docker pull consumerdataright/mock-data-holder-energy:develop
         docker image tag consumerdataright/mock-data-holder-energy:develop mock-data-holder-energy:latest
 
