@@ -9,30 +9,30 @@
     @if (Model.TokenResponse != null && Model.TokenResponse.IsSuccessful)
     {
         <dl>
-            <dt>Id Token:</dt>
+            <dt id="consent-callback-idToken">Id Token:</dt>
             <dd>@Model.TokenResponse.Data.IdToken</dd>
-            <dt>Access Token:</dt>
+            <dt id="consent-callback-accessToken">Access Token:</dt>
             <dd>@Model.TokenResponse.Data.AccessToken</dd>
 
             @if (!string.IsNullOrEmpty(Model.TokenResponse.Data.RefreshToken))
             {
-                <dt>Refresh Token:</dt>
+                <dt id="consent-callback-refreshToken">Refresh Token:</dt>
                 <dd>@Model.TokenResponse.Data.RefreshToken</dd>
             }
 
-            <dt>Expires In:</dt>
+            <dt id="consent-callback-expiresIn">Expires In:</dt>
             <dd>@Model.TokenResponse.Data.ExpiresIn</dd>
-            <dt>Scope:</dt>
+            <dt id="consent-callback-scope">Scope:</dt>
             <dd>@Model.TokenResponse.Data.Scope</dd>
-            <dt>Token Type:</dt>
+            <dt id="consent-callback-tokenType">Token Type:</dt>
             <dd>@Model.TokenResponse.Data.TokenType</dd>
-            <dt>CDR Arrangement Id:</dt>
+            <dt id="consent-callback-cdrArrangementId">CDR Arrangement Id:</dt>
             <dd>@Model.TokenResponse.Data.CdrArrangementId</dd>
         </dl>
     }
     else
     {
-        <strong>Could not retrieve token from Data Holder</strong>
+        <strong id="consent-callback-noTokenMessage">Could not retrieve token from Data Holder</strong>
         <div>@Model.Messages</div>
         <ul>
             @foreach (var error in Model.ErrorList.Errors)
