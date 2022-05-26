@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using CDR.DataRecipient.SDK.Models;
+﻿using CDR.DataRecipient.SDK.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using System.Linq;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace CDR.DataRecipient.Web.Models
@@ -18,11 +17,16 @@ namespace CDR.DataRecipient.Web.Models
 
         public string DataHolderInfosecBaseUri { get; set; }
 
+        public string RedirectUris { get; set; }
+
         [Display(Name = "Sharing Duration")]
         public int? SharingDuration { get; set; }
 
         [Display(Name = "Scope")]
         public string Scope { get; set; }
+
+        [Display(Name = "Use PKCE")]
+        public bool UsePkce { get; set; }
 
         public IEnumerable<SelectListItem> RegistrationListItems { get; set; }
 

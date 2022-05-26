@@ -8,5 +8,6 @@
         public string kid { get; set; }
         public string kty { get; set; }
         public string n { get; set; }
+        public string d { get; set; }
     }
 }

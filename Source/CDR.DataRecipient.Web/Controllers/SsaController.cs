@@ -1,30 +1,28 @@
-﻿using System;
-using System.Threading.Tasks;
-using CDR.DataRecipient.SDK.Services.Register;
+﻿using CDR.DataRecipient.SDK.Services.Register;
 using CDR.DataRecipient.Web.Configuration;
 using CDR.DataRecipient.Web.Configuration.Models;
+using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
+    [Authorize]
     [Route("ssa")]
     public class SsaController : Controller
     {
-        private readonly ILogger<SsaController> _logger;
         private readonly IConfiguration _config;
         private readonly IInfosecService _infosecService;
         private readonly ISsaService _ssaService;
 
         public SsaController(
             IConfiguration config,
-            ILogger<SsaController> logger,
             IInfosecService infosecService,
             ISsaService ssaService)
         {
-            _logger = logger;
             _config = config;
             _infosecService = infosecService;
             _ssaService = ssaService;
@@ -39,6 +37,7 @@ namespace CDR.DataRecipient.Web.Controllers
         }
 
         [HttpPost]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index(SsaModel model)
         {
             await GetSSA(model);
@@ -60,7 +59,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 return;
             }
 
-            var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(reg.MtlsBaseUri, model.Version, tokenResponse.Data.AccessToken, sp.ClientCertificate.X509Certificate, model.BrandId, model.SoftwareProductId);
+            var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(reg.MtlsBaseUri, model.Version, tokenResponse.Data.AccessToken, sp.ClientCertificate.X509Certificate, model.BrandId, model.SoftwareProductId, model.Industry);
 
             model.StatusCode = ssaResponse.StatusCode;
             model.Messages = $"{ssaResponse.StatusCode} - {ssaResponse.Message}";
@@ -75,17 +74,18 @@ namespace CDR.DataRecipient.Web.Controllers
 
             SetDefaults(model, sp);
 
+            // Populate the view
             model.SSARequest = new HttpRequestModel()
             {
                 Method = "GET",
                 RequiresAccessToken = true,
                 RequiresClientCertificate = true,
                 SupportsVersion = true,
-                Url = string.Concat(reg.MtlsBaseUri.TrimEnd('/'), "/cdr-register/v1/banking/data-recipients/brands/{BrandId}/software-products/{SoftwareProductId}/ssa"),
+                Url = reg.GetSsaEndpoint
             };
         }
 
-        private void SetDefaults(SsaModel model, SoftwareProduct sp)
+        private static void SetDefaults(SsaModel model, SoftwareProduct sp)
         {
             if (string.IsNullOrEmpty(model.BrandId))
             {
@@ -99,7 +99,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
             if (string.IsNullOrEmpty(model.Version))
             {
-                model.Version = "2";
+                model.Version = "3";
             }
 
             if (string.IsNullOrEmpty(model.Messages))

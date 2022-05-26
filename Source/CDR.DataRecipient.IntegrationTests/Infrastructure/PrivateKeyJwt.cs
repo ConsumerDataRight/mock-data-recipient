@@ -99,9 +99,11 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
 
             var privateKeyBytes = Convert.FromBase64String(PrivateKeyBase64);
 
-            using (var key = CngKey.Import(privateKeyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob))
-            using (var rsa = new RSACng(key))
-            {
+            var rsa = RSA.Create();
+            rsa.ImportPkcs8PrivateKey(privateKeyBytes, out _);
+            //using (var key = CngKey.Import(privateKeyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob))
+            //using (var rsa = new RSACng(key))
+            //{
                 var kid = GenerateKeyId(rsa);
                 var privateSecurityKey = new RsaSecurityKey(rsa)
                 {
@@ -127,7 +129,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
 
                 var tokenHandler = new JsonWebTokenHandler();
                 return tokenHandler.CreateToken(descriptor);
-            }
+            //}
         }
 
         /// <summary>
@@ -135,12 +137,12 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         /// </summary>
         /// <param name="privateKey">Raw private key</param>
         /// <returns>Formatted private key</returns>
-        private string FormatKey(string privateKey)
+        private static string FormatKey(string privateKey)
         {
             return privateKey.Replace("-----BEGIN PRIVATE KEY-----", "").Replace("-----END PRIVATE KEY-----", "").Replace("\r\n", "").Trim();
         }
 
-        private string GenerateKeyId(RSAParameters rsaParams, out string e, out string n)
+        private static string GenerateKeyId(RSAParameters rsaParams, out string e, out string n)
         {
             e = Base64UrlEncoder.Encode(rsaParams.Exponent);
             n = Base64UrlEncoder.Encode(rsaParams.Modulus);
@@ -159,7 +161,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         /// </summary>
         /// <param name="rsa">RSA</param>
         /// <returns>The generated kid value</returns>
-        private string GenerateKeyId(RSA rsa)
+        private static string GenerateKeyId(RSA rsa)
         {
             var rsaParameters = rsa.ExportParameters(false);
             return GenerateKeyId(rsaParameters, out _, out _);

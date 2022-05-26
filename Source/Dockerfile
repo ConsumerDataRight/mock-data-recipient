@@ -1,9 +1,12 @@
-FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 9001
 
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+# Default ASPNETCORE_ENVIRONMENT to Release
+ENV ASPNETCORE_ENVIRONMENT=Release 
+
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
 COPY . ./
@@ -11,7 +14,7 @@ COPY . ./
 FROM build AS publish
 
 COPY ./CDR.DataRecipient.Web/. /app/CDR.DataRecipient.Web
-COPY ./CDR.DataRecipient.Repository.SQLite/. /app/CDR.DataRecipient.Repository.SQLite
+COPY ./CDR.DataRecipient.Repository.SQL/. /app/CDR.DataRecipient.Repository.SQL
 COPY ./CDR.DataRecipient/. /app/CDR.DataRecipient
 COPY ./CDR.DataRecipient.SDK/. /app/CDR.DataRecipient.SDK
 

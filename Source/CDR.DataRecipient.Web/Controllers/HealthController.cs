@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
-
     [Route("health")]
     public class HealthController : Controller
     {

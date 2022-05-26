@@ -18,7 +18,7 @@ namespace CDR.DataRecipient.Web.Models
 			this.Errors = new List<ErrorModel>() { error };
 		}
 
-		public ErrorListModel(string errorCode, string errorTitle, string errorDetail)
+		public ErrorListModel(string errorCode, string errorTitle, string errorDetail = null)
 		{
 			var error = new ErrorModel(errorCode, errorTitle, errorDetail);
 			this.Errors = new List<ErrorModel>() { error };

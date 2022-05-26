@@ -1,4 +1,7 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System.Net;
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Configuration.Models
 {
@@ -7,6 +10,7 @@ namespace CDR.DataRecipient.Web.Configuration.Models
         private X509Certificate2 _certificate;
 
         public string Path { get; set; }
+        public string Url { get; set; }
         public string Password { get; set; }
         public X509Certificate2 X509Certificate
         { 
@@ -22,7 +26,23 @@ namespace CDR.DataRecipient.Web.Configuration.Models
                     _certificate = new X509Certificate2(Path, Password, X509KeyStorageFlags.Exportable);
                 }
 
+                if (!string.IsNullOrEmpty(Url) && !string.IsNullOrEmpty(Password))
+                {
+                    // Retrieve the raw bytes from the URL value.
+                    _certificate = new X509Certificate2(DownloadData(Url), Password, X509KeyStorageFlags.Exportable);
+                }
+
                 return _certificate;
+            }
+        }
+
+        private static byte[] DownloadData(string url)
+        {
+            using (var http = new HttpClient())
+            {
+                byte[] result = null;
+                Task.Run(async () => result = await http.GetByteArrayAsync(url)).Wait();
+                return result;
             }
         }
     }

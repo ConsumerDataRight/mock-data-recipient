@@ -4,6 +4,7 @@ namespace CDR.DataRecipient.Models
 {
     public class ConsentArrangement
     {
+        public string UserId { get; set; }
         public string DataHolderBrandId { get; set; }
         public string ClientId { get; set; }
         public int? SharingDuration { get; set; }

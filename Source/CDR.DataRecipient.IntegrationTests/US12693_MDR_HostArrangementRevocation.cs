@@ -1,15 +1,16 @@
+using CDR.DataRecipient.IntegrationTests.Fixtures;
+using CDR.DataRecipient.IntegrationTests.Infrastructure.API2;
+using CDR.DataRecipient.SDK.Models;
+using FluentAssertions;
+using FluentAssertions.Execution;
+using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using CDR.DataRecipient.SDK.Models;
-using FluentAssertions;
-using FluentAssertions.Execution;
 using Xunit;
-using CDR.DataRecipient.IntegrationTests.Infrastructure.API2;
-using Microsoft.Data.Sqlite;
 
 #nullable enable
 
@@ -34,6 +35,8 @@ namespace CDR.DataRecipient.IntegrationTests
 
         private static async Task<string> Arrange(string? dataHolderBrandId = null)
         {
+            TestSetup.PatchRegister();
+
             // Get access token for Register
             async Task<string> GetAccessTokenFromRegister()
             {
@@ -70,7 +73,7 @@ namespace CDR.DataRecipient.IntegrationTests
                     HttpMethod = HttpMethod.Get,
                     URL = REGISTER_MTLS_DATAHOLDERBRANDS_URL,
                     AccessToken = token,
-                    XV = "1"
+                    XV = "2"
                 };
 
                 var response = await apiCall.SendAsync();
@@ -86,23 +89,15 @@ namespace CDR.DataRecipient.IntegrationTests
                 return brandList ?? throw new Exception();
             }
 
-            // Patch the seed data
-            // void PatchDataHolderBrands(List<DataHolderBrand> brandList)
-            // {
-            //     var brand = brandList.Find(x => x.DataHolderBrandId == DATAHOLDER_BRAND.ToLower()) ?? throw new Exception("Brand not found");
-
-            //     brand.EndpointDetail.InfoSecBaseUri = DATAHOLDER_BRAND_INFOSECBASEURL;
-            // }
-
             // Save data holder brands
             void PersistDataHolderBrands(List<DataHolderBrand> brandList)
             {
                 // Connect
-                using var connection = new SqliteConnection(BaseTest.DATARECIPIENT_CONNECTIONSTRING);
+                using var connection = new SqlConnection(BaseTest.DATARECIPIENT_CONNECTIONSTRING);
                 connection.Open();
 
                 // Purge table
-                using var deleteCommand = new SqliteCommand($"delete from dataholderbrand", connection);
+                using var deleteCommand = new SqlCommand($"delete from dataholderbrand", connection);
                 deleteCommand.ExecuteNonQuery();
 
                 // Save each brand
@@ -110,14 +105,14 @@ namespace CDR.DataRecipient.IntegrationTests
                 {
                     var jsonDocument = System.Text.Json.JsonSerializer.Serialize(brand);
 
-                    using var insertCommand = new SqliteCommand($"insert into dataholderbrand (dataholderbrandid, jsondocument) values (@dataholderbrandid, @jsondocument)", connection);
+                    using var insertCommand = new SqlCommand($"insert into dataholderbrand (dataholderbrandid, jsondocument) values (@dataholderbrandid, @jsondocument)", connection);
                     insertCommand.Parameters.AddWithValue("@dataholderbrandid", brand.DataHolderBrandId);
                     insertCommand.Parameters.AddWithValue("@jsondocument", jsonDocument);
                     insertCommand.ExecuteNonQuery();
                 }
 
                 // Check count
-                using var selectCommand = new SqliteCommand($"select count(*) from dataholderbrand", connection);
+                using var selectCommand = new SqlCommand($"select count(*) from dataholderbrand", connection);
                 var count = Convert.ToInt32(selectCommand.ExecuteScalar());
                 if (count != brandList.Count)
                 {
@@ -126,30 +121,35 @@ namespace CDR.DataRecipient.IntegrationTests
             }
 
             // Create and save a consent arrangement
-            string CreateConsentArrangement(string dataHolderBrandId)
+            string CreateConsentArrangement(string dataHolderBrandId, string clientId)
             {
                 var consentArrangement = new ConsentArrangement
                 {
                     CdrArrangementId = Guid.NewGuid().ToString(),
                     DataHolderBrandId = dataHolderBrandId,
+                    ClientId = clientId,
+                    ExpiresIn = 300,
+                    CreatedOn = DateTime.Now,
+                    SharingDuration = 0,
                 };
 
                 // Connect
-                using var connection = new SqliteConnection(BaseTest.DATARECIPIENT_CONNECTIONSTRING);
+                using var connection = new SqlConnection(BaseTest.DATARECIPIENT_CONNECTIONSTRING);
                 connection.Open();
 
                 // Purge table
-                using var deleteCommand = new SqliteCommand($"delete from cdrarrangement", connection);
+                using var deleteCommand = new SqlCommand($"delete from cdrarrangement", connection);
                 deleteCommand.ExecuteNonQuery();
 
                 // Save arrangement
                 var jsonDocument = System.Text.Json.JsonSerializer.Serialize(consentArrangement);
-                using var insertCommand = new SqliteCommand($"insert into cdrarrangement (cdrarrangementid, jsondocument) values (@cdrarrangementid, @jsondocument)", connection);
+                using var insertCommand = new SqlCommand($"insert into cdrarrangement (cdrarrangementid, clientid, jsondocument) values (@cdrarrangementid, @clientid, @jsondocument)", connection);
                 insertCommand.Parameters.AddWithValue("@cdrarrangementid", consentArrangement.CdrArrangementId);
+                insertCommand.Parameters.AddWithValue("@clientid", consentArrangement.ClientId);
                 insertCommand.Parameters.AddWithValue("@jsondocument", jsonDocument);
                 insertCommand.ExecuteNonQuery();
 
-                using var selectCommand = new SqliteCommand($"select count(*) from cdrarrangement", connection);
+                using var selectCommand = new SqlCommand($"select count(*) from cdrarrangement", connection);
                 var count = Convert.ToInt32(selectCommand.ExecuteScalar());
                 if (count != 1)
                 {
@@ -161,9 +161,8 @@ namespace CDR.DataRecipient.IntegrationTests
 
             var registerToken = await GetAccessTokenFromRegister();
             var brandsList = await GetDataHolderBrandsFromRegister(registerToken);
-            // PatchDataHolderBrands(brandsList);
             PersistDataHolderBrands(brandsList);
-            return CreateConsentArrangement(dataHolderBrandId ?? DATAHOLDER_BRAND.ToLower());
+            return CreateConsentArrangement(dataHolderBrandId ?? DATAHOLDER_BRAND.ToLower(), SOFTWAREPRODUCT_ID);
         }
 
         private static string GetClientAssertion()
@@ -174,7 +173,7 @@ namespace CDR.DataRecipient.IntegrationTests
                 CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
                 Iss = DATAHOLDER_BRAND.ToLower(),
                 Aud = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                Kid = "73AEFCAF807652A46E3316DB47E905E7B72652B2",  // Kid for this dataholder
+                Kid = "7C5716553E9B132EF325C49CA2079737196C03DB",  // Kid for this dataholder
             }.Get();
         }
 
@@ -183,6 +182,7 @@ namespace CDR.DataRecipient.IntegrationTests
         public async Task AC01_Post_WithCDRArrangementId_ShouldRespondWith_204NoContent(HttpStatusCode expectedStatusCode)
         {
             // Arrange 
+            var clientAssertion = GetClientAssertion();
             var cdrArrangementId = await Arrange();
             var apiCall = new Infrastructure.API
             {
@@ -190,7 +190,7 @@ namespace CDR.DataRecipient.IntegrationTests
                 CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
                 HttpMethod = HttpMethod.Post,
                 URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
+                AccessToken = clientAssertion,
                 Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
                     {
                         new KeyValuePair<string?, string?>("cdr_arrangement_id", cdrArrangementId)
@@ -245,8 +245,7 @@ namespace CDR.DataRecipient.IntegrationTests
                         ""errors"": [{
                             ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
                             ""title"": ""Invalid Consent Arrangement"",
-                            ""detail"": """",
-                            ""meta"": {}
+                            ""detail"": ""Invalid arrangement: foo""
                         }]
                     }";
                     await Assert_HasContent_Json(expectedContent, response.Content);
@@ -261,6 +260,7 @@ namespace CDR.DataRecipient.IntegrationTests
         {
             // Arrange 
             var cdrArrangementId = await Arrange(dataHolderBrandId);
+
             var apiCall = new Infrastructure.API
             {
                 CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
@@ -290,10 +290,9 @@ namespace CDR.DataRecipient.IntegrationTests
                         ""errors"": [{
                             ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
                             ""title"": ""Invalid Consent Arrangement"",
-                            ""detail"": """",
-                            ""meta"": {}
+                            ""detail"": ""Invalid arrangement: #{cdrArrangementId}""
                         }]
-                    }";
+                    }".Replace("#{cdrArrangementId}", cdrArrangementId);
                     await Assert_HasContent_Json(expectedContent, response.Content);
                 }
             }
@@ -335,8 +334,7 @@ namespace CDR.DataRecipient.IntegrationTests
                         ""errors"": [{
                             ""code"": ""urn:au-cds:error:cds-all:Field/Missing"",
                             ""title"": ""Missing Required Field"",
-                            ""detail"": ""cdr_arrangement_id"",
-                            ""meta"": {}
+                            ""detail"": ""cdr_arrangement_jwt or cdr_arrangement_id""
                         }]
                     }";
                     await Assert_HasContent_Json(expectedContent, response.Content);
@@ -380,8 +378,7 @@ namespace CDR.DataRecipient.IntegrationTests
                         ""errors"": [{
                             ""code"": ""urn:au-cds:error:cds-all:Header/Invalid"",
                             ""title"": ""Invalid Header"",
-                            ""detail"": """",
-                            ""meta"": {}
+                            ""detail"": """"
                         }]
                     }";
                     await Assert_HasContent_Json(expectedContent, response.Content);

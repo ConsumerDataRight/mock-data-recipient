@@ -1,7 +1,12 @@
-﻿@{
+﻿@using CDR.DataRecipient.SDK.Enumerations
+@using CDR.DataRecipient.Web.Features
+@using Microsoft.FeatureManagement
+@{
     ViewData["Title"] = "Private Key JWT Generator";
+	var linkToExternalJwt = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.LinkToExternalJwt));
 }
 @model PrivateKeyJwtModel
+@inject IFeatureManager _featureManager
 
 <h2>Private Key JWT Generator</h2>
 
@@ -66,9 +71,12 @@
                 <div class="code">
                     @Model.ClientAssertion
                 </div>
-                <p>
-                    <a href="https://jwt.io?token=@Model.ClientAssertion" target="_blank" class="btn btn-primary">View Decoded</a>
+                @if (linkToExternalJwt)
+                {
+                    <p>
+                        <a href="https://jwt.io?token=@Model.ClientAssertion" target="_blank" rel="noopener" class="btn btn-primary">View Decoded</a>
                 </p>
+                }
             }
 
             @if (Model.ClientAssertionClaims != null)

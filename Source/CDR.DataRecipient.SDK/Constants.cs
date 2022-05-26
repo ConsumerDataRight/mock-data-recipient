@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CDR.DataRecipient.SDK
+﻿namespace CDR.DataRecipient.SDK
 {
     public static class Constants
     {
@@ -25,6 +19,11 @@ namespace CDR.DataRecipient.SDK
             public const string ID_TOKEN = "id_token";
             public const string ACCESS_TOKEN = "access_token";
             public const string REFRESH_TOKEN = "refresh_token";
+        }
+
+        public static class Infosec
+        {
+            public const string CODE_CHALLENGE_METHOD = "S256";
         }
 
     }

@@ -16,7 +16,7 @@ namespace CDR.DataRecipient.SDK.Services
         protected readonly IConfiguration _config;
         protected readonly ILogger _logger;
 
-        public BaseService(
+        protected BaseService(
             IConfiguration config,
             ILogger logger)
         {
@@ -33,7 +33,7 @@ namespace CDR.DataRecipient.SDK.Services
             return GetHttpClient(acceptAnyServerCertificate, clientCertificate, accessToken, version);
         }
 
-        protected HttpClient GetHttpClient(
+        protected static HttpClient GetHttpClient(
             bool acceptAnyServerCertificate,
             X509Certificate2 clientCertificate = null,
             string accessToken = null,

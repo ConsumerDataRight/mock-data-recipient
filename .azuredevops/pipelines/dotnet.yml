@@ -109,7 +109,7 @@ steps:
       del /Q mdr.db 
 
 # Start APIs
-- template: Pipeline/start-apis.yml
+- template: templates/start-apis.yml
 
 # Run integration tests
 - task: VSTest@2
