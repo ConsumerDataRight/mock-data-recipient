@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using CDR.DataRecipient.SDK.Enumerations;
+using System.ComponentModel.DataAnnotations;
 
 namespace CDR.DataRecipient.Web.Models
 {
@@ -7,6 +8,9 @@ namespace CDR.DataRecipient.Web.Models
         public HttpRequestModel SSARequest { get; set; }
 
         public string SSA { get; set; }
+
+        [Display(Name = "Industry")]
+        public Industry Industry { get; set; }
 
         [Display(Name = "Version")]
         public string Version { get; set; }

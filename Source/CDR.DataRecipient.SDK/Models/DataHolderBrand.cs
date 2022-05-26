@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace CDR.DataRecipient.SDK.Models
 {
@@ -10,5 +11,6 @@ namespace CDR.DataRecipient.SDK.Models
         public string Status { get; set; }
         public EndpointDetail EndpointDetail { get; set; }
         public IList<AuthDetail> AuthDetails { get; set; }
+        public DateTime LastUpdated { get; set; }
     }
 }

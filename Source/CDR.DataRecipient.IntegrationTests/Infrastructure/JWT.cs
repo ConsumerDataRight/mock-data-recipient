@@ -91,10 +91,10 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         /// <summary>
         /// Get a security token descriptor
         /// </summary>
-        static private SecurityTokenDescriptor GetSecurityTokenDescriptor(byte[] keyBytes, 
+        static private SecurityTokenDescriptor GetSecurityTokenDescriptor(
+            byte[] keyBytes, 
             string? issuer, string? audience, 
             bool expired,
-            // Dictionary<string, string> claims,
             Dictionary<string, object> claims,
             SecurityAlgorithm securityAlgorithm)
         {
@@ -112,17 +112,6 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
                 tokenDescriptor.NotBefore = utcNow;
                 tokenDescriptor.Expires = utcNow.AddSeconds(1);
             }
-
-            // Add claims
-            // tokenDescriptor.Subject = new ClaimsIdentity();
-            // if (claims != null)
-            // {
-            //     foreach (var kvp in claims)
-            //     {
-            //         // tokenDescriptor.Subject.AddClaim(new Claim(kvp.Key, kvp.Value));
-            //         tokenDescriptor.Subject.AddClaim(new Claim(kvp.Key, kvp.Value.ToString()));
-            //     }
-            // }
 
             tokenDescriptor.Claims = claims;
 
@@ -146,8 +135,12 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         /// </summary>
         static private RsaSecurityKey GetRsaSecurityKey(byte[] keyBytes)
         {
-            var key1 = CngKey.Import(keyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob);
-            var rsa = new RSACng(key1);
+            var rsa = RSA.Create();
+            rsa.ImportPkcs8PrivateKey(keyBytes, out _);
+            //rsa.ImportPkcs8PrivateKey(keyBytes, out _);
+            //var rsaSecurityKey = new RsaSecurityKey(rsa);
+            //var key1 = CngKey.Import(keyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob);
+            //var rsa = new RSACng(key1);
 
             var kid = GetKeyId(rsa);
             var rsaSecurityKey = new RsaSecurityKey(rsa)

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "CDR.DataRecipient.Repository.SQL.UnitTests": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

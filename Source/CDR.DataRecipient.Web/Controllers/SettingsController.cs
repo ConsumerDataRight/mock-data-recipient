@@ -1,26 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
+    [Authorize]
     public class SettingsController : Controller
     {
 
-        private readonly ILogger<SettingsController> _logger;
         private readonly IConfiguration _config;
 
-        public SettingsController(IConfiguration config, ILogger<SettingsController> logger)
+        public SettingsController(IConfiguration config)
         {
-            _logger = logger;
             _config = config;
         }
 
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult Index()
         {
             var model = new SettingsModel();

@@ -1,0 +1,14 @@
+﻿@model ErrorViewModel
+@{
+    Layout = null;
+}
+
+<h1 class="text-danger">@(Model.ErrorTitle)</h1>
+
+@if (Model != null && Model.ShowMessage)
+{
+    <h2 class="text-danger">An Error Occurred</h2>
+    <p>
+        @(Model.Message)
+    </p>
+}

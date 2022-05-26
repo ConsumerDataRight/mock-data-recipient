@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = $"Data Sharing - {Model.IndustryName}";
+}
+@model DataSharingModel
+ 
+<h2>Data Sharing - @Model.IndustryName</h2>
+<p>This page allow you to test data holder resource APIs by using the <a href="@Model.CdsSwaggerLocation" target="_blank">CDS Swagger file</a> and Swagger UI.</p>
+<p>Please note that not all resource endpoints are available for Mock Data Holder (@Model.IndustryName).</p>
+
+<p>
+    <strong>Note:</strong> In order to apply a client certificate for mTLS connections as well as an access_token in the Authorization header 
+    all requests are proxied through the Mock Data Recipient proxy endpoint (<em class="highlight">/@Model.BasePath/proxy</em>)
+</p>
+<br/>
+<div>
+    <iframe title="Data Sharing" src="~/cds-@(Model.IndustryName.ToLower())">
+    </iframe>
+</div>
+
+@section Scripts {
+    <script type="text/javascript">
+        setSidebarMenuItem('@Model.BasePath');
+    </script>
+}

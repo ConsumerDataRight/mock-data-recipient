@@ -5,13 +5,16 @@
 
 <h2>Pushed Authorisation Request (PAR)</h2>
 
-<p>
-    This page allows the data recipient to commence the PAR process with a selected data holder.  The outcome of this process will be an access token that can then be used for consumer data sharing.
-</p>
-<p>
-    <strong>Note:</strong> an existing CDR Arrangement can also be updated through the PAR process.  Select an existing CDR Arrangement from the list to start this process.
-</p>
+<p>This page allows you to use the Mock Data Recipient to commence the PAR process with a data holder.</p>  
+<p>The outcome of this process will be an access token that can then be used for consumer data sharing.</p>
 
+<strong>
+    <em>
+        <p>Note: PKCE support has been added in order to test Data Holder implementations in preparation for FAPI 1.0 adoption.</p>
+    </em>
+</strong>
+
+<br/> 
 <div class="card">
     <h5 class="card-header">Initiate PAR with the selected Data Holder</h5>
     <div class="card-body">
@@ -19,41 +22,54 @@
 
             @using (Html.BeginForm())
             {
-            <div class="form">
-                <div class="row mb-3">
-                    @Html.LabelFor(m => m.ClientId, new { @class = "col-sm-2 col-form-label" })
-                    <div class="col-sm-10">
-                        @Html.DropDownListFor(m => m.ClientId, Model.RegistrationListItems, "Select registration...", new { @class = "form-control" })
-                    </div>
-                </div>
+                @Html.HiddenFor(m => m.RedirectUris)
 
-                <div class="row mb-3">
-                    @Html.LabelFor(m => m.CdrArrangementId, new { @class = "col-sm-2 col-form-label" })
-                    <div class="col-sm-10">
-                        @Html.DropDownListFor(m => m.CdrArrangementId, Model.ConsentArrangementListItems, "Select consent arrangement...", new { @class = "form-control" })
+                <div class="form">
+                    <div class="row mb-3">
+                        @Html.LabelFor(m => m.ClientId, new { @class = "col-sm-2 col-form-label" })
+                        <div class="col-sm-10">
+                            @Html.DropDownListFor(m => m.ClientId, Model.RegistrationListItems, "Select registration...", new { @class = "form-control" })
+                        </div>
                     </div>
-                </div>
 
-                <div class="row mb-3">
-                    @Html.LabelFor(m => m.SharingDuration, new { @class = "col-sm-2 col-form-label" })
-                    <div class="col-sm-10">
-                        @Html.TextBoxFor(m => m.SharingDuration, new { @class = "form-control" })
-                    </div>
-                </div>
+                    <div id="arrdetail">
+                        <div class="row mb-3">
+                            @Html.LabelFor(m => m.CdrArrangementId, new { @class = "col-sm-2 col-form-label" })
+                            <div class="col-sm-10">
+                                @Html.DropDownListFor(m => m.CdrArrangementId, Model.ConsentArrangementListItems, "Create new arrangement", new { @class = "form-control" })
+                            </div>
+                        </div>
 
-                <div class="row mb-3">
-                    @Html.LabelFor(m => m.Scope, new { @class = "col-sm-2 col-form-label" })
-                    <div class="col-sm-10">
-                        @Html.TextBoxFor(m => m.Scope, new { @class = "form-control" })
-                    </div>
-                </div>
+                        <div class="row mb-3">
+                            @Html.LabelFor(m => m.SharingDuration, new { @class = "col-sm-2 col-form-label" })
+                            <div class="col-sm-10">
+                                @Html.TextBoxFor(m => m.SharingDuration, new { @class = "form-control" })
+                            </div>
+                        </div>
 
-                <div class="row mb-3 buttons">
-                    <div class="col-sm-10 offset-sm-2">
-                        <input name="get-auth-uri" type="submit" value="Initiate PAR" class="btn btn-primary" />
+                        <div class="row mb-3">
+                            @Html.LabelFor(m => m.Scope, new { @class = "col-sm-2 col-form-label" })
+                            <div class="col-sm-10">
+                                @Html.TextBoxFor(m => m.Scope, new { @class = "form-control" })
+                            </div>
+                        </div>
+
+                       <div class="row mb-3">
+                            <div class="col-sm-10 offset-sm-2">
+                                <div class="form-check  mb-3">
+                                    @Html.CheckBoxFor(m => m.UsePkce, new { @class = "form-check-input" })
+                                    @Html.LabelFor(m => m.UsePkce, new { @class = "form-check-label" })
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3 buttons">
+                            <div class="col-sm-10 offset-sm-2">
+                                <input name="get-auth-uri" type="submit" value="Initiate PAR" class="btn btn-primary" />
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
             }
 
         </div>
@@ -79,8 +95,71 @@
     </div>
 </div>
 
+<div id="modal-par" class="modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Par</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-messages"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script type="text/javascript">
-        setSidebarMenuItem('par');
+        jQuery(document).ready(function($) {
+
+            $('#arrdetail').show();
+
+            var modal = new bootstrap.Modal(document.getElementById('modal-par'), {
+                keyboard: false
+            });
+
+            // Populate the view with the picked details
+            $('#ClientId').click(function () {
+                var clientId = $('#ClientId option:selected').val();
+                if (clientId !== null && clientId !== '') {
+                    $.ajax({
+                        url: '/par/registration/detail',
+                        type: 'POST',
+                        data: {
+                            clientId: clientId
+                        },
+                        success: function (result) {
+                            if (result.message !== '') {
+                                modal.show();
+                                $('#modal-messages').html(result.message);
+                            } else {
+                                $('#RedirectUris').val(result.redirectUris);
+                                $('#Scope').val(result.scope);
+
+                                var $select = $("#CdrArrangementId");
+                                $select.html('<option value="">Create new arrangement</option>');
+
+                                if (result.arrangements.length > 0) {
+                                    $.each(result.arrangements, function (i, item) {
+                                        $("<option>", { value: item.value }).html("Update arrangement: " + item.text).appendTo($select);
+                                    });
+                                }
+                            }
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            modal.show();
+                            $('#modal-messages').html('error');
+                        }
+                    });
+                }
+                return false;
+            });
+
+            setSidebarMenuItem('par');
+        });
     </script>
 }

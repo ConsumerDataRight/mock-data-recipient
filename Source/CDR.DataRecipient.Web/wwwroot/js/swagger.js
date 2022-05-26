@@ -1,5 +1,5 @@
 ﻿function AppendCdrArrangementIdToRequest(req) {
-    if (req.loadSpec == true) return req;
+    if (req.loadSpec) return req;
 
     var select = document.getElementById("select-cdr-arrangement-id");
     req.headers["x-inject-cdr-arrangement-id"] = select.value;
@@ -28,11 +28,13 @@ async function AddCdrArrangementSelector() {
     var arrangements = await GetArrangements();
 
     //Create and append the options
-    for (var i = 0; i < arrangements.length; i++) {
-        var option = document.createElement("option");
-        option.value = arrangements[i].key;
-        option.text = arrangements[i].value;
-        select.appendChild(option);
+    if (arrangements !== null && typeof arrangements !== 'undefined') {
+        for (var item of arrangements) {
+            var option = document.createElement("option");
+            option.value = item["key"];
+            option.text = item["value"];
+            select.appendChild(option);
+        }
     }
 
     var parent = document.getElementById("swagger-ui");
@@ -41,7 +43,7 @@ async function AddCdrArrangementSelector() {
 }
 
 async function GetArrangements() {
-    let url = '/data-sharing/cdr-arrangements';
+    let url = GetPath() + '/cdr-arrangements';
     var data;
 
     await fetch(url)
@@ -52,6 +54,14 @@ async function GetArrangements() {
         .catch(err => { throw err });
 
     return data;
+}
+
+function GetPath() {
+    if (this.location.href.indexOf("banking") >= 0) {
+        return "/data-sharing-banking"
+    }
+
+    return "/data-sharing-energy"
 }
 
 document.addEventListener("DOMContentLoaded", function (event) {

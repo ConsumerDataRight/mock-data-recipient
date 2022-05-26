@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using CDR.DataRecipient.SDK.Enumerations;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -11,14 +12,21 @@ namespace CDR.DataRecipient.Web.Models
 
         public string ResponsePayload { get; set; }
 
+        public Industry Industry { get; set; }
+
         [Display(Name = "Client ID", Prompt = "Only populate for update operations")]
         public string ClientId { get; set; }
 
-        [Display(Name = "DH Brand ID")]
+        [Display(Name = "DH Brand Name")]
         public string DataHolderBrandId { get; set; }
 
         [Display(Name = "Software Product ID")]
         public string SoftwareProductId { get; set; }
+
+        [Display(Name = "DR Brand ID")]
+        public string DataRecipientBrandId { get; set; }
+
+        public string Scope { get; set; }
 
         [Display(Name = "Redirect URIs")]
         public string RedirectUris { get; set; }
@@ -51,6 +59,7 @@ namespace CDR.DataRecipient.Web.Models
         public string RequestObjectSigningAlg { get; set; }
 
         public List<SelectListItem> DataHolderBrands { get; set; }
+        public List<SelectListItem> DataRecipients { get; set; }
 
         public string TransactionType
         {

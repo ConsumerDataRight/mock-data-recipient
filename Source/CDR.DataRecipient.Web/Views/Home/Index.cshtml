@@ -1,31 +1,57 @@
 ﻿@{
     ViewData["Title"] = "Home";
+    string name = Context.User.GetUserName();
+}
+@using CDR.DataRecipient.Web.Extensions
+@using Microsoft.AspNetCore.Http
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration _config
+
+@if (Context.User.IsLocal())
+{
+    <h2>Welcome to the Mock Data Recipient</h2>
+}
+else
+{
+    <h2>Welcome @(name) to the Mock Data Recipient</h2>
 }
 
-<h2>Welcome to the Mock Data Recipient</h2>
-
 <p>
-    You can use the Mock Data Recipient to test interactions with the Mock Register and the Mock Data Holder.
+    You can use the Mock Data Recipient to test interactions with the Mock Register and the Mock Data Holder (Banking) & Mock Data Holder (Energy).
 </p>
 <p>
-    A Mock Register and Mock Data Holder are provided by the ACCC and can be found in <a href="https://github.com/ConsumerDataRight" target="_blank">GitHub</a>.
+    A Mock Register and Mock Data Holder (Banking) & Mock Data Holder (Energy) are provided by the ACCC and can be found in <a href="https://github.com/ConsumerDataRight" target="_blank" rel="noopener">GitHub</a>.
 </p>
 <p>
-    Consult the documentation on how to download and run the Mock Register and Mock Data Holder.  It is expected that these mock solutions are running for this Mock Data Recipient to work.
+    Consult the documentation on how to download and run the Mock Register and Mock Data Holder (Banking) & Mock Data Holder (Energy).  It is expected that these mock solutions are running for this Mock Data Recipient to work.
 </p>
 <p>
-    However, if you would like to test your own implementations via this Mock Data Recipient, then please modify the <a href="~/settings" target="_blank">configuration</a> or the <a href="https://github.com/ConsumerDataRight/mock-register" target="_blank">Mock Register</a> metadata to point to the appropriate endpoint/s.
+    However, if you would like to test your own implementations via this Mock Data Recipient, then please modify the <a href="~/settings" target="_blank" rel="noopener">configuration</a> or the <a href="https://github.com/ConsumerDataRight/mock-register" target="_blank" rel="noopener">Mock Register</a> metadata to point to the appropriate endpoint/s.
 </p>
 <p>
     <h3>Running the provided mock solutions</h3>
     <div class="code">
         <pre>
-docker run -d -h mock-register -p 7000:7000 -p 7001:7001 -p 7006:7006 --name mock-register consumerdataright/mock-register
+docker run -d -h mock-register -p 7000:7000 -p 7001:7001 -p 7006:7006 --add-host=host.docker.internal:host-gateway --name mock-register consumerdataright/mock-register
 </pre>
         <pre>
-docker run -d -h mock-data-holder -p 8000:8000 -p 8001:8001 -p 8002:8002 -p 8003:8003 -p 8004:8004 -p 8005:8005 --name mock-data-holder consumerdataright/mock-data-holder
+docker run -d -h mock-data-holder -p 8000:8000 -p 8001:8001 -p 8002:8002 -p 8005:8005 --add-host=host.docker.internal:host-gateway --name mock-data-holder consumerdataright/mock-data-holder
+</pre>
+        <pre>
+docker run -d -h mock-data-holder-energy -p 8100:8100 -p 8101:8101 -p 8102:8102 -p 8105:8105 --add-host=host.docker.internal:host-gateway --name mock-data-holder-energy consumerdataright/mock-data-holder-energy
 </pre>
     </div>
+</p>
+
+<h3>Dummy Data Holders</h3>
+<p>
+    Throughout the Mock Data Recipient you will see we have included dummy data holders. 
+</p>
+<p>
+    These have been included for various testing purposes, such as testing the Mock Register Discover Data Holders endpoint and should not be used for Dynamic Client Registration, Constent and Authorisation, or Consumer Data Sharing. 
+</p>
+<p>
+    You should use the Mock Data Holder (Banking), Mock Data Holder (Energy), or your own solution to test the Mock Data Recipient features.
 </p>
 
 @section Scripts {

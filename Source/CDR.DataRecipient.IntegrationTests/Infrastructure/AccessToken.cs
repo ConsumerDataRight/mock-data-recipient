@@ -13,8 +13,8 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
 {
 public class AccessToken
     {
-        private const string IDENTITYSERVER_URL = BaseTest.REGISTER_MTLS_TOKEN_URL;
-        private const string AUDIENCE = IDENTITYSERVER_URL;
+        private static readonly string IDENTITYSERVER_URL = BaseTest.REGISTER_MTLS_TOKEN_URL;
+        private static readonly string AUDIENCE = IDENTITYSERVER_URL;
         private const string SCOPE = "bank:accounts.basic:read";
         private const string GRANT_TYPE = "";
         private const string CLIENT_ID = "86ecb655-9eba-409c-9be3-59e7adf7080d";
@@ -76,11 +76,6 @@ public class AccessToken
                 return kvp.Value;
             }
 
-            // DEBUG - 07/09/2021
-            // var tokenizer = new PrivateKeyJwt(certificateFilename, certificatePassword);
-            //var tokenizer = new CDR.DataHolder.IntegrationTests.Infrastructure.API3.PrivateKeyJwt(certificateFilename, certificatePassword);
-            // var client_assertion = tokenizer.Generate(issuer, audience);
-
             var client_assertion = new PrivateKeyJwt2
             {
                 CertificateFilename = jwt_certificateFilename,
@@ -89,7 +84,6 @@ public class AccessToken
                 Audience = audience
             }.Generate();
 
-            // var request = new HttpRequestMessage(HttpMethod.Post, IDENTITYSERVER_URL)
             var request = new HttpRequestMessage(HttpMethod.Post, url)
             {
                 Content = new StringContent(
@@ -125,7 +119,6 @@ public class AccessToken
             // Create an access token request
             var request = CreateAccessTokenRequest(
                 URL,
-                // CertificateFilename, CertificatePassword,
                 JWT_CertificateFilename ?? throw new Exception("JWT_Certificatefilename is null"),
                 JWT_CertificatePassword,
                 Issuer, Audience,
@@ -135,8 +128,8 @@ public class AccessToken
             var response = await client.SendAsync(request);
 
             if (response.StatusCode != HttpStatusCode.OK)
-            {
-                throw new Exception($"{nameof(AccessToken)}.{nameof(GetAsync)} - Error getting access token - {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+            {   
+                throw new Exception($"{nameof(AccessToken)}.{nameof(GetAsync)} - Error getting access token - {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");                
             }
 
             // Deserialize the access token from the response
