@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -103,6 +104,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestJwt)}.");
 
+            var now = DateTime.UtcNow;
+
             // Build the list of claims to include in the authorisation request jwt.
             var authorisationRequestClaims = new Dictionary<string, object>
             {
@@ -113,6 +116,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 { "scope", scope },
                 { "state", state },
                 { "nonce", nonce },
+                { "nbf", new DateTimeOffset(now).ToUnixTimeSeconds() },
                 { "claims", new AuthorisationRequestClaims() { sharing_duration = sharingDuration, cdr_arrangement_id = cdrArrangementId } }
             };
 
