@@ -9,13 +9,13 @@
     This page allows you to manage the existing consent arrangements that have been collected via the Mock Data Recipient.
 </p>
 
-<div class="card h-100">
-    <h5 class="card-header">Existing Consent Arrangements</h5>
+<div id="consents" class="card h-100">
+    <h5 id="consents-header" class="card-header">Existing Consent Arrangements</h5>
     <div class="card-body">
         <div class="card-text">
             @if (Model.ConsentArrangements != null && Model.ConsentArrangements.Any())
             {
-                <table class="table table-striped table-bordered table-sm">
+                <table id="consents-table" class="table table-striped table-bordered table-sm">
                     <thead>
                         <tr>
                             <th>CDR Arrangement ID</th>
@@ -30,19 +30,19 @@
 
                     @foreach (var arrangement in Model.ConsentArrangements)
                     {
-                        <tr>
-                            <td class="align-top">@arrangement.CdrArrangementId</td>
-                            <td class="align-top">@arrangement.ClientId</td>
-                            <td class="align-top">@arrangement.Scope</td>
-                            <td class="align-top">@arrangement.ExpiresIn</td>
-                            <td class="align-top">@arrangement.SharingDuration</td>
-                            <td class="align-top">@arrangement.CreatedOn.ToString("s")</td>
+                        <tr id="consents-arrangement_@arrangement.ClientId">
+                            <td id="consents-cdrArrangementId_@arrangement.ClientId" class="align-top">@arrangement.CdrArrangementId</td>
+                            <td id="consents-clientId_@arrangement.ClientId" class="align-top">@arrangement.ClientId</td>
+                            <td id="consents-scope_@arrangement.ClientId" class="align-top">@arrangement.Scope</td>
+                            <td id="consents-expiresIn_@arrangement.ClientId" class="align-top">@arrangement.ExpiresIn</td>
+                            <td id="consents-sharingDuration_@arrangement.ClientId" class="align-top">@arrangement.SharingDuration</td>
+                            <td id="consents-createdOn_@arrangement.ClientId" class="align-top">@arrangement.CreatedOn.ToString("s")</td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <button id="btnActions" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <button id="consents-btnActions_@arrangement.ClientId" type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                         Actions
                                     </button>
-                                    <ul class="dropdown-menu" aria-labelledby="btnActions">
+                                    <ul class="dropdown-menu" aria-labelledby="consents-btnActions_@arrangement.ClientId">
                                         <li>
                                             <a href="#" title="View ID Token" data-bs-toggle="modal" data-bs-target="#modal-token" class="dropdown-item" data-val="@arrangement.IdToken">View ID Token</a>
                                         </li>
@@ -95,7 +95,7 @@
             }
             else
             {
-                <p>
+                <p id="consents-noArrangementMessage">
                     No existing consent arrangements found.
                 </p>
             }
