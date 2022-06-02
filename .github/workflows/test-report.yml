@@ -34,3 +34,17 @@ jobs:
         name: Integration Tests
         path: '*.trx'
         reporter: dotnet-trx
+
+  e2e-test-report:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Publish e2e Test Report
+      uses: dorny/test-reporter@v1
+      with:
+        artifact: e2e-test-results
+        name: e2e Tests
+        path: '*.trx'
+        reporter: dotnet-trx
