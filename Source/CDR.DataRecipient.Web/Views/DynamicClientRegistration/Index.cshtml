@@ -214,7 +214,7 @@
                 keyboard: false
             });
 
-            $('#registrations .view').click(function () {
+            $('#dcr-current .view').click(function () {
                 // Get the registration.
                 $.ajax({
                     url: this.href,
@@ -237,7 +237,7 @@
         });
 
         $(document).ready(function () {
-            $('#registrations .delete').click(function () {
+            $('#dcr-current .delete').click(function () {
                 var clientId = $(this).data('id');
 
                 // Post the delete to the endpoint.
