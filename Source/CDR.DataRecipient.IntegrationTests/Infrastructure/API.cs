@@ -1,4 +1,5 @@
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
@@ -154,7 +155,11 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
             {
                 HttpClient GetClient()
                 {
-                    var clientHandler = new HttpClientHandler();
+                    var clientHandler = new HttpClientHandler()
+                    {
+                        AutomaticDecompression = DecompressionMethods.GZip
+                    };
+                    
                     clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
 
                     // Attach client certificate
