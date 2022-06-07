@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -116,7 +117,11 @@ namespace CDR.DataRecipient.Web.Middleware
 
 		private async Task<JsonWebKeySet> GetJwks(string jwksEndpoint)
 		{
-			var clientHandler = new HttpClientHandler();
+			var clientHandler = new HttpClientHandler()
+			{
+                AutomaticDecompression = DecompressionMethods.GZip
+            };
+			
 			clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
 			var jwksClient = new HttpClient(clientHandler);
 			var jwksResponse = await jwksClient.GetAsync(jwksEndpoint);
