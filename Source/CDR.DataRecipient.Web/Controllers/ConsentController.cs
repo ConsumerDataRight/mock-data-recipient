@@ -167,8 +167,17 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 // Error state.
                 var qs = HttpUtility.ParseQueryString(this.Request.QueryString.Value);
+
+                var error = qs["error"];
+                if (String.IsNullOrEmpty(error))
+                    error = this.Request.Form["error"].ToString();
+
+                var errorDesc = qs["error_description"];
+                if (String.IsNullOrEmpty(errorDesc))
+                    errorDesc = this.Request.Form["error_description"].ToString();
+
                 model.Messages = "An error has occurred.";
-                model.ErrorList.Errors.Add(new SDK.Models.Error(qs["code"], qs["title"], qs["detail"]));
+                model.ErrorList.Errors.Add(new SDK.Models.Error(qs["code"], error, errorDesc));
             }
 
             return View(model);
