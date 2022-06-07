@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
@@ -96,7 +97,11 @@ namespace CDR.DataRecipient.Web.Controllers
             var baseUri = isPublic ? dh.EndpointDetail.PublicBaseUri : dh.EndpointDetail.ResourceBaseUri;
 
             // Build the Http Request to the data holder.
-            var clientHandler = new HttpClientHandler();
+            var clientHandler = new HttpClientHandler()
+            {
+                AutomaticDecompression = DecompressionMethods.GZip
+            };
+            
             clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
 
             // Provide the data recipient's client certificate for a non-public endpoint.

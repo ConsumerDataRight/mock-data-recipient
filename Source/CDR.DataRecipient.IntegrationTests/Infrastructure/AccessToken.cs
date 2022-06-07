@@ -109,7 +109,11 @@ public class AccessToken
         public async Task<string?> GetAsync()
         {
             // Create ClientHandler 
-            var _clientHandler = new HttpClientHandler();
+            var _clientHandler = new HttpClientHandler()
+            {
+                AutomaticDecompression = DecompressionMethods.GZip
+            };
+
             _clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
 
             // Attach client certificate to handler
