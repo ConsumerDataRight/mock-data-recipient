@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2022-06-09
 ### Changed
 - Build and Test action to archive test results. End to end tests now included in test report.
 
