@@ -1,8 +1,10 @@
-﻿using CDR.DataRecipient.Web.Filters;
+﻿using CDR.DataRecipient.Web.Features;
+using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Microsoft.FeatureManagement.Mvc;
 using System.Linq;
 
 namespace CDR.DataRecipient.Web.Controllers
@@ -18,6 +20,7 @@ namespace CDR.DataRecipient.Web.Controllers
             _config = config;
         }
 
+        [FeatureGate(nameof(FeatureFlags.ShowSettings))]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult Index()
         {

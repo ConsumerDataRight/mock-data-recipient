@@ -1,13 +1,14 @@
 ﻿using CDR.DataRecipient.SDK.Extensions;
+using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.Web.Common;
-using CDR.DataRecipient.Web.Configuration;
-using CDR.DataRecipient.Web.Configuration.Models;
+using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -24,7 +25,7 @@ namespace CDR.DataRecipient.Web.Middleware
 		// Any path that requires a client authorisaton should be listed here.
 		private readonly string[] _validPaths = new string[]
 		{
-			$"/{Constants.Urls.ClientArrangementRevokeUrl}"
+			$"/{Common.Constants.Urls.ClientArrangementRevokeUrl}"
 		};
 
 		public ClientAuthorizationMiddleware(RequestDelegate next,

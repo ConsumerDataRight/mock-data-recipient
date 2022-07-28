@@ -5,8 +5,7 @@ using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.SDK.Services.Register;
-using CDR.DataRecipient.Web.Configuration;
-using CDR.DataRecipient.Web.Configuration.Models;
+using CDR.DataRecipient.Web.Caching;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Features;
 using CDR.DataRecipient.Web.Filters;
@@ -32,7 +31,6 @@ namespace CDR.DataRecipient.Web.Controllers
     public class DynamicClientRegistrationController : Controller
     {
         private readonly IConfiguration _config;
-        private readonly IMetadataService _metadataService;
         private readonly ISsaService _ssaService;
         private readonly IDynamicClientRegistrationService _dcrService;
         private readonly IRegistrationsRepository _regRepository;
@@ -40,12 +38,11 @@ namespace CDR.DataRecipient.Web.Controllers
         private readonly SDK.Services.Register.IInfosecService _regInfosecService;
         private readonly SDK.Services.DataHolder.IInfosecService _dhInfosecService;
         private readonly Common.IDataHolderDiscoveryCache _dataHolderDiscoveryCache;
-        private readonly ISqlDataAccess _sqlService;
         private readonly IFeatureManager _featureManager;
+        private readonly ICacheManager _cacheManager;
 
         public DynamicClientRegistrationController(
             IConfiguration config,
-            IMetadataService metadataService,
             ISsaService ssaService,
             IRegistrationsRepository regRepository,
             IDataHoldersRepository dhRepository,
@@ -53,19 +50,18 @@ namespace CDR.DataRecipient.Web.Controllers
             SDK.Services.Register.IInfosecService regInfosecService,
             SDK.Services.DataHolder.IInfosecService dhInfosecService,
             Common.IDataHolderDiscoveryCache dataHolderDiscoveryCache,
-            ISqlDataAccess sqlService,
+            ICacheManager cacheManager,
             IFeatureManager featureManager)
         {
             _config = config;
             _regRepository = regRepository;
             _dhRepository = dhRepository;
-            _metadataService = metadataService;
             _ssaService = ssaService;
             _dcrService = dcrService;
             _regInfosecService = regInfosecService;
             _dhInfosecService = dhInfosecService;
             _dataHolderDiscoveryCache = dataHolderDiscoveryCache;
-            _sqlService = sqlService;
+            _cacheManager = cacheManager;
             _featureManager = featureManager;
         }
 
@@ -93,16 +89,27 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index(DynamicClientRegistrationModel model)
         {
-            if (string.IsNullOrEmpty(model.ClientId))
+            try
             {
-                await Register(model);
-            }
-            else
-            {
-                await UpdateRegistration(model);
-            }
+                if (string.IsNullOrEmpty(model.ClientId))
+                    await Register(model);
 
-            await PopulateFormDetail(model);
+                else
+                    await UpdateRegistration(model);
+
+                await PopulateFormDetail(model);
+            }
+            catch (Exception ex)
+            {
+                var type = "";
+                if (string.IsNullOrEmpty(model.ClientId))
+                    type = $"create";
+                else
+                    type = "update";
+
+                var msg = $"Unable to {type} the Dynamic Client Registration with DataHolderBrandId: {model.DataHolderBrandId} - {ex.Message}";
+                return View("Error", new ErrorViewModel { Message = msg });
+            }
             return View(model);
         }
 
@@ -113,23 +120,28 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Delete(string clientId)
         {
             // Delete the registration from the data holder.
-            var deleteResponse = await DeleteRegistration(clientId);
+            var regResp = new ResponseModel();
 
-            if (deleteResponse.StatusCode.IsSuccessful())
+            try
             {
-                return Ok();
+                var deleteResponse = await DeleteRegistration(clientId);
+                if (deleteResponse.StatusCode.IsSuccessful())
+                {
+                    return Ok();
+                }
+                regResp.StatusCode = System.Net.HttpStatusCode.OK;
+                regResp.Messages = deleteResponse.Messages;
+                regResp.Payload = deleteResponse.ResponsePayload;
             }
-
-            var response = new
+            catch (Exception ex)
             {
-                StatusCode = deleteResponse.StatusCode,
-                Messages = deleteResponse.Messages,
-                Payload = deleteResponse.ResponsePayload
-            };
-
-            return new JsonResult(response)
+                var msg = $"Unable to delete the DCR details for ClientId: {clientId} - {ex.Message}";
+                regResp.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                regResp.Messages = msg;
+            }
+            return new JsonResult(regResp)
             {
-                StatusCode = Convert.ToInt32(deleteResponse.StatusCode)
+                StatusCode = Convert.ToInt32(regResp.StatusCode)
             };
         }
 
@@ -138,16 +150,31 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Get(string clientId)
         {
-            var reg = await GetRegistration(clientId);
-            var response = new
+            var regResp = new ResponseModel();
+
+            try
             {
-                StatusCode = reg.StatusCode,
-                Messages = reg.Messages,
-                Payload = reg.ResponsePayload
-            };
-            return new JsonResult(response)
+                var reg = await GetRegistration(clientId);
+                if (reg.StatusCode.IsSuccessful())
+                {
+                    regResp.StatusCode = reg.StatusCode;
+                    regResp.Messages = reg.Messages;
+                    regResp.Payload = reg.ResponsePayload;
+                }
+                else
+                {
+                    throw new Exception();
+                }
+            }
+            catch (Exception ex)
             {
-                StatusCode = Convert.ToInt32(reg.StatusCode)
+                var msg = $"Unable to view the DCR details for ClientId: {clientId} - {ex.Message}";
+                regResp.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                regResp.Messages = msg;
+            }
+            return new JsonResult(regResp)
+            {
+                StatusCode = Convert.ToInt32(regResp.StatusCode)
             };
         }
 
@@ -161,7 +188,10 @@ namespace CDR.DataRecipient.Web.Controllers
             var registrationRequestJwt = PopulateRegistrationRequestJwt(model, sp, ssa, dataHolderDiscovery.Issuer);
 
             // Request DCR to the Data Holder.
-            var dcrResponse = await _dcrService.Register(dataHolderDiscovery.RegistrationEndpoint, sp.ClientCertificate.X509Certificate, registrationRequestJwt);
+            var dcrResponse = await _dcrService.Register(
+                dataHolderDiscovery.RegistrationEndpoint,
+                sp.ClientCertificate.X509Certificate,
+                registrationRequestJwt);
 
             model.StatusCode = dcrResponse.StatusCode;
             model.Messages = $"{dcrResponse.StatusCode} - {(dcrResponse.IsSuccessful ? "Registered" : dcrResponse.Message)}";
@@ -180,8 +210,22 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             var model = new DynamicClientRegistrationModel();
             var sp = _config.GetSoftwareProductConfig();
+
             var client = await _regRepository.GetRegistration(clientId);
+            if (client == null)
+            {
+                model.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                model.Messages = $"The registration details do not exist in the repository";
+                return model;
+            }
+
             var dataHolderDiscovery = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(client.DataHolderBrandId);
+            if (dataHolderDiscovery == null)
+            {
+                model.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                model.Messages = $"Data Holder discovery failed for {client.BrandName} ({client.DataHolderBrandId})";
+                return model;
+            }
 
             var tokenResponse = await _dhInfosecService.GetAccessToken(
                 dataHolderDiscovery.TokenEndpoint,
@@ -200,7 +244,11 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Request DCR to the Data Holder.
-            var dcrResponse = await _dcrService.GetRegistration(dataHolderDiscovery.RegistrationEndpoint, sp.ClientCertificate.X509Certificate, tokenResponse.Data.AccessToken, clientId);
+            var dcrResponse = await _dcrService.GetRegistration(
+                dataHolderDiscovery.RegistrationEndpoint,
+                sp.ClientCertificate.X509Certificate,
+                tokenResponse.Data.AccessToken,
+                clientId);
 
             model.StatusCode = dcrResponse.StatusCode;
             model.Messages = dcrResponse.Message;
@@ -235,7 +283,12 @@ namespace CDR.DataRecipient.Web.Controllers
             var registrationRequestJwt = PopulateRegistrationRequestJwt(model, sp, ssa, dataHolderDiscovery.Issuer);
 
             // Request DCR to the Data Holder.
-            var dcrResponse = await _dcrService.UpdateRegistration(dataHolderDiscovery.RegistrationEndpoint, sp.ClientCertificate.X509Certificate, tokenResponse.Data.AccessToken, model.ClientId, registrationRequestJwt);
+            var dcrResponse = await _dcrService.UpdateRegistration(
+                dataHolderDiscovery.RegistrationEndpoint,
+                sp.ClientCertificate.X509Certificate,
+                tokenResponse.Data.AccessToken,
+                model.ClientId,
+                registrationRequestJwt);
 
             model.StatusCode = dcrResponse.StatusCode;
             model.Messages = dcrResponse.Message;
@@ -332,7 +385,11 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Delete client from the Data Holder.  This is an optional endpoint and may not be implemented by the Data Holder.
-            var dcrResponse = await _dcrService.DeleteRegistration(dataHolderDiscovery.RegistrationEndpoint, sp.ClientCertificate.X509Certificate, tokenResponse.Data.AccessToken, clientId);
+            var dcrResponse = await _dcrService.DeleteRegistration(
+                dataHolderDiscovery.RegistrationEndpoint,
+                sp.ClientCertificate.X509Certificate,
+                tokenResponse.Data.AccessToken,
+                clientId);
 
             model.StatusCode = dcrResponse.StatusCode;
             model.Messages = dcrResponse.Message;
@@ -347,9 +404,15 @@ namespace CDR.DataRecipient.Web.Controllers
         private async Task<string> GetSSA(SoftwareProduct sp, DynamicClientRegistrationModel model)
         {
             var reg = _config.GetRegisterConfig();
+            var tokenEndpoint = await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
 
             // Get an access token from the Register.
-            var tokenResponse = await _regInfosecService.GetAccessToken(reg.TokenEndpoint, sp.SoftwareProductId, sp.ClientCertificate.X509Certificate, sp.SigningCertificate.X509Certificate);
+            var tokenResponse = await _regInfosecService.GetAccessToken(
+                tokenEndpoint, 
+                sp.SoftwareProductId, 
+                sp.ClientCertificate.X509Certificate, 
+                sp.SigningCertificate.X509Certificate,
+                scope: ScopeExtensions.GetRegisterScope(model.SsaVersion, 3));
 
             if (!tokenResponse.IsSuccessful)
             {
@@ -359,8 +422,14 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Get an SSA from the Register.
-            string xvVer = "3";
-            var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(reg.MtlsBaseUri, xvVer, tokenResponse.Data.AccessToken, sp.ClientCertificate.X509Certificate, sp.BrandId, sp.SoftwareProductId, model.Industry);
+            var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(
+                reg.MtlsBaseUri,
+                model.SsaVersion,
+                tokenResponse.Data.AccessToken,
+                sp.ClientCertificate.X509Certificate,
+                sp.BrandId,
+                sp.SoftwareProductId,
+                model.Industry);
 
             if (!ssaResponse.IsSuccessful)
             {
@@ -374,17 +443,26 @@ namespace CDR.DataRecipient.Web.Controllers
 
         private async Task PopulateFormDetail(DynamicClientRegistrationModel model)
         {
-            // Return any Registrations from the repository.
-            model.Registrations = await _regRepository.GetRegistrations();
-
             var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
             if (allowDynamicClientRegistration)
             {
-                // Return any Data Holders from repository
+                // Return any from the Registration table repository.
+                var registrations = await _regRepository.GetRegistrations();
                 model.DataHolderBrands = (await _dhRepository.GetDataHolderBrands())
                     .OrderByMockDataHolders(allowDynamicClientRegistration)
                     .Select(d => new SelectListItem(d.BrandName, d.DataHolderBrandId))
                     .ToList();
+
+                // Fill the brand name
+                if (model.DataHolderBrands != null && model.DataHolderBrands.Any())
+                {
+                    var brandsDictionary = model.DataHolderBrands.ToDictionary(brand => brand.Value);
+                    foreach (var registration in registrations)
+                    {
+                        registration.BrandName = brandsDictionary.ContainsKey(registration.DataHolderBrandId) ? brandsDictionary[registration.DataHolderBrandId].Text : string.Empty;
+                    }
+                }
+                model.Registrations = registrations;
 
                 // Set Selected item in picker
                 if (model.DataHolderBrands.Count > 0 && !string.IsNullOrEmpty(model.DataHolderBrandId))
@@ -395,6 +473,11 @@ namespace CDR.DataRecipient.Web.Controllers
                         selected.Selected = true;
                     }
                 }
+            }
+            else
+            {
+                // Return any from the DcrMessage table in the repository.
+                model.Registrations = await _regRepository.GetDcrMessageRegistrations();
             }
         }
 
@@ -413,6 +496,7 @@ namespace CDR.DataRecipient.Web.Controllers
             model.IdTokenEncryptedResponseAlg = "RSA-OAEP";
             model.IdTokenEncryptedResponseEnc = "A256GCM";
             model.RequestObjectSigningAlg = sp.DefaultSigningAlgorithm;
+            model.SsaVersion = "3";
             model.Messages = "Waiting...";
         }
 

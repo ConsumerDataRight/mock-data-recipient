@@ -69,11 +69,15 @@ main {
     }
 
 footer {
-    text-align: right;
+    text-align: center;
 }
 
-    footer div span {
-        margin: 0 10px;
+    footer div {
+        margin: 5px;
+    }
+
+    footer a {
+        color: #6c757d !important;
     }
 
 iframe {

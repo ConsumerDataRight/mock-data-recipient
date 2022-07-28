@@ -19,9 +19,11 @@ namespace CDR.DataRecipient.SDK.Extensions
             string validIssuer = null,
             string[] validAudiences = null,
             int clockSkewMins = 2,
-            bool validateLifetime = true)
+            bool validateLifetime = true,
+            bool acceptAnyServerCertificate = false,
+            bool enforceHttpsEndpoint = false)
         {
-            var jwks = await jwksUri.GetJwks();
+            var jwks = await jwksUri.GetJwks(acceptAnyServerCertificate, enforceHttpsEndpoint);
             if (jwks == null || jwks.Keys.Count == 0)
             {
                 return (false, null, null);
@@ -65,12 +67,19 @@ namespace CDR.DataRecipient.SDK.Extensions
             return null;
         }
 
-        public static async Task<JsonWebKeySet> GetJwks(this string jwksEndpoint)
+        public static async Task<JsonWebKeySet> GetJwks(
+            this string jwksEndpoint,
+            bool acceptAnyServerCertificate = false,
+            bool enforceHttpsEndpoint = false)
         {
             var clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+            if (acceptAnyServerCertificate)
+            {
+                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+            }
+
             var jwksClient = new HttpClient(clientHandler);
-            var jwksResponse = await jwksClient.GetAsync(jwksEndpoint);
+            var jwksResponse = await jwksClient.GetAsync(jwksEndpoint.ValidateEndpoint(enforceHttpsEndpoint));
             return new JsonWebKeySet(await jwksResponse.Content.ReadAsStringAsync());
         }
 

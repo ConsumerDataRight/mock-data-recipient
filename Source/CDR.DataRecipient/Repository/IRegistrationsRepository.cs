@@ -7,6 +7,7 @@ namespace CDR.DataRecipient.Repository
     public interface IRegistrationsRepository
     {
         Task<IEnumerable<Registration>> GetRegistrations();
+        Task<IEnumerable<Registration>> GetDcrMessageRegistrations();
         Task<Registration> GetRegistration(string clientId);
         Task PersistRegistration(Registration registration);
         Task DeleteRegistration(string clientId);

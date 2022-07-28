@@ -15,7 +15,8 @@ namespace CDR.DataRecipient.SDK.Services.Register
 
         public SsaService(
             IConfiguration config,
-            ILogger<SsaService> logger) : base(config, logger)
+            ILogger<SsaService> logger,
+            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
         {
         }
 
@@ -41,7 +42,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             _logger.LogDebug("Requesting SSA from Register: {ssaEndpoint}.  Client Certificate: {thumbprint}", ssaEndpoint, clientCertificate.Thumbprint);
 
             // Make the request to the get data holder brands endpoint.
-            var response = await client.GetAsync(ssaEndpoint);
+            var response = await client.GetAsync(EnsureValidEndpoint(ssaEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
             _logger.LogDebug("Get SSA Response: {statusCode}.  Body: {body}", response.StatusCode, body);

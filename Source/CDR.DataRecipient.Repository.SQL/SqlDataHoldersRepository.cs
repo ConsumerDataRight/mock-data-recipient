@@ -23,6 +23,12 @@ namespace CDR.DataRecipient.Repository.SQL
             return dataHolderBrand;
         }
 
+        public async Task<DataHolderBrand> GetDHBrandById(string brandId)
+        {
+            var dataHolderBrand = await _sqlDataAccess.GetDHBrandById(brandId);
+            return dataHolderBrand;
+        }
+
         public async Task<IEnumerable<DataHolderBrand>> GetDataHolderBrands()
         {            
             return await _sqlDataAccess.GetDataHolderBrands();
@@ -34,7 +40,7 @@ namespace CDR.DataRecipient.Repository.SQL
             await _sqlDataAccess.DataHolderBrandsDelete();
         }
 
-        public async Task<(int, int)> AggregateDataHolderBrands(IEnumerable<DataHolderBrand> dataHolderBrands)
+        public async Task<(int, int)> AggregateDataHolderBrands(IList<DataHolderBrand> dataHolderBrands)
         {
             // Aggregate Old with New data
             return await _sqlDataAccess.AggregateDataHolderBrands(dataHolderBrands);

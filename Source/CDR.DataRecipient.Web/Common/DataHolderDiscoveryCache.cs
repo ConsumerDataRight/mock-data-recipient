@@ -6,25 +6,34 @@ using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.Web.Extensions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using CDR.DataRecipient.Web.Features;
+using Microsoft.FeatureManagement;
 
 namespace CDR.DataRecipient.Web.Common
 {
     public class DataHolderDiscoveryCache : IDataHolderDiscoveryCache
     {
-        protected readonly IDistributedCache _cache;
-        protected readonly IInfosecService _dhInfosecService;
+        private readonly IConfiguration _configuration;
+        private readonly IDistributedCache _cache;
+        private readonly IInfosecService _dhInfosecService;
         private readonly IDataHoldersRepository _dhRepository;
+        private readonly IFeatureManager _featureManager;
         private readonly ILogger<DataHolderDiscoveryCache> _logger;
 
         public DataHolderDiscoveryCache(
+            IConfiguration configuration,
             IDistributedCache cache,
             IInfosecService dhInfosecService,
             IDataHoldersRepository dhRepository,
+            IFeatureManager featureManager,
             ILogger<DataHolderDiscoveryCache> logger)
         {
+            _configuration = configuration;
             _cache = cache;
             _dhInfosecService = dhInfosecService;
             _dhRepository = dhRepository;
+            _featureManager = featureManager;
             _logger = logger;
         }
 
@@ -36,14 +45,20 @@ namespace CDR.DataRecipient.Web.Common
             {
                 _logger.LogDebug("Discovery document for {dataHolderBrandId} not found in cache.  Retrieving...", dataHolderBrandId);
 
-                var dataHolder = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
+                DataHolderBrand dataHolder;
+                var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
+                if (allowDynamicClientRegistration)
+                    dataHolder = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
+                else
+                    dataHolder = await _dhRepository.GetDHBrandById(dataHolderBrandId);
+
                 if (dataHolder == null)
                 {
                     _logger.LogError("Data Holder {dataHolderBrandId} not found.", dataHolderBrandId);
                     return null;
                 }
-
                 string infosecBaseUri = dataHolder.EndpointDetail.InfoSecBaseUri;
+
                 oidcDiscovery = (await _dhInfosecService.GetOidcDiscovery(infosecBaseUri)).Data;
                 if (oidcDiscovery != null)
                 {

@@ -1,11 +1,22 @@
 ﻿using CDR.DataRecipient.Web.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
     [Route("oidc")]
     public class OidcController : Controller
     {
+        private readonly IConfiguration _config;
+
+        public OidcController(IConfiguration config)
+        {            
+            _config = config;
+        }
+
         [Route("remoteerror")]
         [HttpGet]
         public IActionResult RemoteError([FromQuery(Name = "error_message")] string errMsg)
@@ -46,6 +57,18 @@ namespace CDR.DataRecipient.Web.Controllers
                 }
             }
             return msg;
+        }
+
+        [Route("logout")]
+        [HttpGet]
+        public async Task Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var prop = new AuthenticationProperties()
+            {
+                RedirectUri = "/"
+            };
+            await HttpContext.SignOutAsync("OpenIdConnect", prop);
         }
     }
 }

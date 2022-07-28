@@ -1,7 +1,8 @@
 ﻿using CDR.DataRecipient.Repository;
+using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.Register;
-using CDR.DataRecipient.Web.Configuration;
+using CDR.DataRecipient.Web.Caching;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Features;
 using CDR.DataRecipient.Web.Filters;
@@ -22,6 +23,7 @@ namespace CDR.DataRecipient.Web.Controllers
     {
         private readonly IConfiguration _config;
         private readonly IInfosecService _infosecService;
+        private readonly ICacheManager _cacheManager;
         private readonly IMetadataService _metadataService;
         private readonly IDataHoldersRepository _repository;
         private readonly IFeatureManager _featureManager;
@@ -29,12 +31,14 @@ namespace CDR.DataRecipient.Web.Controllers
         public DataHoldersController(
             IConfiguration config,
             IInfosecService infosecService,
+            ICacheManager cacheManager,
             IMetadataService metadataService,
             IDataHoldersRepository repository,
             IFeatureManager featureManager)
         {
             _config = config;
             _infosecService = infosecService;
+            _cacheManager = cacheManager;
             _metadataService = metadataService;
             _repository = repository;
             _featureManager = featureManager;
@@ -63,9 +67,15 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             var reg = _config.GetRegisterConfig();
             var sp = _config.GetSoftwareProductConfig();
+            var tokenEndpoint = await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
 
             // Get the access token from the Register.
-            var tokenResponse = await _infosecService.GetAccessToken(reg.TokenEndpoint, sp.SoftwareProductId, sp.ClientCertificate.X509Certificate, sp.SigningCertificate.X509Certificate);
+            var tokenResponse = await _infosecService.GetAccessToken(
+                tokenEndpoint, 
+                sp.SoftwareProductId, 
+                sp.ClientCertificate.X509Certificate, 
+                sp.SigningCertificate.X509Certificate,
+                scope: ScopeExtensions.GetRegisterScope(model.Version, 2));
 
             if (!tokenResponse.IsSuccessful)
             {
@@ -74,7 +84,14 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Using the access token, make a request to Get Data Holder Brands.
-            (string respBody, System.Net.HttpStatusCode statusCode, string reason) = await _metadataService.GetDataHolderBrands(reg.MtlsBaseUri, model.Version, tokenResponse.Data.AccessToken, sp.ClientCertificate.X509Certificate, sp.SoftwareProductId, model.Industry, pageSize: _config.GetDefaultPageSize());
+            (string respBody, System.Net.HttpStatusCode statusCode, string reason) = await _metadataService.GetDataHolderBrands(
+                reg.MtlsBaseUri, 
+                model.Version, 
+                tokenResponse.Data.AccessToken, 
+                sp.ClientCertificate.X509Certificate, 
+                sp.SoftwareProductId, 
+                model.Industry, 
+                pageSize: _config.GetDefaultPageSize());
 
             if (statusCode != System.Net.HttpStatusCode.OK)
             {

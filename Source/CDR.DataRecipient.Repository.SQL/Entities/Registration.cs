@@ -8,6 +8,8 @@ namespace CDR.DataRecipient.Repository.SQL.Entities
         [Key]
         public Guid ClientId { get; set; }
 
+        public Guid DataHolderBrandId { get; set; }
+
         public string JsonDocument { get; set; }
     }
 }

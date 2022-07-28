@@ -1,9 +1,10 @@
 ﻿using CDR.DataRecipient.Models;
 using CDR.DataRecipient.Repository;
+using CDR.DataRecipient.SDK.Exceptions;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.DataHolder;
-using CDR.DataRecipient.Web.Configuration;
+using CDR.DataRecipient.Web.Common;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
@@ -18,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Security;
 using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
@@ -37,6 +39,8 @@ namespace CDR.DataRecipient.Web.Controllers
         protected abstract string IndustryName { get; }
         protected abstract string CdsSwaggerLocation { get; }
 
+        protected List<string> _allowedHeaders;
+
         protected DataSharingControllerBase(
             IConfiguration config,
             IDistributedCache cache,
@@ -51,6 +55,7 @@ namespace CDR.DataRecipient.Web.Controllers
             _dhRepository = dhRepository;
             _infosecService = infosecService;
             _logger = logger;
+            _allowedHeaders = _config.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificHeaders).Split(',').ToList();
         }
 
         [HttpGet]
@@ -110,6 +115,16 @@ namespace CDR.DataRecipient.Web.Controllers
                 return;
             }
 
+            var requestPath = this.Request.Path.ToString().Replace($"/{this.BasePath}/proxy", "");
+            if (!IsValidRequestPath(requestPath))
+            {
+                Response.ContentType = "application/json";
+                Response.StatusCode = StatusCodes.Status400BadRequest;
+                string rtnMsg = @"{""Error"":""Invalid request path""}";
+                await Response.BodyWriter.WriteAsync(System.Text.UTF8Encoding.UTF8.GetBytes(rtnMsg));
+                return;
+            }
+
             var dh = await GetDataHolder(cdrArrangement);
             var isPublic = IsPublic(this.Request.Path);
             var baseUri = isPublic ? dh.EndpointDetail.PublicBaseUri : dh.EndpointDetail.ResourceBaseUri;
@@ -118,7 +133,11 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Build the Http Request to the data holder.
             var clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+            var acceptAnyServerCertificate = _config.IsAcceptingAnyServerCertificate();
+            if (acceptAnyServerCertificate)
+            {
+                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+            }
 
             // Provide the data recipient's client certificate for a non-public endpoint.
             if (!isPublic)
@@ -127,7 +146,7 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             var client = new HttpClient(clientHandler);
-            var requestUri = String.Concat(baseUri, this.Request.Path.ToString().Replace($"/{this.BasePath}/proxy", ""), this.Request.QueryString);
+            var requestUri = String.Concat(baseUri, requestPath, this.Request.QueryString);
             var request = new HttpRequestMessage()
             {
                 Method = this.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) ? HttpMethod.Get : HttpMethod.Post,
@@ -135,8 +154,7 @@ namespace CDR.DataRecipient.Web.Controllers
             };
 
             // Don't add the host header or there will be CORS errors. This has to be added to the where.
-            foreach (var header in this.Request.Headers.Keys.Where(
-                h => !h.StartsWith(":") && !h.StartsWith("x-inject-") && h != "Host"))
+            foreach (var header in this.Request.Headers.Keys.Where(h => _allowedHeaders.Contains(h, StringComparer.OrdinalIgnoreCase)))
             {
                 request.Headers.Add(header, this.Request.Headers[header].ToString());
             }
@@ -145,6 +163,11 @@ namespace CDR.DataRecipient.Web.Controllers
             if (!isPublic)
             {
                 client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", cdrArrangement.AccessToken);
+            }
+
+            if (_config.IsEnforcingHttpsEndpoints() && !request.RequestUri.IsHttps())
+            {
+                throw new NoHttpsException();
             }
 
             _logger.LogDebug("Making request to: {RequestUri}.", request.RequestUri);
@@ -168,7 +191,7 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             var consents = await GetConsents(industry: this.IndustryName, userId: HttpContext.User.GetUserId());
             return consents
-                .Select(c => new KeyValuePair<string, string>(c.CdrArrangementId, $"{c.CdrArrangementId} (DH Brand: {c.DataHolderBrandId})"))
+                .Select(c => new KeyValuePair<string, string>(c.CdrArrangementId, $"{c.CdrArrangementId} (DH Brand: {c.BrandName} {c.DataHolderBrandId})"))
                 .ToList();
         }
 
@@ -209,5 +232,17 @@ namespace CDR.DataRecipient.Web.Controllers
 
         protected abstract JObject PrepareSwaggerJson(JObject json, Uri uri);
         protected abstract bool IsPublic(string requestPath);
+
+        protected virtual bool IsValidRequestPath(string requestPath)
+        {
+            // Validate the request path prefix.
+            var validPath = $"/cds-au/v1/{this.IndustryName.ToLower()}/";
+            if (requestPath.StartsWith(validPath))
+            {
+                return true;
+            }
+
+            return false;
+        }
     }
 }

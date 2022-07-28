@@ -1,13 +1,14 @@
 ﻿using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.Web.Common;
-using CDR.DataRecipient.Web.Configuration;
+using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -65,16 +66,61 @@ namespace CDR.DataRecipient.Web.Controllers
             // cdr_arrangement_jwt takes precedence.
             if (!string.IsNullOrEmpty(revocationModel.CdrArrangementJwt))
             {
+                var sp = _config.GetSoftwareProductConfig();
+
+                // Retrieve the cdr_arrangement_id from the JWT.
+                var handler = new JwtSecurityTokenHandler();
+                var token = handler.ReadJwtToken(revocationModel.CdrArrangementJwt);
+
+                if (token == null || token.Claims == null || !token.Claims.Any())
+                {
+                    return BadRequest(new ErrorListModel(ErrorCodes.InvalidField, ErrorTitles.InvalidField, CdrArrangementRevocationRequest.CdrArrangementJwt));
+                }
+
+                var cdrArrangementIdClaim = token.Claims.FirstOrDefault(c => c.Type.Equals(CdrArrangementRevocationRequest.CdrArrangementId));
+                if (cdrArrangementIdClaim == null)
+                {
+                    return BadRequest(new ErrorListModel(ErrorCodes.InvalidField, ErrorTitles.InvalidField, CdrArrangementRevocationRequest.CdrArrangementJwt));
+                }
+
+                // Check for mandatory claims in the cdr_arrangement_jwt.
+                var issClaim = token.Claims.FirstOrDefault(c => c.Type.Equals("iss"));
+                var subClaim = token.Claims.FirstOrDefault(c => c.Type.Equals("sub"));
+                var audClaim = token.Claims.FirstOrDefault(c => c.Type.Equals("aud"));
+                var jtiClaim = token.Claims.FirstOrDefault(c => c.Type.Equals("jti"));
+                var expClaim = token.Claims.FirstOrDefault(c => c.Type.Equals("exp"));
+                if (subClaim == null || string.IsNullOrEmpty(subClaim.Value)
+                    || issClaim == null || string.IsNullOrEmpty(issClaim.Value)
+                    || audClaim == null || string.IsNullOrEmpty(audClaim.Value)
+                    || jtiClaim == null || string.IsNullOrEmpty(jtiClaim.Value)
+                    || expClaim == null || string.IsNullOrEmpty(expClaim.Value)
+                    || !subClaim.Value.Equals(issClaim.Value))
+                {
+                    return BadRequest(new ErrorListModel(ErrorCodes.InvalidField, ErrorTitles.InvalidField, CdrArrangementRevocationRequest.CdrArrangementJwt));
+                }
+
+                // Find the matching cdr arrangement.
+                var arrangement = await _consentsRepository.GetConsentByArrangement(cdrArrangementIdClaim.Value);
+                if (arrangement == null 
+                    || !arrangement.DataHolderBrandId.Equals(issClaim.Value, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return UnprocessableEntity(new ErrorListModel(ErrorCodes.InvalidConsent, ErrorTitles.InvalidArrangement, $"Invalid arrangement: {cdrArrangementIdClaim.Value}"));
+                }
+
+                // Validate the cdr_arrangement_jwt using the brand id associated with the arrangement.
                 var jwksUri = await GetJwksUri();
-                var validated = await revocationModel.CdrArrangementJwt.ValidateToken(jwksUri, validateLifetime: false);
+                var validated = await revocationModel.CdrArrangementJwt.ValidateToken(
+                    jwksUri,
+                    validIssuer: arrangement.DataHolderBrandId, // DH Brand Id
+                    validAudiences: new[] { sp.RevocationUri },
+                    acceptAnyServerCertificate: _config.IsAcceptingAnyServerCertificate());
+
                 if (!validated.IsValid)
                 {
                     return BadRequest(new ErrorListModel(ErrorCodes.InvalidField, ErrorTitles.InvalidField, CdrArrangementRevocationRequest.CdrArrangementJwt));
                 }
 
-                revocationModel.CdrArrangementId = validated.ClaimsPrincipal.Claims
-                    .Where(p => p.Type == CdrArrangementRevocationRequest.CdrArrangementId)
-                    .FirstOrDefault()?.Value;
+                revocationModel.CdrArrangementId = cdrArrangementIdClaim.Value;
             }
 
             var isDeleted = await _consentsRepository.RevokeConsent(revocationModel.CdrArrangementId, ClientBrandId);

@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using CDR.DataRecipient.Web.Common;
-
-namespace CDR.DataRecipient.Web.Configuration.Models
+﻿namespace CDR.DataRecipient.SDK.Models
 {
     public class SoftwareProduct
     {
@@ -15,7 +12,8 @@ namespace CDR.DataRecipient.Web.Configuration.Models
 
         public string RedirectUris { get; set; }
 
-        public string RedirectUri { 
+        public string RedirectUri
+        {
             get
             {
                 return (string.IsNullOrEmpty(this.RedirectUris) ? null : this.RedirectUris.Split(',')[0]);
@@ -31,6 +29,5 @@ namespace CDR.DataRecipient.Web.Configuration.Models
         public Certificate ClientCertificate { get; set; }
 
         public Certificate SigningCertificate { get; set; }
-
     }
 }

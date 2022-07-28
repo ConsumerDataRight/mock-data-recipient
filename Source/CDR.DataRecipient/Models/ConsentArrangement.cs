@@ -6,6 +6,7 @@ namespace CDR.DataRecipient.Models
     {
         public string UserId { get; set; }
         public string DataHolderBrandId { get; set; }
+        public string BrandName { get; set; }
         public string ClientId { get; set; }
         public int? SharingDuration { get; set; }
         public string CdrArrangementId { get; set; }

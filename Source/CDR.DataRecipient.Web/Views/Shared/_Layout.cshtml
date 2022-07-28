@@ -1,7 +1,10 @@
 ﻿@{
 	var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
 	var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDataHolderRefresh));
+	var showSettings = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.ShowSettings));
+    var appName = _config.GetValue<string>(Constants.Content.ApplicationName);
 }
+@using CDR.DataRecipient.Web.Common
 @using CDR.DataRecipient.Web.Extensions
 @using CDR.DataRecipient.Web.Features
 @using Microsoft.AspNetCore.Http
@@ -15,7 +18,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>@ViewData["Title"] - Mock Data Recipient</title>
+	<title>@ViewData["Title"] - @(appName)</title>
 	<link rel="shortcut icon" href="~/favicon.ico" type="image/vnd.microsoft.icon" />
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
@@ -27,11 +30,14 @@
 	<header class="d-flex flex-wrap justify-content-center py-3 border-bottom">
 		<a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none home">
 			<img src="~/img/cdr-logo.png" title="CDR Logo" height="38" width="102" alt="CDR Logo" />
-			<h1 class="fs-4">Mock Data Recipient</h1>
+			<h1 class="fs-4">@(appName)</h1>
 		</a>
 
 		<ul class="nav nav-pills">
+			@if (showSettings)
+			{
 			<li class="nav-item"><a href="~/settings" class="nav-link settings">Settings</a></li>
+			}
 			<li class="nav-item"><a href="~/home/about" class="nav-link about">About</a></li>
 		</ul>
 	</header>
@@ -109,6 +115,14 @@
 						</li>
 					</ul>
 				</li>
+				<li>
+					@if (!Context.User.IsLocal())
+					{
+						<a href="/oidc/logout" class="nav-link text-white">
+							Logout
+						</a>
+					}
+				</li>
 			</ul>
 		</div>
 
@@ -117,13 +131,20 @@
 		</div>
 	</main>
 
-	<footer class="border-top footer text-muted">
-		<div class="container-fluid">
-			<span>
-				&copy; @DateTime.Now.Year - Mock Data Recipient
-			</span>
-		</div>
-	</footer>
+		<footer class="border-top footer text-muted">
+			<div class="container-fluid">
+				@if (!string.IsNullOrEmpty(ViewBag.FooterContent))
+				{
+					@Html.Raw(@ViewBag.FooterContent)
+				}
+				else
+				{
+					<span>
+						&copy; @DateTime.Now.Year - @(appName)
+					</span>
+				}
+			</div>
+		</footer>
 
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>

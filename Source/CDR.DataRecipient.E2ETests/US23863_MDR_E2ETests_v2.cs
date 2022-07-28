@@ -452,7 +452,7 @@ namespace CDR.DataRecipient.E2ETests
 
             // Arrange - Goto home page, click menu button, check page loaded
             await page.GotoAsync(WEB_URL);
-            await page.Locator("text=Consent and Authorisation").ClickAsync();
+            await page.Locator("a:text(\"Consent and Authorisation\")").ClickAsync();
             await page.Locator("h2 >> text=Consent and Authorisation").TextContentAsync();
 
             // Arrange - Set Client ID

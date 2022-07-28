@@ -1,8 +1,8 @@
-﻿using System;
-using CDR.DataRecipient.Web.Common;
+﻿using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using System;
 
 namespace CDR.DataRecipient.Web.Filters
 {

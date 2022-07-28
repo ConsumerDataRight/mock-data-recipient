@@ -10,6 +10,12 @@ namespace CDR.DataRecipient.SDK.Services.Register
             string tokenEndpoint,
             string clientId,
             X509Certificate2 clientCertificate,
-            X509Certificate2 signingCertificate);
+            X509Certificate2 signingCertificate,
+            string scope = Constants.Scopes.CDR_REGISTER);
+
+        Task<Response<OidcDiscovery>> GetOidcDiscovery(string registerOidcConfigEndpoint);
+
+        Task<string> GetTokenEndpoint(string registerOidcConfigEndpoint);
+
     }
 }

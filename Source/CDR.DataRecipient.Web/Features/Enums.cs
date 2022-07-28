@@ -4,6 +4,8 @@
     {
         AllowDataHolderRefresh,
         AllowDynamicClientRegistration,
-        LinkToExternalJwt
+        ShowSettings,
+        LinkToExternalJwt,
+        EnforceHttpsEndpoints
     }
 }
