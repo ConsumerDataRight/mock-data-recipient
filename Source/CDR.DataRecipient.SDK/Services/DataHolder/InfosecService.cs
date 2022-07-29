@@ -22,23 +22,22 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         public InfosecService(
             IConfiguration config,
             ILogger<InfosecService> logger,
-            IAccessTokenService accessTokenService) : base(config, logger)
+            IAccessTokenService accessTokenService,
+            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
         {
             _accessTokenService = accessTokenService;
         }
 
-        public async Task<Response<OidcDiscovery>> GetOidcDiscovery(string infosecBaseUri)
+        public async Task<Response<OidcDiscovery>> GetOidcDiscovery(
+            string infosecBaseUri)
         {
             var oidcResponse = new Response<OidcDiscovery>();
 
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetOidcDiscovery)}.");
 
-            var clientHandler = new HttpClientHandler();
-            clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            var client = new HttpClient(clientHandler);
-
+            var client = GetHttpClient();
             var configUrl = string.Concat(infosecBaseUri.TrimEnd('/'), "/.well-known/openid-configuration");
-            var configResponse = await client.GetAsync(configUrl);
+            var configResponse = await client.GetAsync(EnsureValidEndpoint(configUrl));
 
             oidcResponse.StatusCode = configResponse.StatusCode;
 
@@ -72,7 +71,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 parEndpoint,
                 signingCertificate,
                 issuer: clientId,
-                additionalFormFields: formFields);
+                additionalFormFields: formFields,
+                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -144,17 +144,9 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             var authRequestUri = config.AuthorizationEndpoint
                 .AppendQueryString("client_id", clientId)
-                //.AppendQueryString("response_type", "code id_token")
-                //.AppendQueryString("scope", scope)
-                //.AppendQueryString("response_mode", "form_post")
+                .AppendQueryString("scope", scope)
+                .AppendQueryString("response_type", "code id_token")
                 .AppendQueryString("request", jwt);
-
-            //if (pkce != null)
-            //{
-            //    authRequestUri = authRequestUri
-            //        .AppendQueryString("code_challenge", pkce.CodeChallenge)
-            //        .AppendQueryString("code_challenge_method", pkce.CodeChallengeMethod);
-            //}
 
             return authRequestUri;
         }
@@ -163,7 +155,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string infosecBaseUri,
             string clientId,
             X509Certificate2 signingCertificate,
-            string requestUri)
+            string requestUri,
+            string scope)
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestUri)}.");
 
@@ -171,6 +164,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             string authRequestUri = config.AuthorizationEndpoint
                 .AppendQueryString("client_id", clientId)
+                .AppendQueryString("scope", scope)
+                .AppendQueryString("response_type", "code id_token")
                 .AppendQueryString("request_uri", requestUri);
 
             return authRequestUri;
@@ -228,7 +223,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 clientId: clientId,
                 scope: scope,
                 grantType: "refresh_token",
-                additionalFormFields: formFields);
+                additionalFormFields: formFields,
+                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -270,7 +266,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 issuer: clientId,
                 clientId: clientId,
                 scope: "",
-                additionalFormFields: formFields);
+                additionalFormFields: formFields,
+                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -308,7 +305,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 issuer: clientId,
                 clientId: clientId,
                 scope: "",
-                additionalFormFields: formFields);
+                additionalFormFields: formFields,
+                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -326,7 +324,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             return introspectionResponse;
         }
 
-        public async Task<Response<Models.UserInfo>> UserInfo(string userInfoEndpoint, X509Certificate2 clientCertificate, string accessToken)
+        public async Task<Response<Models.UserInfo>> UserInfo(
+            string userInfoEndpoint, 
+            X509Certificate2 clientCertificate, 
+            string accessToken)
         {
             var userInfoResponse = new Response<Models.UserInfo>();
 
@@ -335,7 +336,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             // Setup the http client.
             var client = GetHttpClient(clientCertificate, accessToken);
 
-            var response = await client.GetAsync(userInfoEndpoint);
+            var response = await client.GetAsync(EnsureValidEndpoint(userInfoEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
             userInfoResponse.StatusCode = response.StatusCode;
@@ -375,7 +376,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 issuer: clientId,
                 clientId: clientId,
                 scope: "",
-                additionalFormFields: formFields);
+                additionalFormFields: formFields,
+                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -389,7 +391,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             return revocationResponse;
         }
 
-        public async Task<Response<Models.UserInfo>> PushedAuthorizationRequest(string parEndpoint, X509Certificate2 clientCertificate, string accessToken)
+        public async Task<Response<Models.UserInfo>> PushedAuthorizationRequest(
+            string parEndpoint, 
+            X509Certificate2 clientCertificate, 
+            string accessToken)
         {
             var parResponse = new Response<Models.UserInfo>();
 
@@ -398,7 +403,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             // Setup the http client.
             var client = GetHttpClient(clientCertificate, accessToken);
 
-            var response = await client.GetAsync(parEndpoint);
+            var response = await client.GetAsync(EnsureValidEndpoint(parEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
             parResponse.StatusCode = response.StatusCode;

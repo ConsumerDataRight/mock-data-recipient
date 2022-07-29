@@ -3,7 +3,6 @@ using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.Web.Common;
-using CDR.DataRecipient.Web.Configuration;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
@@ -19,7 +18,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using static CDR.DataRecipient.SDK.Constants;
 using static CDR.DataRecipient.Web.Common.Constants;
 
 namespace CDR.DataRecipient.Web.Controllers
@@ -67,54 +65,71 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index(ConsentModel model)
         {
-            await PopulatePicker(model);
-
-            if (!ModelState.IsValid)
+            try
             {
-                model.Messages = ModelState.GetErrorMessage();
-                return View(model);
-            }
+                await PopulatePicker(model);
 
-            // Build the authorisation uri based on the selected client id.
-            if (!string.IsNullOrEmpty(model.ClientId))
-            {
-                var sp = _config.GetSoftwareProductConfig();
-                var client = model.Registrations.FirstOrDefault(c => c.ClientId == model.ClientId);
-                var infosecBaseUri = await GetInfoSecBaseUri(client.DataHolderBrandId);
-                var stateKey = Guid.NewGuid().ToString();
-                var nonce = Guid.NewGuid().ToString();
-                var redirectUri = model.RedirectUris;
-
-                var authState = new AuthorisationState()
+                if (!ModelState.IsValid)
                 {
-                    StateKey = stateKey,
-                    ClientId = model.ClientId,
-                    SharingDuration = model.SharingDuration,
-                    Scope = model.Scope,
-                    DataHolderBrandId = client.DataHolderBrandId,
-                    DataHolderInfosecBaseUri = infosecBaseUri,
-                    RedirectUri = redirectUri,
-                };
-
-                if (model.UsePkce)
-                {
-                    authState.Pkce = _dhInfosecService.CreatePkceData();
+                    model.Messages = ModelState.GetErrorMessage();
+                    return View(model);
                 }
 
-                await _cache.SetAsync(stateKey, authState, DateTimeOffset.Now.AddMinutes(60));
+                // Build the authorisation uri based on the selected client id.
+                if (!string.IsNullOrEmpty(model.ClientId))
+                {
+                    var sp = _config.GetSoftwareProductConfig();
+                    var client = model.Registrations.FirstOrDefault(c => c.ClientId == model.ClientId);
 
-                model.AuthorisationUri = await _dhInfosecService.BuildAuthorisationRequestUri(
-                    infosecBaseUri,
-                    client.ClientId,
-                    redirectUri,
-                    model.Scope,
-                    stateKey,
-                    nonce,
-                    sp.SigningCertificate.X509Certificate,
-                    model.SharingDuration,
-                    authState.Pkce);
+                    var infosecBaseUri = await GetInfoSecBaseUri(client.DataHolderBrandId);
+                    if (string.IsNullOrEmpty(infosecBaseUri))
+                        throw new CustomException();
+
+                    var stateKey = Guid.NewGuid().ToString();
+                    var nonce = Guid.NewGuid().ToString();
+                    var redirectUri = model.RedirectUris;
+
+                    var authState = new AuthorisationState()
+                    {
+                        StateKey = stateKey,
+                        ClientId = model.ClientId,
+                        SharingDuration = model.SharingDuration,
+                        Scope = model.Scope,
+                        DataHolderBrandId = client.DataHolderBrandId,
+                        DataHolderInfosecBaseUri = infosecBaseUri,
+                        RedirectUri = redirectUri,
+                        UserId = this.HttpContext.User.GetUserId()
+                    };
+
+                    if (model.UsePkce)
+                    {
+                        authState.Pkce = _dhInfosecService.CreatePkceData();
+                    }
+
+                    await _cache.SetAsync(stateKey, authState, DateTimeOffset.Now.AddMinutes(60));
+
+                    model.AuthorisationUri = await _dhInfosecService.BuildAuthorisationRequestUri(
+                        infosecBaseUri,
+                        client.ClientId,
+                        redirectUri,
+                        model.Scope,
+                        stateKey,
+                        nonce,
+                        sp.SigningCertificate.X509Certificate,
+                        model.SharingDuration,
+                        authState.Pkce);
+                }
             }
-
+            catch (CustomException)
+            {
+                var msg = $"The Data Holder details do not exist in the repository for ClientId: {model.ClientId}";
+                return View("Error", new ErrorViewModel { Message = msg });
+            }
+            catch (Exception ex)
+            {
+                var msg = $"Unable to create the Consent with ClientId: {model.ClientId} - {ex.Message}";
+                return View("Error", new ErrorViewModel { Message = msg });
+            }
             return View(model);
         }
 
@@ -151,6 +166,7 @@ namespace CDR.DataRecipient.Web.Controllers
         [HttpPost]
         [Route("callback")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
+        [AllowAnonymous]
         public async Task<IActionResult> Callback()
         {
             var model = new TokenModel();
@@ -182,7 +198,7 @@ namespace CDR.DataRecipient.Web.Controllers
                     // Save the consent arrangement.
                     var consentArrangement = new ConsentArrangement()
                     {
-                        UserId = HttpContext.User.GetUserId(),
+                        UserId = authState.UserId,
                         DataHolderBrandId = authState.DataHolderBrandId,
                         ClientId = authState.ClientId,
                         SharingDuration = authState.SharingDuration,
@@ -495,7 +511,7 @@ namespace CDR.DataRecipient.Web.Controllers
             model.Registrations = await _registrationsRepository.GetRegistrations();
 
             if (model.Registrations != null && model.Registrations.Any())
-                model.RegistrationListItems = model.Registrations.Select(r => new SelectListItem($"DH Brand: {r.DataHolderBrandId} ({r.ClientId})", r.ClientId)).ToList();
+                model.RegistrationListItems = model.Registrations.Select(r => new SelectListItem($"DH Brand: {r.BrandName} ({r.DataHolderBrandId}) - ({r.ClientId})", r.ClientId)).ToList();
             else
                 model.RegistrationListItems = new List<SelectListItem>();
         }
@@ -503,6 +519,9 @@ namespace CDR.DataRecipient.Web.Controllers
         private async Task<string> GetInfoSecBaseUri(string dataHolderBrandId)
         {
             var dh = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
+            if (dh == null)
+                return null;
+
             return dh.EndpointDetail.InfoSecBaseUri;
         }
 
@@ -529,7 +548,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 sp.SigningCertificate.X509Certificate,
                 arrangement.ClientId,
                 tokenType,
-                tokenType.Equals(TokenTypes.ACCESS_TOKEN, StringComparison.OrdinalIgnoreCase) ? arrangement.AccessToken : arrangement.RefreshToken);
+                tokenType.Equals(SDK.Constants.TokenTypes.ACCESS_TOKEN, StringComparison.OrdinalIgnoreCase) ? arrangement.AccessToken : arrangement.RefreshToken);
 
             return new ResponseModel()
             {

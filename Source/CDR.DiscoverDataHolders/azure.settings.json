@@ -1,0 +1,9 @@
+{
+  "Values": {
+    "Values": {
+      "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+      "Schedule": "*/5 * * * *",
+      "Software_Product_Id": "c6327f87-687a-4369-99a4-eaacd3bb8210"
+    }
+  },
+}

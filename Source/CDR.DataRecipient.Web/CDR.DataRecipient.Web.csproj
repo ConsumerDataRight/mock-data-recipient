@@ -5,9 +5,9 @@
 		<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
 		<UserSecretsId>e18cd40c-c7d1-4df4-8448-82de536a628c</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-		<AssemblyVersion>0.2.0</AssemblyVersion>
-		<FileVersion>0.2.0</FileVersion>
-		<Version>0.2.0</Version>
+		<AssemblyVersion>1.0.0</AssemblyVersion>
+		<FileVersion>1.0.0</FileVersion>
+		<Version>1.0.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -21,6 +21,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNet.Mvc" Version="5.2.9" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="6.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.2" />
@@ -32,7 +33,7 @@
 		<PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="2.5.1" />
 		<PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.11.1" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.13" />
-		<PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="6.0.4" />
+		<PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="6.0.6" />
 		<PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
 		<PackageReference Include="Serilog.Enrichers.Process" Version="2.0.2" />
 		<PackageReference Include="Serilog.Enrichers.Thread" Version="3.1.0" />
@@ -42,7 +43,7 @@
 		<PackageReference Include="Serilog.Sinks.MSSqlServer" Version="5.6.1" />
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.2.3" />
 		<PackageReference Include="IdentityModel.OidcClient" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="6.0.4" />
+		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="6.0.6" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -17,7 +17,9 @@ resources:
 
 trigger:
   - develop
-  
+  - main
+  - releases/*
+
 pool:
   vmImage: ubuntu-latest
 
@@ -34,7 +36,7 @@ steps:
   displayName: Build mock-register image
   inputs:
     command: build 
-    Dockerfile: $(Build.SourcesDirectory)/sb-mock-register/Source/Dockerfile
+    Dockerfile: $(Build.SourcesDirectory)/sb-mock-register/Source/Dockerfile.for-testing
     buildContext: $(Build.SourcesDirectory)/sb-mock-register/Source
     repository: mock-register
     tags: latest
@@ -44,7 +46,7 @@ steps:
   displayName: Build mock-data-holder image
   inputs:
     command: build 
-    Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-holder/Source/Dockerfile
+    Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-holder/Source/Dockerfile.for-testing
     buildContext: $(Build.SourcesDirectory)/sb-mock-data-holder/Source
     repository: mock-data-holder
     tags: latest
@@ -54,7 +56,7 @@ steps:
   displayName: Build mock-data-holder-energy image
   inputs:
     command: build 
-    Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-holder-energy/Source/Dockerfile
+    Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-holder-energy/Source/Dockerfile.for-testing
     buildContext: $(Build.SourcesDirectory)/sb-mock-data-holder-energy/Source
     repository: mock-data-holder-energy
     tags: latest
@@ -98,6 +100,16 @@ steps:
     buildContext: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source
     repository: mock-data-recipient-e2e-tests
     tags: latest    
+
+# Build mock-data-recipient
+- task: Docker@2
+  displayName: Build mock-data-recipient-for-testing image
+  inputs:
+    command: build 
+    Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/Dockerfile.for-testing
+    buildContext: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source
+    repository: mock-data-recipient-for-testing
+    tags: latest
 
 # List docker images
 - task: Docker@2
@@ -252,3 +264,17 @@ steps:
   displayName: Publish EF Migration bundle
   condition: always()
   artifact: Database Migration Scripts
+  
+- task: PublishTestResults@2
+  displayName: 'Surface Integration Test TRX results to devops'
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: 'VSTest' # Options: JUnit, NUnit, VSTest, xUnit, cTest
+    testResultsFiles: '**/results.trx' 
+    #searchFolder: '$(System.DefaultWorkingDirectory)' # Optional
+    #mergeTestResults: false # Optional
+    #failTaskOnFailedTests: false # Optional
+    #testRunTitle: # Optional
+    #buildPlatform: # Optional
+    #buildConfiguration: # Optional
+    #publishRunAttachments: true # Optional

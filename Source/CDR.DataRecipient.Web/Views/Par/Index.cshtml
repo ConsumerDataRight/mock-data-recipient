@@ -41,7 +41,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            @Html.LabelFor(m => m.SharingDuration, new { @class = "col-sm-2 col-form-label" })
+                            @Html.LabelFor(m => m.SharingDuration, "SharingDuration (in Seconds)", htmlAttributes: new { @class = "col-sm-2 col-form-label" })
                             <div class="col-sm-10">
                                 @Html.TextBoxFor(m => m.SharingDuration, new { @class = "form-control" })
                             </div>

@@ -1,17 +1,17 @@
-﻿using CDR.DataRecipient.SDK;
-using CDR.DataRecipient.Web.Models;
+﻿using CDR.DataRecipient.SDK.Models;
+using CDR.DataRecipient.Web.Common;
 using Microsoft.Extensions.Configuration;
-using System;
 
-namespace CDR.DataRecipient.Web.Configuration
+namespace CDR.DataRecipient.Web.Extensions
 {
     public static class Extensions
     {
-        public static Models.Register GetRegisterConfig(
+        public static Register GetRegisterConfig(
             this IConfiguration config,
-            string key = ConfigurationKeys.REGISTER)
+            string key = Constants.ConfigurationKeys.Register.Root,
+            string industry = null)
         {
-            var register = new Models.Register();
+            var register = new Register();
             config.GetSection(key).Bind(register);
 
             if (string.IsNullOrEmpty(register.GetDataHolderBrandsEndpoint))
@@ -27,23 +27,22 @@ namespace CDR.DataRecipient.Web.Configuration
             return register;
         }
 
-        public static Models.SoftwareProduct GetSoftwareProductConfig(this IConfiguration config, string key = ConfigurationKeys.SOFTWARE_PRODUCT)
+        public static SoftwareProduct GetSoftwareProductConfig(this IConfiguration config, string key = Common.Constants.ConfigurationKeys.MockDataRecipient.SoftwareProduct.Root)
         {
-            var sp = new Models.SoftwareProduct();
+            var sp = new SoftwareProduct();
             config.GetSection(key).Bind(sp);
             return sp;
         }
-
-        public static Models.DataHolder GetDefaultDataHolderConfig(this IConfiguration config, string key = ConfigurationKeys.DEFAULT_DATA_HOLDER)
+        public static DataHolderEndpoints GetDefaultDataHolderConfig(this IConfiguration config, string key = Common.Constants.ConfigurationKeys.MockDataRecipient.DefaultDataHolder.Root)
         {
-            var dh = new Models.DataHolder();
+            var dh = new DataHolderEndpoints();
             config.GetSection(key).Bind(dh);
             return dh;
         }
 
         public static int? GetDefaultPageSize(this IConfiguration config)
         {
-            var defaultPageSize = config.GetValue<int>(ConfigurationKeys.DEFAULT_PAGE_SIZE, 25);
+            var defaultPageSize = config.GetValue<int>(Constants.ConfigurationKeys.MockDataRecipient.DefaultPageSize, 25);
             if (defaultPageSize != 25)
             {
                 return defaultPageSize;
@@ -54,7 +53,7 @@ namespace CDR.DataRecipient.Web.Configuration
 
         public static bool CdrArrangementAsJwtOnly(this IConfiguration config)
         {
-            return config.GetValue<bool>(ConfigurationKeys.CDR_ARRANGEMENT_AS_JWT_ONLY, false);
+            return config.GetValue<bool>(Constants.ConfigurationKeys.MockDataRecipient.CdrArrangementAsJwtOnly, true);
         }
     }
 }

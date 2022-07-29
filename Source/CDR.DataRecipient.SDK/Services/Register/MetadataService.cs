@@ -11,11 +11,12 @@ namespace CDR.DataRecipient.SDK.Services.Register
 {
     public class MetadataService : BaseService, IMetadataService
     {
-
         public MetadataService(
-            IConfiguration config,
-            ILogger<MetadataService> logger) : base(config, logger)
+            IConfiguration config, 
+            ILogger<MetadataService> logger,
+            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
         {
+
         }
 
         public async Task<(string, System.Net.HttpStatusCode, string)> GetDataHolderBrands(
@@ -50,7 +51,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             }
 
             // Make the request to the get data holder brands endpoint.
-            var response = await client.GetAsync(endpoint);
+            var response = await client.GetAsync(EnsureValidEndpoint(endpoint));
             var body = await response.Content.ReadAsStringAsync();
 
             _logger.LogDebug("Get Data Holder Brands Response: {statusCode}.  Body: {body}", response.StatusCode, body);
@@ -74,7 +75,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             _logger.LogDebug("Requesting data recipients from Register: {endpoint}.", endpoint);
 
             // Make the request to the get data recipients endpoint.
-            var response = await client.GetAsync(endpoint);
+            var response = await client.GetAsync(EnsureValidEndpoint(endpoint));
             var body = await response.Content.ReadAsStringAsync();
 
             _logger.LogDebug("Get Data Recipients Response: {statusCode}.  Body: {body}", response.StatusCode, body);

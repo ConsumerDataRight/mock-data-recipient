@@ -1,11 +1,12 @@
-﻿using System;
+﻿using CDR.DataRecipient.SDK.Models;
+using CDR.DataRecipient.SDK.Register;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using CDR.DataRecipient.SDK.Models;
-using CDR.DataRecipient.SDK.Register;
 
 namespace CDR.DataRecipient.SDK.Extensions
 {
@@ -28,17 +29,18 @@ namespace CDR.DataRecipient.SDK.Extensions
         }
 
         public static async Task<HttpResponseMessage> SendPrivateKeyJwtRequest(
-            this HttpClient client, 
-            string url, 
+            this HttpClient client,
+            string url,
             X509Certificate2 signingCertificate,
-            string issuer, 
+            string issuer,
             string clientId = null,
             string scope = null,
             string redirectUri = null,
-            string code = null, 
+            string code = null,
             string grantType = null,
             IDictionary<string, string> additionalFormFields = null,
-            Pkce pkce = null)
+            Pkce pkce = null,
+            bool enforceHttpsEndpoint = true)
         {
             var privateKeyJwt = new PrivateKeyJwt(signingCertificate);
 
@@ -88,7 +90,7 @@ namespace CDR.DataRecipient.SDK.Extensions
 
             var clientAssertionContent = new FormUrlEncodedContent(formFields);
 
-            return await client.PostAsync(url, clientAssertionContent);
+            return await client.PostAsync(url.ValidateEndpoint(enforceHttpsEndpoint), clientAssertionContent);
         }
     }
 }

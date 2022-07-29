@@ -10,6 +10,9 @@ namespace CDR.DataRecipient.Web.Models
     {
         public IEnumerable<Registration> Registrations { get; set; }
 
+        [Display(Name = "SSA Version")]
+        public string SsaVersion { get; set; }
+
         public string ResponsePayload { get; set; }
 
         public Industry Industry { get; set; }

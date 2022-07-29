@@ -1,10 +1,18 @@
 ﻿using Newtonsoft.Json;
+using System;
 
 namespace CDR.DataRecipient.SDK.Models
 {
     public class Registration
     {
         public string DataHolderBrandId { get; set; }
+
+        public string BrandName { get; set; }
+
+        public string MessageState { get; set; }
+
+        public DateTime LastUpdated { get; set; }
+
 
         [JsonProperty("client_id")]
         public string ClientId { get; set; }

@@ -19,6 +19,10 @@ namespace CDR.DataRecipient.Infrastructure
         public DbSet<DataHolderBrand> DataHolderBrands { get; set; }
         public DbSet<SoftwareProduct> SoftwareProducts { get; set; }
         public DbSet<Registration> Registrations { get; set; }
+
+        public DbSet<DcrMessage> DcrMessage { get; set; }
+        public DbSet<LogEventsDcrService> LogEvents_DCRService { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<CdrArrangement>().ToTable("CdrArrangement");

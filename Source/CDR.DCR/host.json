@@ -1,0 +1,31 @@
+{
+  "version": "2.0",
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+        "isEnabled": true,
+        "excludedTypes": "Request"
+      }
+    }
+  },
+  "extensions": {
+    "http": {
+      "routePrefix": ""
+    },
+    "queues": {
+      "batchSize": 1,
+      "newBatchThreshold": 0,
+      "maxPollingInterval": "00:00:30",
+      "visibilityTimeout": "00:01:00",
+      "maxDequeueCount": 3
+    },
+    "durableTask": {
+      "storageProvider": {
+        "controlQueueBatchSize": 1,
+        "partitionCount": 1
+      },
+      "maxConcurrentActivityFunctions": 1,
+      "maxConcurrentOrchestratorFunctions": 1
+    }
+  }
+}

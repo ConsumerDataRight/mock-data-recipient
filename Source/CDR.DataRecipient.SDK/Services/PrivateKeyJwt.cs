@@ -58,7 +58,8 @@ namespace CDR.DataRecipient.SDK.Register
             string issuer, 
             string audience,
             string jti = null,
-            int expiryMinutes = 10)
+            int expiryMinutes = 10,
+            string kid = null)
         {
             if (string.IsNullOrEmpty(issuer))
             {
@@ -68,6 +69,11 @@ namespace CDR.DataRecipient.SDK.Register
             if (string.IsNullOrEmpty(audience))
             {
                 throw new ArgumentException("audience must be provided");
+            }
+
+            if (!string.IsNullOrEmpty(kid))
+            {
+                this.SigningCredentials.Key.KeyId = kid;
             }
 
             var expiry = DateTime.UtcNow.AddMinutes(expiryMinutes);

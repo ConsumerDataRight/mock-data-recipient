@@ -8,6 +8,6 @@ namespace CDR.DataRecipient.Repository.SQL.Entities
         [Key]
         public Guid DataHolderBrandId { get; set; }
         public string JsonDocument { get; set; }
-        public DateTime LastUpdated { get; set; }
+        public DateTime? LastUpdated { get; set; }
     }
 }

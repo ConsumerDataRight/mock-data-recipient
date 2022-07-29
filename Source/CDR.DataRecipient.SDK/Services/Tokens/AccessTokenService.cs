@@ -12,7 +12,8 @@ namespace CDR.DataRecipient.SDK.Services.Tokens
     {
         public AccessTokenService(
             IConfiguration config,
-            ILogger<AccessTokenService> logger) : base(config, logger)
+            ILogger<AccessTokenService> logger,
+            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
         {
         }
 
@@ -46,7 +47,8 @@ namespace CDR.DataRecipient.SDK.Services.Tokens
                 redirectUri, 
                 code, 
                 grantType,
-                pkce: pkce);
+                pkce: pkce,
+                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 

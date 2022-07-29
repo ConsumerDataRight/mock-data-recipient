@@ -15,6 +15,7 @@ namespace CDR.DataRecipient.Web.Models
         public string Scope { get; set; }
         public int? SharingDuration { get; set; }
         public string RedirectUri { get; set; }
+        public string UserId { get; set; }
         public Pkce Pkce { get; set; }
     }
 }
