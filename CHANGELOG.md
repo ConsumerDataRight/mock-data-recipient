@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2022-07-22
+## [1.0.0] - 2022-08-02
 ### Added
 - Azure functions to perform Data Holder discovery by polling the Get Data Holder Brands API of the Register.
 
