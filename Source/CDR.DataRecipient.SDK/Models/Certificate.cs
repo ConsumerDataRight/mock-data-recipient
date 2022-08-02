@@ -3,7 +3,7 @@ using System.Net.Http;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
-namespace CDR.DataRecipient.Web.Configuration.Models
+namespace CDR.DataRecipient.SDK.Models
 {
     public class Certificate
     {
@@ -13,7 +13,7 @@ namespace CDR.DataRecipient.Web.Configuration.Models
         public string Url { get; set; }
         public string Password { get; set; }
         public X509Certificate2 X509Certificate
-        { 
+        {
             get
             {
                 if (_certificate != null)

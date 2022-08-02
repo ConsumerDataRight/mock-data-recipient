@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DCR": {
+      "commandName": "Project",
+      "commandLineArgs": "host start --verbose"
+    }
+  }
+}

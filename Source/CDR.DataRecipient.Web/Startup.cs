@@ -1,11 +1,12 @@
 using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.Repository.SQL;
+using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.SDK.Services.Register;
 using CDR.DataRecipient.SDK.Services.Tokens;
+using CDR.DataRecipient.Web.Caching;
 using CDR.DataRecipient.Web.Common;
-using CDR.DataRecipient.Web.Configuration;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Middleware;
@@ -16,9 +17,9 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -31,7 +32,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web
@@ -58,6 +58,10 @@ namespace CDR.DataRecipient.Web
                     options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
                 });
 
+            services.AddSingleton<IServiceConfiguration>(x => new ServiceConfiguration() { 
+                AcceptAnyServerCertificate = _configuration.IsAcceptingAnyServerCertificate(),
+                EnforceHttpsEndpoints = _configuration.IsEnforcingHttpsEndpoints()
+            });
             services.AddTransient<SDK.Services.Register.IInfosecService, SDK.Services.Register.InfosecService>();
             services.AddTransient<IAccessTokenService, AccessTokenService>();
             services.AddTransient<IMetadataService, MetadataService>();
@@ -68,6 +72,8 @@ namespace CDR.DataRecipient.Web
             services.AddSingleton<IConsentsRepository>(x => new SqlConsentsRepository(_configuration, dbContext));
             services.AddSingleton<IRegistrationsRepository>(x => new SqlRegistrationsRepository(_configuration, dbContext));
             services.AddTransient<SDK.Services.DataHolder.IInfosecService, SDK.Services.DataHolder.InfosecService>();
+            services.AddSingleton<ICacheManager, CacheManager>();
+            services.AddSingleton<IMemoryCache, MemoryCache>();
             services.AddSingleton<IDataHolderDiscoveryCache, DataHolderDiscoveryCache>();
             services.AddScoped<LogActionEntryAttribute>();
 
@@ -92,7 +98,7 @@ namespace CDR.DataRecipient.Web
                 services.AddDistributedMemoryCache();
             }
 
-            string specificOrigin = _configuration.GetValue<string>(ConfigurationKeys.ALLOW_SPECIFIC_ORIGINS);
+            string specificOrigin = _configuration.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificOrigins);
             services.AddCors(options =>
             {
                 options.AddPolicy(AllowSpecificOrigins,
@@ -247,6 +253,13 @@ namespace CDR.DataRecipient.Web
                     await next();
                 });
             }
+
+            // Add HTTP response headers.
+            app.Use(async (context, next) =>
+            {
+                context.Response.Headers.Add("Content-Security-Policy", _configuration.GetValue(Constants.ConfigurationKeys.ContentSecurityPolicy, "default-src 'self', 'https://cdn.jsdelivr.net/';"));
+                await next();
+            });
 
             // Set the request host name.
             var hostname = _configuration.GetValue<string>(Constants.ConfigurationKeys.MockDataRecipient.Hostname);

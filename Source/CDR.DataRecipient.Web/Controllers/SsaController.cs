@@ -1,6 +1,8 @@
-﻿using CDR.DataRecipient.SDK.Services.Register;
-using CDR.DataRecipient.Web.Configuration;
-using CDR.DataRecipient.Web.Configuration.Models;
+﻿using CDR.DataRecipient.SDK;
+using CDR.DataRecipient.SDK.Models;
+using CDR.DataRecipient.SDK.Services.Register;
+using CDR.DataRecipient.Web.Caching;
+using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -17,14 +19,17 @@ namespace CDR.DataRecipient.Web.Controllers
         private readonly IConfiguration _config;
         private readonly IInfosecService _infosecService;
         private readonly ISsaService _ssaService;
+        private readonly ICacheManager _cacheManager;
 
         public SsaController(
             IConfiguration config,
             IInfosecService infosecService,
+            ICacheManager cacheManager,
             ISsaService ssaService)
         {
             _config = config;
             _infosecService = infosecService;
+            _cacheManager = cacheManager;
             _ssaService = ssaService;
         }
 
@@ -48,9 +53,15 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             var reg = _config.GetRegisterConfig();
             var sp = _config.GetSoftwareProductConfig();
+            var tokenEndpoint = await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
 
             // Get the access token from the Register.
-            var tokenResponse = await _infosecService.GetAccessToken(reg.TokenEndpoint, model.SoftwareProductId, sp.ClientCertificate.X509Certificate, sp.SigningCertificate.X509Certificate);
+            var tokenResponse = await _infosecService.GetAccessToken(
+                tokenEndpoint, 
+                model.SoftwareProductId, 
+                sp.ClientCertificate.X509Certificate, 
+                sp.SigningCertificate.X509Certificate,
+                scope: ScopeExtensions.GetRegisterScope(model.Version, 3));
 
             if (!tokenResponse.IsSuccessful)
             {
@@ -59,7 +70,14 @@ namespace CDR.DataRecipient.Web.Controllers
                 return;
             }
 
-            var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(reg.MtlsBaseUri, model.Version, tokenResponse.Data.AccessToken, sp.ClientCertificate.X509Certificate, model.BrandId, model.SoftwareProductId, model.Industry);
+            var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(
+                reg.MtlsBaseUri, 
+                model.Version, 
+                tokenResponse.Data.AccessToken, 
+                sp.ClientCertificate.X509Certificate, 
+                model.BrandId, 
+                model.SoftwareProductId, 
+                model.Industry);
 
             model.StatusCode = ssaResponse.StatusCode;
             model.Messages = $"{ssaResponse.StatusCode} - {ssaResponse.Message}";

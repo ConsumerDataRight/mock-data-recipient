@@ -77,7 +77,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string infosecBaseUri,
             string clientId,
             X509Certificate2 signingCertificate,
-            string requestUri);
+            string requestUri,
+            string scope);
 
         string BuildAuthorisationRequestJwt(
             string infosecBaseUri,

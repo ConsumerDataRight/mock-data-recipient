@@ -1,6 +1,5 @@
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
 WORKDIR /app
-EXPOSE 80
 EXPOSE 9001
 
 # Default ASPNETCORE_ENVIRONMENT to Release
@@ -30,11 +29,21 @@ COPY --from=publish /app/publish/supervisord.conf .
 COPY --from=publish /app/publish/web ./web
 
 RUN apt-get update && apt-get install -y supervisor
-
 RUN apt-get update && apt-get install -y sudo
 
 RUN sudo cp ./web/Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
 RUN sudo update-ca-certificates
 
+RUN addgroup --group appgroup --gid 2000 \
+&& adduser \    
+    --uid 1000 \
+    --gid 2000 \
+    "appuser" 
+
+RUN chown -R appuser:appgroup /app
+RUN chown -R appuser:appgroup /usr/bin/
+RUN chown -R appuser:appgroup /tmp
+USER appuser:appgroup 
+
 ENV ASPNETCORE_URLS=https://+:9001
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.conf"]
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.conf", "-u", "1000"]

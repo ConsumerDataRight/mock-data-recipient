@@ -4,7 +4,6 @@
 }
 @using CDR.DataRecipient.SDK.Enumerations
 @using CDR.DataRecipient.SDK.Extensions
-@using CDR.DataRecipient.Web.Configuration
 @using CDR.DataRecipient.Web.Extensions
 @using CDR.DataRecipient.Web.Features
 @using Microsoft.AspNetCore.Http
@@ -64,6 +63,13 @@ else
                                                 }
                                             }
                                             @Html.TextBoxFor(m => m.ClientId, options)
+                                        </div>
+                                    </div>
+
+                                   <div class="row mb-3">
+                                        @Html.LabelFor(m => m.SsaVersion, new { @class = "col-sm-3 col-form-label" })
+                                        <div class="col-sm-9">
+                                            @Html.TextBoxFor(m => m.SsaVersion, new { @class = "form-control" })
                                         </div>
                                     </div>
 
@@ -180,7 +186,7 @@ else
                             var json = Model.ResponsePayload.ToPrettyJson();
 
                             <br />
-                            <pre>@Html.Raw(json)</pre>
+                            <pre>@json</pre>
                         }
                     </small>
                 </div>
@@ -201,14 +207,17 @@ else
                                 <tr>
                                     <th scope="col">Client ID</th>
                                     <th scope="col">DH Brand Name</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col">Last Update</th>
+                                    @if (!allowDynamicClientRegistration)
+                                    {
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Last Update</th>
+                                    }
                                     <th scope="col">Actions</th>
                                 </tr>
                             </thead>
                             @foreach (var reg in Model.Registrations)
                             {
-                                <tr id="@reg.ClientId">
+                                <tr id="@reg.ClientId" style="height:30px;">
                                     <td>
                                         @if (allowDynamicClientRegistration)
                                         {
@@ -219,15 +228,22 @@ else
                                             @reg.ClientId
                                         }
                                     </td>
-                                    <td>@reg.DataHolderBrandId</td>
-                                    <td>&nbsp;</td>
-                                    <td>&nbsp;</td>
+                                    <td>@reg.BrandName (@reg.DataHolderBrandId)</td>
+                                    @if (!allowDynamicClientRegistration)
+                                    {
+                                        <td>@reg.MessageState</td>
+                                        <td>@reg.LastUpdated</td>
+                                    }
                                     <td>
                                         @if (allowDynamicClientRegistration)
                                         {
                                             <a href="/dcr/registrations/@reg.ClientId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId">Delete</a>
+                                            <a href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId">View</a>
                                         }
-                                        <a href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId">View</a>
+                                        else if (!string.IsNullOrEmpty(@reg.ClientId))
+                                        {
+                                            <a href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" style="display:inline-block; height:30px;" data-id="@reg.ClientId">View</a>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -312,6 +328,9 @@ else
                 url: this.href,
                 type: 'GET',
                 success: function (result) {
+
+                    debugger;
+
                     modal.show();
                     $('#modal-messages').html(result.messages);
                     var obj = JSON.parse(result.payload);

@@ -69,6 +69,10 @@ The following diagram outlines the high level architecture of the Mock Data Reci
 
 [<img src="https://raw.githubusercontent.com/ConsumerDataRight/mock-data-recipient/main/mock-data-recipient-architecture.png" height='600' width='600' alt="Mock Data Recipient - Architecture"/>](https://raw.githubusercontent.com/ConsumerDataRight/mock-data-recipient/main/mock-data-recipient-architecture.png)
 
+Dynamic Client Registration Interface:
+
+[<img src="mock-data-recipient-dcr-architecture.png"  height='240' width='600' alt="Dynamic Client Registration Interface"/>](mock-data-recipient-dcr-architecture.png)
+
 ## Mock Data Recipient - Components
 The Mock Data Recipient contains the following components:
 
@@ -85,6 +89,10 @@ The Mock Data Recipient contains the following components:
   - Also contains the JWKS and CDR Arrangement Revocation endpoints.
 - SDK
   - Used internally within the Mock Data Recipient to simplify interactions with the Register and Data Holders.
+- Azure Functions
+  - Azure Functions that can automate the continuous Get Data Holders discovery and Dynamic Client Registration process.
+  - For each Data Holder retrieved from the Register, a message will be added to the DynamicClietnRegistration queue. A function listening to the queue, will pick up the message and attempt to register the Data Recipient with the Data Holder.
+  - To get help on the Azure Functions, see the [help guide](./Help/azurefunctions/HELP.md).
 - Repository
   - A SQL repository is included that contains local data used within the Mock Data Recipient.
   - Includes the following collections:

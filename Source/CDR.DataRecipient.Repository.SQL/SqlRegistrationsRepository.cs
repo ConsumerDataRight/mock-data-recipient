@@ -27,6 +27,11 @@ namespace CDR.DataRecipient.Repository.SQL
             return await _sqlDataAccess.GetRegistrations();
         }
 
+        public async Task<IEnumerable<Registration>> GetDcrMessageRegistrations()
+        {
+            return await _sqlDataAccess.GetDcrMessageRegistrations();
+        }
+
         public async Task DeleteRegistration(string clientId)
         {                        
             var registration = await GetRegistration(clientId);

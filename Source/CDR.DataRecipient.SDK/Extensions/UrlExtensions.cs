@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CDR.DataRecipient.SDK.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,38 @@ namespace CDR.DataRecipient.SDK.Extensions
             else
             {
                 uri += $"&{name}={value}";
+            }
+
+            return uri;
+        }
+
+        public static bool IsHttps(this Uri uri)
+        {
+            return uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static string ValidateEndpoint(this string endpoint, bool enforceHttpsEndpoint)
+        {
+            if (!enforceHttpsEndpoint)
+            {
+                return endpoint;
+            }
+
+            var uri = new Uri(endpoint);
+            uri.ValidateEndpoint(enforceHttpsEndpoint);
+                return endpoint;
+        }
+
+        public static Uri ValidateEndpoint(this Uri uri, bool enforceHttpsEndpoint)
+        {
+            if (!enforceHttpsEndpoint)
+            {
+                return uri;
+            }
+
+            if (!uri.IsHttps())
+            {
+                throw new NoHttpsException();
             }
 
             return uri;

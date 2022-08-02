@@ -6,6 +6,8 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using CDR.DataRecipient.SDK.Extensions;
+using CDR.DataRecipient.SDK.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
@@ -15,13 +17,17 @@ namespace CDR.DataRecipient.SDK.Services
     {
         protected readonly IConfiguration _config;
         protected readonly ILogger _logger;
+        protected readonly IServiceConfiguration _serviceConfiguration;
+
 
         protected BaseService(
             IConfiguration config,
-            ILogger logger)
+            ILogger logger,
+            IServiceConfiguration serviceConfiguration)
         {
             _config = config;
             _logger = logger;
+            _serviceConfiguration = serviceConfiguration;
         }
 
         protected HttpClient GetHttpClient(
@@ -29,20 +35,10 @@ namespace CDR.DataRecipient.SDK.Services
             string accessToken = null,
             string version = null)
         {
-            var acceptAnyServerCertificate = _config.GetValue<bool>("AcceptAnyServerCertificate");
-            return GetHttpClient(acceptAnyServerCertificate, clientCertificate, accessToken, version);
-        }
-
-        protected static HttpClient GetHttpClient(
-            bool acceptAnyServerCertificate,
-            X509Certificate2 clientCertificate = null,
-            string accessToken = null,
-            string version = null)
-        {
             var clientHandler = new HttpClientHandler();
 
             // If accepting any TLS server certificate, then ignore certificate validation.
-            if (acceptAnyServerCertificate)
+            if (_serviceConfiguration.AcceptAnyServerCertificate)
             {
                 clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
             }
@@ -68,6 +64,22 @@ namespace CDR.DataRecipient.SDK.Services
             }
 
             return client;
+        }
+
+        protected virtual string EnsureValidEndpoint(string uri)
+        {
+            return uri.ValidateEndpoint(_serviceConfiguration.EnforceHttpsEndpoints);
+        }
+
+        protected virtual Uri EnsureValidEndpoint(Uri uri)
+        {
+            return uri.ValidateEndpoint(_serviceConfiguration.EnforceHttpsEndpoints);
+        }
+
+        protected virtual HttpRequestMessage EnsureValidEndpoint(HttpRequestMessage request)
+        {
+            request.RequestUri.ValidateEndpoint(_serviceConfiguration.EnforceHttpsEndpoints);
+            return request;
         }
     }
 }

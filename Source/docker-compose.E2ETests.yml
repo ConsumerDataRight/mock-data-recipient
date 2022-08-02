@@ -69,14 +69,14 @@ services:
         condition: service_healthy       
 
   mock-data-recipient:
-    container_name: mock-data-recipient
-    image: mock-data-recipient
+    container_name: mock-data-recipient-for-testing
+    image: mock-data-recipient-for-testing
     hostname: mock-data-recipient
     ports: 
       - "9001:9001"
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.for-testing
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
     volumes:

@@ -1,41 +1,51 @@
 ﻿using CDR.DataRecipient.SDK.Extensions;
-using CDR.DataRecipient.Web.Configuration;
+using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
     public class JwksController : Controller
     {
         private readonly IConfiguration _config;
+        private readonly ILogger<JwksController> _logger;
+        private readonly IMemoryCache _cache;
 
         public JwksController(
-            IConfiguration config)
+            IConfiguration config,
+            ILogger<JwksController> logger,
+            IMemoryCache cache)
         {
             _config = config;
+            _logger = logger;
+            _cache = cache;
         }
 
         [HttpGet]
         [Route("jwks/{id:int?}")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public IActionResult GetJwks(int? id = 1)
+        public async Task<IActionResult> GetJwks(int? id = 1)
         {
-            return Ok(GenerateJwks(id, false));
+            return Ok(await GenerateJwks(id, false));
         }
 
         [HttpGet]
         [Route("jwks-with-private-keys/{id:int?}")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public IActionResult GetJwksPrivateKeys(int? id = 1)
+        public async Task<IActionResult> GetJwksPrivateKeys(int? id = 1)
         {
-            return Ok(GenerateJwks(id, true));
+            return Ok(await GenerateJwks(id, true));
         }
 
         /// <summary>
-        /// GEnerate a JWKS for the DR.
+        /// Generate a JWKS for the DR.
         /// </summary>
         /// <param name="id">ID to control the certificate to use to generate the JWKS.  Can be 1 or 2.</param>
         /// <param name="includePrivateKeyDetails">Whether private key details should be included in the JWKS.</param>
@@ -45,8 +55,19 @@ namespace CDR.DataRecipient.Web.Controllers
         /// However, for FAPI testing the private key is required to be included in the JWKS when configuring the test plan.
         /// Therefore, set this flag to generate the JWKS with the private key that can then be included in the FAPI configuration.
         /// </remarks>
-        private Models.JsonWebKeySet GenerateJwks(int? id = 1, bool includePrivateKeyDetails = false)
+        private async Task<SDK.Models.JsonWebKeySet> GenerateJwks(int? id = 1, bool includePrivateKeyDetails = false)
         {
+            _logger.LogInformation($"{nameof(JwksController)}.{nameof(GenerateJwks)}");
+
+            string cacheKey = $"jwks-{id}-{includePrivateKeyDetails}";
+            var item = _cache.Get<SDK.Models.JsonWebKeySet>(cacheKey);
+
+            if (item != null)
+            {
+                _logger.LogInformation("Cache hit: {cacheKey}", cacheKey);
+                return item;
+            }
+
             var cert = GetCertificate(id.Value);
 
             // Get credentials from certificate
@@ -58,7 +79,7 @@ namespace CDR.DataRecipient.Web.Controllers
             var e = Base64UrlEncoder.Encode(rsaParams.Exponent);
             var n = Base64UrlEncoder.Encode(rsaParams.Modulus);
 
-            var jwkSign = new Models.JsonWebKey()
+            var jwkSign = new SDK.Models.JsonWebKey()
             {
                 alg = signingCredentials.Algorithm,
                 kid = signingCredentials.Kid,
@@ -68,7 +89,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 use = "sig"
             };
 
-            var jwkEnc = new Models.JsonWebKey()
+            var jwkEnc = new SDK.Models.JsonWebKey()
             {
                 alg = encryptingCredentials.Enc,
                 kid = encryptingCredentials.Key.KeyId.Sha256(), // FAPI 1.0 - kid needs to be unique id within the keyset.
@@ -87,10 +108,16 @@ namespace CDR.DataRecipient.Web.Controllers
                 jwkEnc.d = jwkPrivate.D;
             }
 
-            return new Models.JsonWebKeySet()
+            var jwks = new SDK.Models.JsonWebKeySet()
             {
-                keys = new Models.JsonWebKey[] { jwkSign, jwkEnc }
+                keys = new SDK.Models.JsonWebKey[] { jwkSign, jwkEnc }
             };
+
+            // Add the jwks to the cache.
+            _cache.Set<SDK.Models.JsonWebKeySet>(cacheKey, jwks);
+            _logger.LogInformation("JWKS added to cache");
+
+            return jwks;
         }
 
         /// <summary>

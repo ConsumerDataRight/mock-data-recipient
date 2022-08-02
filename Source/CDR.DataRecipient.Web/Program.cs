@@ -1,15 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Authentication;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using System;
+using System.IO;
+using System.Security.Authentication;
 
 namespace CDR.DataRecipient.Web
 {
@@ -21,11 +17,12 @@ namespace CDR.DataRecipient.Web
                             .AddCommandLine(args).Build();
 
             var configuration = new ConfigurationBuilder()
-                            .AddCommandLine(args)
-                            .SetBasePath(Directory.GetCurrentDirectory())
-                            .AddJsonFile("appsettings.json")
-                            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? configurationCommandLine.GetValue<string>("environment")}.json", true)
-                            .Build();
+                .AddCommandLine(args)
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? configurationCommandLine.GetValue<string>("environment")}.json", true)
+                .AddEnvironmentVariables()
+                .Build();
 
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
@@ -45,8 +42,14 @@ namespace CDR.DataRecipient.Web
                 CreateHostBuilder(args, configuration).Build().Run();
                 return 0;
             }
-            catch (Exception ex) when (ex is not OperationCanceledException && ex.GetType().Name != "StopTheHostException")
+            catch (Exception ex)
             {
+                string type = ex.GetType().Name;
+                if (type.Equals("StopTheHostException", StringComparison.Ordinal))
+                {
+                    throw;
+                }
+
                 Log.Fatal(ex, "Host terminated unexpectedly");
                 return 1;
             }

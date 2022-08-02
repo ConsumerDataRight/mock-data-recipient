@@ -1,4 +1,4 @@
-﻿namespace CDR.DataRecipient.Web.Models
+﻿namespace CDR.DataRecipient.SDK.Models
 {
     public class JsonWebKey
     {

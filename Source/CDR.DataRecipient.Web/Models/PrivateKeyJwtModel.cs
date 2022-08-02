@@ -7,6 +7,10 @@ namespace CDR.DataRecipient.Web.Models
     public class PrivateKeyJwtModel : BaseModel
     {
         [Required]
+        [Display(Name = "Key ID")]
+        public string Kid { get; set; }
+
+        [Required]
         [Display(Name = "Issuer")]
         public string Issuer { get; set; }
 

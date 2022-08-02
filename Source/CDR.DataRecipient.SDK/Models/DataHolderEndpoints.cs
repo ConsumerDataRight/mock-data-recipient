@@ -1,6 +1,6 @@
-﻿namespace CDR.DataRecipient.Web.Configuration.Models
+﻿namespace CDR.DataRecipient.SDK.Models
 {
-    public class DataHolder
+    public class DataHolderEndpoints
     {
         public string BrandId { get; set; }
         public string InfosecBaseUri { get; set; }

@@ -6,7 +6,7 @@
 <h2>Consent and Authorisation</h2>
 
 <p>This page allows you to use the Mock Data Recipient to commence the consent and authorisation flow with a data holder that you have successfully performed DCR with.</p>
-<p>The outcome of the constent and authorisation process will be an access token that can then be used for consumer data sharing.</p>
+<p>The outcome of the consent and authorisation process will be an access token that can then be used for consumer data sharing.</p>
 
 <div class="alert alert-info" role="alert">
     <h4 class="alert-heading">FAPI 1.0 Adoption</h4>
@@ -42,7 +42,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            @Html.LabelFor(m => m.SharingDuration, new { @class = "col-sm-2 col-form-label" })
+                            @Html.LabelFor(m => m.SharingDuration, "SharingDuration (in Seconds)", htmlAttributes: new { @class = "col-sm-2 col-form-label" })
                             <div class="col-sm-10">
                                 @Html.TextBoxFor(m => m.SharingDuration, new { @class = "form-control" })
                             </div>

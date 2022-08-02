@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "DiscoverDataHolders": {
+      "commandName": "Project",
+      "commandLineArgs": "host start --verbose"
+    }
+  }
+}
