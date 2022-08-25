@@ -169,7 +169,7 @@ namespace CDR.DataRecipient.Web.Controllers
             return NoContent();
         }
 
-        private bool HasValue(Claim claim)
+        private static bool HasValue(Claim claim)
         {
             return claim != null && claim.Value != null;
         }
