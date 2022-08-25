@@ -90,6 +90,7 @@ namespace CDR.DataRecipient.Web.Middleware
 				// Validate the token
 				var validated = await token.ValidateToken(
 					dataholderDiscoveryDocument.JwksUri,
+					_logger,
 					tokenJwt.Issuer,
 					new[] { _softwareProduct.RevocationUri, _softwareProduct.RecipientBaseUri },
 					validateLifetime: false);

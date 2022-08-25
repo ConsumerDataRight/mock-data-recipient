@@ -1,6 +1,6 @@
 ![Consumer Data Right Logo](https://raw.githubusercontent.com/ConsumerDataRight/mock-data-recipient/main/cdr-logo.png) 
 
-[![Consumer Data Standards v1.16.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.16.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.16.0/#introduction)
+[![Consumer Data Standards v1.17.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.17.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards/#introduction)
 [![Conformance Test Suite 3.2](https://img.shields.io/badge/Conformance%20Test%20Suite-v3.2-darkblue.svg)](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients)
 [![made-with-dotnet](https://img.shields.io/badge/Made%20with-.NET-1f425Ff.svg)](https://dotnet.microsoft.com/)
 [![made-with-csharp](https://img.shields.io/badge/Made%20with-C%23-1f425Ff.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
@@ -13,9 +13,9 @@ This project includes source code, documentation and instructions for a Consumer
 This repository contains a mock implementation of a Mock Data Recipient and is offered to help the community in the development and testing of their CDR solutions.
 
 ## Mock Data Recipient - Alignment
-The Mock Data Recipient aligns to [v1.16.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.16.0/#introduction) of the [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards/#introduction).
+The Mock Data Recipient aligns to [v1.17.0](https://consumerdatastandardsaustralia.github.io/standards/#introduction) of the [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards/#introduction).
 The Mock Data Recipient passed v3.2 of the [Conformance Test Suite for Data Recipients](https://www.cdr.gov.au/for-providers/conformance-test-suite-data-recipients).
-The Mock Data Recipient can connect to and complete authentication against both [FAPI 1.0 Migration Phase 1 and Phase 2](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.16.0/#authentication-flows) compliant data holders.
+The Mock Data Recipient can connect to and complete authentication against both [FAPI 1.0 Migration Phase 1 and Phase 2](https://consumerdatastandardsaustralia.github.io/standards/#authentication-flows) compliant data holders.
 
 ## Getting Started
 The Mock Data Recipient was built using the [Mock Register](https://github.com/ConsumerDataRight/mock-register), the [Mock Data Holder](https://github.com/ConsumerDataRight/mock-data-holder) and the [Mock Data Holder Energy](https://github.com/ConsumerDataRight/mock-data-holder-energy). You can swap out any of the Mock Data Holders, Mock Data Register and Mock Data Recipient solutions with a solution of your own.

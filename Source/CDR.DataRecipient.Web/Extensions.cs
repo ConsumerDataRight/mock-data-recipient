@@ -1,6 +1,7 @@
 ﻿using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.Web.Common;
 using Microsoft.Extensions.Configuration;
+using System;
 
 namespace CDR.DataRecipient.Web.Extensions
 {
@@ -51,9 +52,16 @@ namespace CDR.DataRecipient.Web.Extensions
             return null;
         }
 
-        public static bool CdrArrangementAsJwtOnly(this IConfiguration config)
+        public static DateTime AttemptValidateCdrArrangementJwtFromDate(this IConfiguration config)
         {
-            return config.GetValue<bool>(Constants.ConfigurationKeys.MockDataRecipient.CdrArrangementAsJwtOnly, true);
+            var obligationDate = config.GetValue<string>(Constants.ConfigurationKeys.MockDataRecipient.AttemptValidateCdrArrangementJwtFromDate);
+            if (string.IsNullOrEmpty(obligationDate))
+            {
+                return new DateTime(2022, 11, 15, 0, 0, 0, DateTimeKind.Utc);
+            }
+
+            return DateTime.Parse(obligationDate);
         }
+
     }
 }

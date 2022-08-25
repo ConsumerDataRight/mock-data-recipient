@@ -9,7 +9,7 @@
 @using Microsoft.Extensions.Configuration
 @inject IConfiguration _config
 
-@if (Context.User.IsLocal())
+@if (Context.User.IsLocal() || Context.User.IsUserNameUnknown())
 {
     <h2>Welcome to the @(appName)</h2>
 }
