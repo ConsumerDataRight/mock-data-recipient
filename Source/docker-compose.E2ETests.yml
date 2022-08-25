@@ -83,9 +83,9 @@ services:
       - "./_temp/mock-data-recipient/tmp:/tmp"      
     healthcheck:
       test: test -f /app/web/_healthcheck_ready || exit 1
-      timeout: 10s
-      interval: 30s
-      retries: 20
+      timeout: 5s
+      interval: 5s
+      retries: 100    
     depends_on:
       mock-data-holder-energy:
         condition: service_healthy
@@ -116,6 +116,6 @@ services:
       - SA_PASSWORD=Pa{}w0rd2019
     healthcheck:
       test: /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "Pa{}w0rd2019" -Q "SELECT 1" || exit 1 
-      timeout: 10s
-      interval: 10s
-      retries: 30    
+      timeout: 5s
+      interval: 5s
+      retries: 100    

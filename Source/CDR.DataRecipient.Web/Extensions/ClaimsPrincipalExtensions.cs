@@ -2,6 +2,7 @@
 using CDR.DataRecipient.Web.Common;
 using System.Linq;
 using System.Security.Claims;
+using static CDR.DataRecipient.Web.Common.Constants;
 
 namespace CDR.DataRecipient.Web.Extensions
 {
@@ -30,6 +31,11 @@ namespace CDR.DataRecipient.Web.Extensions
         public static bool IsLocal(this ClaimsPrincipal user)
         {
             return user.Identity.IsAuthenticated && user.Identity.AuthenticationType != null && user.Identity.AuthenticationType.Equals(Constants.LocalAuthentication.AuthenticationType);
+        }
+
+        public static bool IsUserNameUnknown(this ClaimsPrincipal user)
+        {
+            return user.GetUserName().ToLower().CompareTo(Defaults.DefaultUserName) == 0;
         }
     }
 }

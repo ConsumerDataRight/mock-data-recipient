@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- File name extension must be .runsettings -->
+<!-- 
+    This .runsettings file is used with test development in VSCode to configure VSTest to use dockercompose specific ASPNETCORE_ENVIRONMENT 
+    Set the following in vscode's workspace settings.json as follows:-
+        "omnisharp.testRunSettings": "Source\\tests.Development-WithDockerCompose.runsettings"
+-->
+<RunSettings>
+    <RunConfiguration>
+        <EnvironmentVariables>
+            <ASPNETCORE_ENVIRONMENT>Development-WithDockerCompose</ASPNETCORE_ENVIRONMENT>
+        </EnvironmentVariables>
+    </RunConfiguration>
+</RunSettings>

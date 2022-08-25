@@ -2,7 +2,7 @@
 	var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
 	var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDataHolderRefresh));
 	var showSettings = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.ShowSettings));
-    var appName = _config.GetValue<string>(Constants.Content.ApplicationName);
+	var appName = _config.GetValue<string>(Constants.Content.ApplicationName);
 }
 @using CDR.DataRecipient.Web.Common
 @using CDR.DataRecipient.Web.Extensions
@@ -36,7 +36,7 @@
 		<ul class="nav nav-pills">
 			@if (showSettings)
 			{
-			<li class="nav-item"><a href="~/settings" class="nav-link settings">Settings</a></li>
+				<li class="nav-item"><a href="~/settings" class="nav-link settings">Settings</a></li>
 			}
 			<li class="nav-item"><a href="~/home/about" class="nav-link about">About</a></li>
 		</ul>
@@ -59,49 +59,53 @@
 						@(allowDataHolderRefresh ? "Discover Data Holders" : "Data Holders")
 					</a>
 				</li>
-					<li>
-						<a href="/ssa" class="nav-link text-white ssa">
-							Get SSA
-						</a>
-					</li>
 				<li>
 					<a href="/dcr" class="nav-link text-white dcr">
 						@(allowDynamicClientRegistration ? "Dynamic Client Registration" : "Dynamic Client Registrations")
 					</a>
 				</li>
 				<li>
-					<a href="/consent" class="nav-link text-white consent">
-						Consent and Authorisation
-					</a>
+					<span class="nav-link text-white">Consent</span>
+					<ul>
+						<li>
+							<a href="/par" class="nav-link text-white par">
+								PAR
+							</a>
+						</li>
+						<li>
+							<a href="/consent" class="nav-link text-white consent">
+								Consent and Authorisation
+							</a>
+						</li>
+						<li>
+							<a href="/consent/consents" class="nav-link text-white consents">
+								Consents
+							</a>
+						</li>
+					</ul>
 				</li>
 				<li>
-					<a href="/consent/consents" class="nav-link text-white consents">
-						Consents
-					</a>
-				</li>
-				<li>
-					<a href="/data-sharing-common" class="nav-link text-white data-sharing-common">
-						Consumer Data Sharing - Common
-					</a>
-				</li>
-				<li>
-					<a href="/data-sharing-banking" class="nav-link text-white data-sharing-banking">
-						Consumer Data Sharing - Banking
-					</a>
-				</li>
-				<li>
-					<a href="/data-sharing-energy" class="nav-link text-white data-sharing-energy">
-						Consumer Data Sharing - Energy
-					</a>
-				</li>
-				<li>
-					<a href="/par" class="nav-link text-white par">
-						PAR
-					</a>
+					<span class="nav-link text-white">Consumer Data Sharing</span>
+					<ul>
+						<li>
+							<a href="/data-sharing-common" class="nav-link text-white data-sharing-common">
+								Common
+							</a>
+						</li>
+						<li>
+							<a href="/data-sharing-banking" class="nav-link text-white data-sharing-banking">
+								Banking
+							</a>
+						</li>
+						<li>
+							<a href="/data-sharing-energy" class="nav-link text-white data-sharing-energy">
+								Energy
+							</a>
+						</li>
+					</ul>
 				</li>
 				<li>
 					<span class="nav-link text-white">Utilities</span>
-
 					<ul class="">
 						<li>
 							<a href="/utilities/id-token" class="nav-link text-white id-token">
@@ -111,6 +115,11 @@
 						<li>
 							<a href="/utilities/private-key-jwt" class="nav-link text-white private-key-jwt">
 								Private Key JWT Generator
+							</a>
+						</li>
+						<li>
+							<a href="/ssa" class="nav-link text-white ssa">
+								Get SSA
 							</a>
 						</li>
 					</ul>
@@ -131,20 +140,20 @@
 		</div>
 	</main>
 
-		<footer class="border-top footer text-muted">
-			<div class="container-fluid">
-				@if (!string.IsNullOrEmpty(ViewBag.FooterContent))
-				{
-					@Html.Raw(@ViewBag.FooterContent)
-				}
-				else
-				{
-					<span>
-						&copy; @DateTime.Now.Year - @(appName)
-					</span>
-				}
-			</div>
-		</footer>
+	<footer class="border-top footer text-muted">
+		<div class="container-fluid">
+			@if (!string.IsNullOrEmpty(ViewBag.FooterContent))
+			{
+				@Html.Raw(@ViewBag.FooterContent)
+			}
+			else
+			{
+				<span>
+					&copy; @DateTime.Now.Year - @(appName)
+				</span>
+			}
+		</div>
+	</footer>
 
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>

@@ -8,7 +8,8 @@
             {
                 public const string Hostname = "MockDataRecipient:Hostname";
                 public const string DefaultPageSize = "MockDataRecipient:Paging:DefaultPageSize";
-                public const string CdrArrangementAsJwtOnly = "MockDataRecipient:Arrangement:UseJwtOnly";
+                public const string AttemptValidateCdrArrangementJwtFromDate = "MockDataRecipient:Arrangement:AttemptValidateJwtFromDate";
+                
 
                 public static class SoftwareProduct
                 {
@@ -69,6 +70,7 @@
 
         public static class Claims
         {
+            public const string ClientId = "client_id";
             public const string UserId = "userId";
             public const string Name = "name";
         }
@@ -103,6 +105,10 @@
             public const string CdrArrangementJwt = "cdr_arrangement_jwt";
         }
 
+        public static class Defaults
+        {
+            public const string DefaultUserName = "unknown";
+        }
         public const string DEFAULT_KEY_ID = "7EFA85C18FDE857949BC2EAA21C25E49627D4865";
 
         public const string DEFAULT_PRIVATE_KEY =

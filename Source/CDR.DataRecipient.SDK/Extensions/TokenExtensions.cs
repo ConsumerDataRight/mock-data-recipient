@@ -1,4 +1,5 @@
 ﻿using Jose;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,7 @@ namespace CDR.DataRecipient.SDK.Extensions
         public static async Task<(bool IsValid, JwtSecurityToken ValidatedToken, ClaimsPrincipal ClaimsPrincipal)> ValidateToken(
             this string jwt,
             string jwksUri,
+            ILogger logger,
             string validIssuer = null,
             string[] validAudiences = null,
             int clockSkewMins = 2,
@@ -26,8 +28,11 @@ namespace CDR.DataRecipient.SDK.Extensions
             var jwks = await jwksUri.GetJwks(acceptAnyServerCertificate, enforceHttpsEndpoint);
             if (jwks == null || jwks.Keys.Count == 0)
             {
+                logger.LogDebug("Keys not found in JWKS: {jwksUri}", jwksUri);
                 return (false, null, null);
             }
+
+            logger.LogDebug("Keys found in JWKS: {keys}", string.Join(',', jwks.Keys.Select(k => k.Kid).ToArray()));
 
             var tokenValidationParameters = new TokenValidationParameters
             {
@@ -37,13 +42,14 @@ namespace CDR.DataRecipient.SDK.Extensions
                 ValidIssuer = validIssuer,
                 ValidateIssuer = !string.IsNullOrEmpty(validIssuer),
                 ValidAudiences = validAudiences,
-                ValidateAudience = (validAudiences != null && validAudiences.Any()),
+                ValidateAudience = validAudiences != null && validAudiences.Any(),
                 RequireSignedTokens = true,
                 ValidateLifetime = validateLifetime,
             };
 
             try
             {
+                logger.LogDebug("Validating token: {jwt}", jwt);
                 var handler = new JwtSecurityTokenHandler();
                 var claimsPrincipal = handler.ValidateToken(jwt, tokenValidationParameters, out var token);
                 return (true, token as JwtSecurityToken, claimsPrincipal);
@@ -51,6 +57,7 @@ namespace CDR.DataRecipient.SDK.Extensions
             catch (Exception ex)
             {
                 // implement logging.
+                logger.LogError(ex, "An error occurred validating the JWT");
             }
 
             return (false, null, null);

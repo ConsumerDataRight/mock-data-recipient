@@ -49,7 +49,7 @@ namespace CDR.DataRecipient.IntegrationTests
                     JWT_CertificateFilename = JWT_CERTIFICATE_FILENAME,
                     JWT_CertificatePassword = JWT_CERTIFICATE_PASSWORD,
                     ClientId = SOFTWAREPRODUCT_ID,
-                    Scope = "cdr-register:bank:read",
+                    Scope = "cdr-register:bank:read cdr-register:read",
                     ClientAssertionType = CLIENTASSERTIONTYPE,
                     GrantType = "client_credentials",
                     Issuer = SOFTWAREPRODUCT_ID,
@@ -184,7 +184,10 @@ namespace CDR.DataRecipient.IntegrationTests
             string? sub = null,
             string? aud = null,
             string? jti = null,
-            int? expiryInSeconds = null)
+            int? expiryInSeconds = null,
+            string? kid = null,
+            string signingCertificateFileName = DATAHOLDER_CERTIFICATE_FILENAME,
+            string signingCertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD)
         {
             var claims = new Dictionary<string, object>();
             if (!string.IsNullOrEmpty(cdrArrangementId))
@@ -206,53 +209,17 @@ namespace CDR.DataRecipient.IntegrationTests
                 claims.Add("exp", (DateTime.UtcNow.AddSeconds(expiryInSeconds.Value) - new DateTime(1970, 1, 1)).TotalSeconds);
 
             return JWT2.CreateJWT(
-                DATAHOLDER_CERTIFICATE_FILENAME,
-                DATAHOLDER_CERTIFICATE_PASSWORD,
+                signingCertificateFileName,
+                signingCertificatePassword,
                 claims,
-                "7C5716553E9B132EF325C49CA2079737196C03DB");
+                kid ?? "7C5716553E9B132EF325C49CA2079737196C03DB");
         }
 
-        [Theory]
-        [InlineData(HttpStatusCode.NoContent)]
-        public async Task AC01_Post_WithCDRArrangementJWT_ShouldRespondWith_204NoContent(HttpStatusCode expectedStatusCode)
+        [Fact]
+        public async Task AC01_Post_WithCDRArrangementIdParameterOnly_ShouldRespondWith_400BadRequest_ErrorResponse()
         {
             // Arrange 
-            var clientAssertion = GetClientAssertion();
             var cdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = clientAssertion,
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-            }
-        }
-
-        [Theory]
-        [InlineData(null, HttpStatusCode.NoContent)]
-        [InlineData("foo", HttpStatusCode.UnprocessableEntity)]
-        public async Task AC02_Post_WithInvalidCDRArrangementIdInJWT_ShouldRespondWith_422UnprocessableEntity_ErrorResponse(string? cdrArrangementId, HttpStatusCode expectedStatusCode)
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId ?? actualCdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
             var apiCall = new Infrastructure.API
             {
                 CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
@@ -262,7 +229,7 @@ namespace CDR.DataRecipient.IntegrationTests
                 AccessToken = GetClientAssertion(),
                 Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
                     {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                        new KeyValuePair<string?, string?>("cdr_arrangement_id", "123")
                     }),
                 ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
             };
@@ -274,72 +241,102 @@ namespace CDR.DataRecipient.IntegrationTests
             using (new AssertionScope())
             {
                 // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-                if (expectedStatusCode != HttpStatusCode.NoContent)
-                {
-                    var expectedContent = @"{
+                var expectedContent = @"{
                         ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
-                            ""title"": ""Invalid Consent Arrangement"",
-                            ""detail"": ""Invalid arrangement: foo""
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Missing"",
+                            ""title"": ""Missing Required Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
                         }]
                     }";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
-            }
-        }
-
-        [Theory]
-        [InlineData(null, HttpStatusCode.NoContent)]
-        [InlineData("foo", HttpStatusCode.UnprocessableEntity)] // Create arrangement beloning to DataHolderBrandId of "foo"
-        public async Task AC03_Post_WithCDRArrangementIdNotOwnedByDataholder_ShouldRespondWith_422UnprocessableEntity_ErrorResponse(string? dataHolderBrandId, HttpStatusCode expectedStatusCode)
-        {
-            // Arrange 
-            var cdrArrangementId = await Arrange(dataHolderBrandId);
-            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
-
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                if (expectedStatusCode != HttpStatusCode.NoContent)
-                {
-                    var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
-                            ""title"": ""Invalid Consent Arrangement"",
-                            ""detail"": ""Invalid arrangement: #{cdrArrangementId}""
-                        }]
-                    }".Replace("#{cdrArrangementId}", cdrArrangementId);
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
+                await Assert_HasContent_Json(expectedContent, response.Content);
             }
         }
 
         [Fact]
-        public async Task AC04_Post_WithEmptyCDRArrangementJWTPayload_ShouldRespondWith_400BadRequest_ErrorResponse()
+        public async Task AC02_Post_WithEmptyCDRArrangementJwtParameter_ShouldRespondWith_400BadRequest_ErrorResponse()
         {
             // Arrange 
+            var cdrArrangementId = await Arrange();
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", "")
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Missing"",
+                            ""title"": ""Missing Required Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC03_Post_WithNullCDRArrangementJwtParameter_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", null)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Missing"",
+                            ""title"": ""Missing Required Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC03b_Post_WithEmptyCDRArrangementJWTPayload_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
             var cdrArrangementJwt = CreateCdrArrangementJwt();
             var apiCall = new Infrastructure.API
             {
@@ -376,338 +373,11 @@ namespace CDR.DataRecipient.IntegrationTests
         }
 
         [Fact]
-        public async Task AC05_Post_WithEmptyCDRArrangementJWTPayload_ShouldRespondWith_400BadRequest_ErrorResponse()
-        {
-            // Arrange 
-            var cdrArrangementJwt = "";
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                var expectedContent = @"{
-                    ""errors"": [{
-                        ""code"": ""urn:au-cds:error:cds-all:Field/Missing"",
-                        ""title"": ""Missing Required Field"",
-                        ""detail"": ""cdr_arrangement_jwt or cdr_arrangement_id""
-                    }]
-                }";
-                await Assert_HasContent_Json(expectedContent, response.Content);
-            }
-        }
-
-        [Theory]
-        [InlineData(null, HttpStatusCode.NoContent)]
-        [InlineData("", HttpStatusCode.BadRequest)]
-        public async Task AC06_Post_WithEmptyCDRArrangementIdInJWT_ShouldRespondWith_400BadRequest_ErrorResponse(string? cdrArrangementId, HttpStatusCode expectedStatusCode)
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId ?? actualCdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
-
-                if (expectedStatusCode != HttpStatusCode.NoContent)
-                {
-                    var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-                            ""title"": ""Invalid Field"",
-                            ""detail"": ""cdr_arrangement_jwt""
-                        }]
-                    }";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
-            }
-        }
-
-        [Fact]
-        public async Task AC07_Post_WithEmptyIssuerInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(actualCdrArrangementId, "", DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-                            ""title"": ""Invalid Field"",
-                            ""detail"": ""cdr_arrangement_jwt""
-                        }]
-                    }";
-                await Assert_HasContent_Json(expectedContent, response.Content);
-            }
-        }
-
-        [Fact]
-        public async Task AC08_Post_WithEmptySubInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(actualCdrArrangementId, DATAHOLDER_BRAND.ToLower(), "", DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-                            ""title"": ""Invalid Field"",
-                            ""detail"": ""cdr_arrangement_jwt""
-                        }]
-                    }";
-                await Assert_HasContent_Json(expectedContent, response.Content);
-            }
-        }
-
-        [Fact]
-        public async Task AC09_Post_WithEmptyAudInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(actualCdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), "", Guid.NewGuid().ToString(), 300);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-                            ""title"": ""Invalid Field"",
-                            ""detail"": ""cdr_arrangement_jwt""
-                        }]
-                    }";
-                await Assert_HasContent_Json(expectedContent, response.Content);
-            }
-        }
-
-        [Fact]
-        public async Task AC10_Post_WithEmptyJtiInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(actualCdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, "", 300);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-                            ""title"": ""Invalid Field"",
-                            ""detail"": ""cdr_arrangement_jwt""
-                        }]
-                    }";
-                await Assert_HasContent_Json(expectedContent, response.Content);
-            }
-        }
-
-        [Fact]
-        public async Task AC11_Post_WithEmptyExpInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(actualCdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), null);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-                            ""title"": ""Invalid Field"",
-                            ""detail"": ""cdr_arrangement_jwt""
-                        }]
-                    }";
-                await Assert_HasContent_Json(expectedContent, response.Content);
-            }
-        }
-
-        [Fact]
-        public async Task AC12_Post_WithExpiredJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
-        {
-            // Arrange 
-            var actualCdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(actualCdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), -300);
-            var apiCall = new Infrastructure.API
-            {
-                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-                HttpMethod = HttpMethod.Post,
-                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = GetClientAssertion(),
-                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-                    {
-                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-                    }),
-                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-            };
-
-            // Act
-            var response = await apiCall.SendAsync();
-
-            // Assert
-            using (new AssertionScope())
-            {
-                // Assert - Check status code
-                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-                var expectedContent = @"{
-                        ""errors"": [{
-                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-                            ""title"": ""Invalid Field"",
-                            ""detail"": ""cdr_arrangement_jwt""
-                        }]
-                    }";
-                await Assert_HasContent_Json(expectedContent, response.Content);
-            }
-        }
-
-        [Theory]
-        [InlineData("application/x-www-form-urlencoded", HttpStatusCode.NoContent)]
-        [InlineData("application/json", HttpStatusCode.BadRequest)] // Invalid content type header
-        public async Task AC07_Post_WithInvalidContentTypeHeader_ShouldRespondWith_400BadRequest_ErrorResponse(string? contentTypeHeader, HttpStatusCode expectedStatusCode)
+        public async Task AC04_Post_WithCDRArrangementJwtWithNoCdrArrangementId_ShouldRespondWith_400BadRequest_ErrorResponse()
         {
             // Arrange 
             var cdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
-
+            var cdrArrangementJwt = CreateCdrArrangementJwt(null, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
             var apiCall = new Infrastructure.API
             {
                 CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
@@ -719,7 +389,7 @@ namespace CDR.DataRecipient.IntegrationTests
                     {
                         new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
                     }),
-                ContentType = MediaTypeHeaderValue.Parse(contentTypeHeader),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
             };
 
             // Act
@@ -729,37 +399,315 @@ namespace CDR.DataRecipient.IntegrationTests
             using (new AssertionScope())
             {
                 // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
-                if (expectedStatusCode != HttpStatusCode.NoContent)
-                {
-                    var expectedContent = @"{
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC04b_Post_WithCDRArrangementJwtWithEmptyCdrArrangementId_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt("", DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC05_Post_WithNonMatchingCDRArrangementIdValues_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt("1", DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt),
+                        new KeyValuePair<string?, string?>("cdr_arrangement_id", "2")
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_id""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC06_Post_WithInvalidCDRArrangementIdValue_ShouldRespondWith_422UnprocessableEntity_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt("foo", DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
+                            ""title"": ""Invalid Consent Arrangement"",
+                            ""detail"": ""foo""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC07_Post_WithUnownedCDRArrangementId_ShouldRespondWith_422UnprocessableEntity_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange(Guid.NewGuid().ToString());
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Authorisation/InvalidArrangement"",
+                            ""title"": ""Invalid Consent Arrangement"",
+                            ""detail"": ""#{cdrArrangementId}"" 
+                        }]
+                    }".Replace("#{cdrArrangementId}", cdrArrangementId);
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        // TODO: this is an interesting case.  Having a non-matching kid (key id) does not break the validation.
+        // It appears like the MS library will validate the signature anyway with the key values in the JWKS even if the kid doesn't directly match.
+        //[Fact]
+        //public async Task AC08_Post_WithInvalidSignatureCDRArrangementJwt_ShouldRespondWith_400InvalidField_ErrorResponse()
+        //{
+        //    // Arrange 
+        //    var cdrArrangementId = await Arrange();
+        //    var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, kid: "foo");
+        //    var apiCall = new Infrastructure.API
+        //    {
+        //        CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+        //        CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+        //        HttpMethod = HttpMethod.Post,
+        //        URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+        //        AccessToken = GetClientAssertion(),
+        //        Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+        //            {
+        //                new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+        //            }),
+        //        ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+        //    };
+
+        //    // Act
+        //    var response = await apiCall.SendAsync();
+
+        //    // Assert
+        //    using (new AssertionScope())
+        //    {
+        //        // Assert - Check status code
+        //        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        //        var expectedContent = @"{
+        //                ""errors"": [{
+        //                    ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+        //                    ""title"": ""Invalid Field"",
+        //                    ""detail"": ""cdr_arrangement_jwt""
+        //                }]
+        //            }";
+        //        await Assert_HasContent_Json(expectedContent, response.Content);
+        //    }
+        //}
+
+        [Fact]
+        public async Task AC08b_Post_WithInvalidSignatureCDRArrangementJwt_ShouldRespondWith_400InvalidField_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, signingCertificateFileName: JWT_CERTIFICATE_FILENAME, signingCertificatePassword: JWT_CERTIFICATE_PASSWORD);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC09_Post_WithInvalidContentTypeHeader_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt("123");
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/json"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
                         ""errors"": [{
                             ""code"": ""urn:au-cds:error:cds-all:Header/Invalid"",
                             ""title"": ""Invalid Header"",
                             ""detail"": """"
                         }]
                     }";
-                    await Assert_HasContent_Json(expectedContent, response.Content);
-                }
+                await Assert_HasContent_Json(expectedContent, response.Content);
             }
         }
 
-        [Theory]
-        [InlineData(null, HttpStatusCode.NoContent)]
-        [InlineData("foo", HttpStatusCode.Unauthorized)]
-        public async Task AC08_Post_WithInvalidBearerToken_ShouldRespondWith_401Unauthorised_ErrorResponse(string clientAssertion, HttpStatusCode expectedStatusCode)
+        [Fact]
+        public async Task AC10_Post_WithInvalidClientAssertion_ShouldRespondWith_401Unauthorized_ErrorResponse()
         {
             // Arrange 
             var cdrArrangementId = await Arrange();
-            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId);
             var apiCall = new Infrastructure.API
             {
                 CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
                 CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
                 HttpMethod = HttpMethod.Post,
                 URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-                AccessToken = clientAssertion ?? GetClientAssertion(),
+                AccessToken = "foo" ?? GetClientAssertion(),
                 Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
                     {
                         new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
@@ -774,18 +722,322 @@ namespace CDR.DataRecipient.IntegrationTests
             using (new AssertionScope())
             {
                 // Assert - Check status code
-                response.StatusCode.Should().Be(expectedStatusCode);
+                response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
-                // Assert - Check error response
-                if (expectedStatusCode != HttpStatusCode.NoContent)
-                {
-                    // Assert - Check error response 
-                    Assert_HasHeader(@"Bearer error=""invalid_token""",
-                        response.Headers,
-                        "WWW-Authenticate"
-                        ); // true); // starts with
-                }
+                // Assert - Check error response 
+                Assert_HasHeader(@"Bearer error=""invalid_token""",
+                    response.Headers,
+                    "WWW-Authenticate"
+                    ); // true); // starts with
             }
         }
+
+        [Fact]
+        public async Task AC11_Post_WithMinimalCDRArrangementJWT_ShouldRespondWith_204NoContent()
+        {
+            // Arrange 
+            var clientAssertion = GetClientAssertion();
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = clientAssertion,
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            }
+        }
+
+        //
+        // TODO: The tests below should kick in from 15/11/2022
+        //
+        [Fact]
+        public async Task AC12_Post_WithInvalidClaimsValuesInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            if (DateTime.UtcNow < AttemptValidateCdrArrangementJwtFromDate())
+            {
+                Assert.True(true, $"This test will not run until {AttemptValidateCdrArrangementJwtFromDate()}");
+                return;
+            }
+
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, "1", "1", "https://foo.com", "123", 0);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC13_Post_WithUnmatchingIssAndSubInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            if (DateTime.UtcNow < AttemptValidateCdrArrangementJwtFromDate())
+            {
+                Assert.True(true, $"This test will not run until {AttemptValidateCdrArrangementJwtFromDate()}");
+                return;
+            }
+
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, "foo1", "foo2", "https://foo.com", "123", 0);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC14_Post_WithExpiredJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            if (DateTime.UtcNow < AttemptValidateCdrArrangementJwtFromDate())
+            {
+                Assert.True(true, $"This test will not run until {AttemptValidateCdrArrangementJwtFromDate()}");
+                return;
+            }
+
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), -300);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC15_Post_WithInvalidAudienceInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            if (DateTime.UtcNow < AttemptValidateCdrArrangementJwtFromDate())
+            {
+                Assert.True(true, $"This test will not run until {AttemptValidateCdrArrangementJwtFromDate()}");
+                return;
+            }
+
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), "https://foo.com", Guid.NewGuid().ToString(), 300);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC16_Post_WithInvalidIssuerInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
+        {
+            if (DateTime.UtcNow < AttemptValidateCdrArrangementJwtFromDate())
+            {
+                Assert.True(true, $"This test will not run until {AttemptValidateCdrArrangementJwtFromDate()}");
+                return;
+            }
+
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, "foo", "foo", DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+                var expectedContent = @"{
+                        ""errors"": [{
+                            ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
+                            ""title"": ""Invalid Field"",
+                            ""detail"": ""cdr_arrangement_jwt""
+                        }]
+                    }";
+                await Assert_HasContent_Json(expectedContent, response.Content);
+            }
+        }
+
+        [Fact]
+        public async Task AC17_Post_WithFullJwt_ShouldRespondWith_204NoContent()
+        {
+            // Arrange 
+            var cdrArrangementId = await Arrange();
+            var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, DATAHOLDER_BRAND.ToLower(), DATAHOLDER_BRAND.ToLower(), DATARECIPIENT_ARRANGEMENTS_REVOKE_URL, Guid.NewGuid().ToString(), 300);
+            var apiCall = new Infrastructure.API
+            {
+                CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
+                CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
+                HttpMethod = HttpMethod.Post,
+                URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
+                AccessToken = GetClientAssertion(),
+                Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
+                    {
+                        new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
+                    }),
+                ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
+            };
+
+            // Act
+            var response = await apiCall.SendAsync();
+
+            // Assert
+            using (new AssertionScope())
+            {
+                // Assert - Check status code
+                response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            }
+        }
+
+        public static DateTime AttemptValidateCdrArrangementJwtFromDate()
+        {
+            var obligationDate = Configuration["AttemptValidateCdrArrangementJwtFromDate"];
+            if (string.IsNullOrEmpty(obligationDate))
+            {
+                return new DateTime(2022, 11, 15, 0, 0, 0, DateTimeKind.Utc);
+            }
+
+            return DateTime.Parse(obligationDate);
+        }
+
     }
 }

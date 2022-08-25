@@ -6,7 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2022-08-02
+## [1.0.1] - 2022-08-30
+### Changed
+- Updated arrangement revocation to match CDS v1.18. Configuration added based on the date to make functionality available or unavailable.
+- Updated side menu layout and text on screens.
+- Updated package references.
+
+### Fixed
+- Fixed issue with Dynamic Client Registration Azure function not retrying for DCR Failed data holders.
+
+## [1.0.0] - 2022-07-22
 ### Added
 - Azure functions to perform Data Holder discovery by polling the Get Data Holder Brands API of the Register.
 

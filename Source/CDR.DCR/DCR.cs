@@ -33,12 +33,13 @@ namespace CDR.DCR
         [FunctionName("FunctionDCR")]
         public static async Task DCR([QueueTrigger("dynamicclientregistration", Connection = "StorageConnectionString")] CloudQueueMessage myQueueItem, ILogger log, ExecutionContext context)
         {
-            string msg = "";
-            string infosecBaseUri = "";
-            string regEndpoint = "";
+            string msg = string.Empty;
+            string dataHolderBrandName = string.Empty;
+            string infosecBaseUri = string.Empty;
+            string regEndpoint = string.Empty;
 
             DcrQueueMessage myQMsg = JsonConvert.DeserializeObject<DcrQueueMessage>(myQueueItem.AsString);
-
+                        
             try
             {
                 var isLocalDev = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT").Equals("Development");
@@ -98,9 +99,9 @@ namespace CDR.DCR
                     {
                         var ssa = await GetSoftwareStatementAssertion(ssaEndpoint, xv, tokenResponse.Data.AccessToken, clientCertificate, brandId, softwareProductId, log, ignoreServerCertificateErrors);
                         if (ssa.IsSuccessful)
-                        {
-                            // DOES the Data Holder EXIST in the REPO?
-                            DataHolderBrand dh = await new SqlDataAccess(dbConnString).GetDHBrandById(myQMsg.DataHolderBrandId);
+                        {                            
+                            //DOES the Data Holder Brand EXIST in the REPO?
+                            DataHolderBrand dh = await new SqlDataAccess(dbConnString).GetDataHolderBrand(myQMsg.DataHolderBrandId);
                             if (dh == null)
                             {
                                 // NO - DOES the DcrMessage exist?
@@ -115,12 +116,13 @@ namespace CDR.DCR
                                         MessageState = MessageEnum.DCRFailed.ToString(),
                                         MessageError = $"{msg} - does not exist in the repo"
                                     };
-                                    await new SqlDataAccess(dbConnString).UpdateDcrMsgReplaceMessageId(dcrMsg, myQueueItem.Id);
+                                    await new SqlDataAccess(dbConnString).UpdateDcrMsgReplaceMessageIdWithoutBrand(dcrMsg, myQueueItem.Id);
                                 }
                                 await InsertLog(log, dbConnString, $"{msg} - does not exist in the repo", "Error", "DCR");
                             }
                             else
                             {
+                                dataHolderBrandName = dh.BrandName;                                
                                 // YES - DOES a Registration already exist for the DataHolderBrandId in the local repo?
                                 Guid clientId = await new SqlDataAccess(dbConnString).GetRegByDHBrandId(dh.DataHolderBrandId);
                                 if (clientId == Guid.Empty)
@@ -164,6 +166,8 @@ namespace CDR.DCR
                                             {
                                                 ClientId = regClientId,
                                                 DataHolderBrandId = new Guid(dh.DataHolderBrandId),
+                                                BrandName = dh.BrandName,
+                                                InfosecBaseUri = infosecBaseUri,
                                                 MessageState = MessageEnum.DCRComplete.ToString()
                                             };
                                             await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
@@ -182,6 +186,8 @@ namespace CDR.DCR
                                             DcrMessage dcrMsg = new()
                                             {
                                                 DataHolderBrandId = new Guid(dh.DataHolderBrandId),
+                                                BrandName = dh.BrandName,
+                                                InfosecBaseUri = infosecBaseUri,
                                                 MessageState = MessageEnum.DCRFailed.ToString(),
                                                 MessageError = $"StatusCode: {regStatusCode}, {regMessage}"
                                             };
@@ -195,6 +201,8 @@ namespace CDR.DCR
                                         DcrMessage dcrMsg = new()
                                         {
                                             DataHolderBrandId = new Guid(myQMsg.DataHolderBrandId),
+                                            BrandName = dh.BrandName,
+                                            InfosecBaseUri = infosecBaseUri,
                                             MessageState = MessageEnum.DCRFailed.ToString(),
                                             MessageError = "OidcDiscovery failed InfosecBaseUri: " + infosecBaseUri
                                         };
@@ -233,6 +241,8 @@ namespace CDR.DCR
                 DcrMessage dcrMsg = new()
                 {
                     DataHolderBrandId = new Guid(myQMsg.DataHolderBrandId),
+                    BrandName = dataHolderBrandName,
+                    InfosecBaseUri = infosecBaseUri,
                     MessageState = MessageEnum.DCRFailed.ToString(),
                     MessageError = ex.Message
                 };
@@ -245,7 +255,12 @@ namespace CDR.DCR
                 if (!string.IsNullOrEmpty(regEndpoint))
                     extraMsg = " - RegistrationEndpoint: " + regEndpoint;
 
-                await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR", ex);
+                if (ex is JsonReaderException)
+                {
+                    await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED: OidcDiscovery can't be desiearlized {extraMsg}", "Exception", "DCR", ex);
+                }
+                else 
+                    await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR", ex);
             }
         }
 

@@ -1,6 +1,13 @@
 ﻿@{
     ViewData["Title"] = "Dynamic Client Registration";
-	var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
+	var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));    
+    
+    var mdrDisplayName = "Mock Data Recipient";
+
+    @if (!Context.User.IsLocal())
+    {
+        mdrDisplayName = "Sandbox Data Recipient";
+    }
 }
 @using CDR.DataRecipient.SDK.Enumerations
 @using CDR.DataRecipient.SDK.Extensions
@@ -20,14 +27,17 @@
     <p>The page allows you to perform Dynamic Client Registration (DCR) with a Data Holder Brand that is currently stored in the Mock Data Recipient's memory - see the Discover Data Holders page for more detail.</p>
 }
 else
+{    
+    <p>This page shows Data Holders for which this @(mdrDisplayName) has attempted a Dynamic Client Registration flow and the last response received.</p>
+    <p>This @(mdrDisplayName) will periodically attempt to perform Dynamic Client Registration with new Data Holder Brand Ids, or retry Dynamic Client Registration with Data Holder Brand Ids that were previously unsuccessful.</p>
+}
+@if (Context.User.IsLocal())
 {
-    <p>This page shows Data Holders for which this Mock Data Recipient has attempted a Dynamic Client Registration flow and the last response received.</p>
-    <p>This Mock Data Recipient will periodically attempt to perform Dynamic Client Registration with new Data Holder Brand Ids, or retry Dynamic Client Registration with Data Holder Brand Ids that were previously unsuccessful.</p>
+    <p>If you would like to DCR to a CDR Mock Data Holder, firstly ensure the relevant solution is running then select either <strong>Mock Data Holder (Banking)</strong> or <strong>Mock Data Holder (Energy)</strong> from the 'DH Brand Name' dropdown.</p>
+    <p>Alternatively, you can select your own data holder solution if you have added it to the Mock Register and have refreshed the data holders held in memory by the Mock Data Recipient. </p>
+    <p><strong><em>Note: The dummy data holder brands displayed here are for other testing purposes and they should not be used</em></strong>.</p>
 }
 
-<p>If you would like to DCR to a CDR Mock Data Holder, firstly ensure the relevant solution is running then select either <strong>Mock Data Holder (Banking)</strong> or <strong>Mock Data Holder (Energy)</strong> from the 'DH Brand Name' dropdown.</p>
-<p>Alternatively, you can select your own data holder solution if you have added it to the Mock Register and have refreshed the data holders held in memory by the Mock Data Recipient. </p>
-<p><strong><em>Note: The dummy data holder brands displayed here are for other testing purposes and they should not be used</em></strong>.</p>
 
 <br />
 
@@ -232,7 +242,7 @@ else
                                     @if (!allowDynamicClientRegistration)
                                     {
                                         <td>@reg.MessageState</td>
-                                        <td>@reg.LastUpdated</td>
+										<td>@reg.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
                                     }
                                     <td>
                                         @if (allowDynamicClientRegistration)
