@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.1] - 2022-08-16
+## [1.0.1] - 2022-08-30
 ### Changed
 - Updated arrangement revocation to match CDS v1.18. Configuration added based on the date to make functionality available or unavailable.
 - Updated side menu layout and text on screens.
