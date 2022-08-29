@@ -153,6 +153,18 @@ steps:
     dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.IntegrationTests.yml     
     dockerComposeCommand: down
 
+# Surface Integration tests TRX results to Devops
+- task: PublishTestResults@2
+  displayName: 'Surface Integration tests TRX results to Devops'
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/results.trx' 
+    searchFolder: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults
+    mergeTestResults: true
+    testRunTitle: 'mock-data-recipient-Integration-tests'
+    publishRunAttachments: true
+
 # Run e2e tests
 - task: DockerCompose@0
   displayName: E2E tests - Up
@@ -170,6 +182,18 @@ steps:
     action: Run a Docker Compose command
     dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.E2ETests.yml     
     dockerComposeCommand: down
+
+# Surface E2E tests TRX results to Devops
+- task: PublishTestResults@2
+  displayName: 'Surface E2E tests TRX results to Devops'
+  condition: succeededOrFailed()
+  inputs:
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '**/results.trx' 
+    searchFolder: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults
+    mergeTestResults: true
+    testRunTitle: 'mock-data-recipient-E2E-tests'
+    publishRunAttachments: true
 
 # Save docker image to TAR so it can be published
 - task: Docker@2
@@ -265,16 +289,16 @@ steps:
   condition: always()
   artifact: Database Migration Scripts
   
-- task: PublishTestResults@2
-  displayName: 'Surface Integration Test TRX results to devops'
-  condition: succeededOrFailed()
-  inputs:
-    testResultsFormat: 'VSTest' # Options: JUnit, NUnit, VSTest, xUnit, cTest
-    testResultsFiles: '**/results.trx' 
-    #searchFolder: '$(System.DefaultWorkingDirectory)' # Optional
-    #mergeTestResults: false # Optional
-    #failTaskOnFailedTests: false # Optional
-    #testRunTitle: # Optional
-    #buildPlatform: # Optional
-    #buildConfiguration: # Optional
-    #publishRunAttachments: true # Optional
+# - task: PublishTestResults@2
+#   displayName: 'Surface Integration Test TRX results to devops'
+#   condition: succeededOrFailed()
+#   inputs:
+#     testResultsFormat: 'VSTest' # Options: JUnit, NUnit, VSTest, xUnit, cTest
+#     testResultsFiles: '**/results.trx' 
+#     #searchFolder: '$(System.DefaultWorkingDirectory)' # Optional
+#     #mergeTestResults: false # Optional
+#     #failTaskOnFailedTests: false # Optional
+#     #testRunTitle: # Optional
+#     #buildPlatform: # Optional
+#     #buildConfiguration: # Optional
+#     #publishRunAttachments: true # Optional

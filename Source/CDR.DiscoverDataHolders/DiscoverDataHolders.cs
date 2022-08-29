@@ -162,7 +162,7 @@ namespace CDR.DiscoverDataHolders
                                     {
                                         // ADD to EMPTY QUEUE
                                         var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to EMPTY QUEUE)");
-                                        await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, newMsgId, "UPDATE DcrMessage table");
+                                        await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, MessageEnum.Pending, newMsgId, "UPDATE DcrMessage table");
                                         pendingReg++;
                                     }
 
@@ -170,13 +170,15 @@ namespace CDR.DiscoverDataHolders
                                     else if (qCount < 33)
                                     {
                                         var ifExist = await IsMessageInQueue(dcrMsgId, qConnString, qName);
-                                        if (!ifExist && dcrMsgState.Equals(MessageEnum.Pending.ToString()))
+                                        if (!ifExist && (dcrMsgState.Equals(MessageEnum.Pending.ToString()) || dcrMsgState.Equals(MessageEnum.DCRFailed.ToString())) )
                                         {
+                                            Enum.TryParse(dcrMsgState, out MessageEnum dcrMsgStatus);
+
                                             // DcrMessage STATE = Pending -> ADD MESSAGE to the QUEUE
                                             var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to QUEUE)");
 
                                             // UPDATE EXISTING DcrMessage (with ADDED Queue MessageId)
-                                            await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, newMsgId, "Update DcrMessage table");
+                                            await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, dcrMsgStatus, newMsgId, "Update DcrMessage table");
                                             pendingReg++;
                                         }
                                     }
@@ -416,15 +418,15 @@ namespace CDR.DiscoverDataHolders
         /// Update the DcrMessage table
         /// </summary>
         /// <returns>Message Id</returns>
-        private static async Task UpdateDcrMessage(ILogger log, string dbConnString, string dhBrandId, string brandName, string infosecBaseUri, string msgId, string newMsgId, string proc)
+        private static async Task UpdateDcrMessage(ILogger log, string dbConnString, string dhBrandId, string brandName, string infosecBaseUri, string msgId, MessageEnum messageState, string newMsgId, string proc)
         {
             DcrMessage dcrMsg = new()
             {
                 DataHolderBrandId = new Guid(dhBrandId),
                 BrandName = brandName,
                 InfosecBaseUri = infosecBaseUri,
-                MessageId = msgId,
-                MessageState = MessageEnum.Pending.ToString()
+                MessageId = msgId,                
+                MessageState = messageState.ToString()
             };
             await new SqlDataAccess(dbConnString).UpdateDcrMsgReplaceMessageId(dcrMsg, newMsgId);
 
@@ -462,7 +464,7 @@ namespace CDR.DiscoverDataHolders
             {
                 await qClient.DeleteAsync();
                 int qCount = await GetQueueCountAsync(qConnString, qName);
-                log.LogInformation($"{qCount} items in {qName} queue");
+                log.LogInformation($"{qCount} items deleted in {qName} queue");
             }
         }
 

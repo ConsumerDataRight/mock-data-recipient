@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- File name extension must be .runsettings -->
-<RunSettings>
-  <EnvironmentVariables>
-    <ASPNETCORE_ENVIRONMENT>Release</ASPNETCORE_ENVIRONMENT>
-  </EnvironmentVariables>
-</RunSettings>

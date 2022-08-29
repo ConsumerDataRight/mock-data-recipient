@@ -207,9 +207,9 @@ namespace CDR.DataRecipient.E2ETests
                 await page.Locator("a >> text=Dynamic Client Registration").TextContentAsync();
                 await page.Locator("a >> text=Consent and Authorisation").TextContentAsync();
                 await page.Locator("a >> text=Consents").TextContentAsync();
-                await page.Locator("a >> text=Consumer Data Sharing - Common").TextContentAsync();
-                await page.Locator("a >> text=Consumer Data Sharing - Banking").TextContentAsync();
-                await page.Locator("a >> text=Consumer Data Sharing - Energy").TextContentAsync();
+                await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Common\")").TextContentAsync();
+                await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Banking\")").TextContentAsync();
+                await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Energy\")").TextContentAsync();
                 await page.Locator("a >> text=PAR").TextContentAsync();
                 await page.Locator("span >> text=Utilities").TextContentAsync();
                 await page.Locator("a >> text=ID Token Helper").TextContentAsync();
@@ -769,8 +769,8 @@ namespace CDR.DataRecipient.E2ETests
                 await TestAsync($"{nameof(US23863_MDR_E2ETests_v2)} - {nameof(AC08_ConsumerDataSharing_Banking)}", async (page) =>
                 {
                     // Arrange - Goto home page, click menu button, check page loaded
-                    await page.GotoAsync(WEB_URL);
-                    await page.Locator("a >> text=Consumer Data Sharing - Banking").ClickAsync();
+                    await page.GotoAsync(WEB_URL);                    
+                    await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Banking\")").ClickAsync();
                     await page.Locator("h2 >> text=Data Sharing - Banking").TextContentAsync();
                     await Task.Delay(2000);  // give screen time to refresh
                 });
@@ -807,7 +807,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     // Arrange - Goto home page, click menu button, check page loaded
                     await page.GotoAsync(WEB_URL);
-                    await page.Locator("a >> text=Consumer Data Sharing - Banking").ClickAsync();
+                    await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Banking\")").ClickAsync();
                     await page.Locator("h2 >> text=Data Sharing - Banking").TextContentAsync();
 
                     // Arrange - Get Swagger iframe
@@ -874,7 +874,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     // Arrange - Goto home page, click menu button, check page loaded
                     await page.GotoAsync(WEB_URL);
-                    await page.Locator("a >> text=Consumer Data Sharing - Energy").ClickAsync();
+                    await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Energy\")").ClickAsync();
                     await page.Locator("h2 >> text=Data Sharing - Energy").TextContentAsync();
                     await Task.Delay(2000);  // give screen time to refresh
                 });
@@ -911,7 +911,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     // Arrange - Goto home page, click menu button, check page loaded
                     await page.GotoAsync(WEB_URL);
-                    await page.Locator("a >> text=Consumer Data Sharing - Energy").ClickAsync();
+                    await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Energy\")").ClickAsync();
                     await page.Locator("h2 >> text=Data Sharing - Energy").TextContentAsync();
 
                     // Arrange - Get Swagger iframe

@@ -996,13 +996,17 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             using (SqlConnection db = new(_dbConn))
             {
-                db.Open();                
-                var sqlQuery = "UPDATE [DcrMessage] SET [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE(), [ClientId] = @clientId WHERE [DataHolderBrandId] = @id";
+                db.Open();
+
+                var sqlQuery = "UPDATE [DcrMessage] SET [BrandName] = @brandName, [InfosecBaseUri] = @infosecBaseUri, [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE(), [ClientId] = @clientId WHERE [DataHolderBrandId] = @id";
+                                
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@id", dcrMessage.DataHolderBrandId);
                 sqlCommand.Parameters.AddWithValue("@msgState", dcrMessage.MessageState);
                 sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
                 sqlCommand.Parameters.AddWithValue("@clientId", string.IsNullOrEmpty(dcrMessage.ClientId) ? DBNull.Value : dcrMessage.ClientId);
+                sqlCommand.Parameters.AddWithValue("@brandName", string.IsNullOrEmpty(dcrMessage.BrandName) ? DBNull.Value : dcrMessage.BrandName);
+                sqlCommand.Parameters.AddWithValue("@infosecBaseUri", string.IsNullOrEmpty(dcrMessage.InfosecBaseUri) ? DBNull.Value : dcrMessage.InfosecBaseUri);
                 await sqlCommand.ExecuteNonQueryAsync();
                 db.Close();
             }
@@ -1012,6 +1016,7 @@ namespace CDR.DataRecipient.Repository.SQL
         /// Update the DcrMessage MessageState and MessageError by the Queue MessageId
         /// </summary>
         /// <param name="dcrMessage">The message object to be updated</param>
+        /// msgState Abandoned brand name not available and can be ignored
         /// <remarks>
         /// This is called from Azure Functions DCR
         /// </remarks>
@@ -1033,11 +1038,11 @@ namespace CDR.DataRecipient.Repository.SQL
         /// <summary>
         /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId
         /// </summary>
-        /// <param name="dcrMessage">The message object to be updated</param>
-        /// <remarks>
-        /// This is called from Azure DiscoverDataHolders and DCR Functions
+        /// <param name="dcrMessage">The message object to be updated</param>        
+        /// This is called from Azure DCR Functions
+        /// BrandName not available when DCR        
         /// </remarks>
-        public async Task UpdateDcrMsgReplaceMessageId(DcrMessage dcrMessage, string replacementMsgId = "")
+        public async Task UpdateDcrMsgReplaceMessageIdWithoutBrand(DcrMessage dcrMessage, string replacementMsgId = "")
         {
             using (SqlConnection db = new(_dbConn))
             {
@@ -1048,6 +1053,33 @@ namespace CDR.DataRecipient.Repository.SQL
                 sqlCommand.Parameters.AddWithValue("@msgState", dcrMessage.MessageState);
                 sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
                 sqlCommand.Parameters.AddWithValue("@id", dcrMessage.MessageId);
+                await sqlCommand.ExecuteNonQueryAsync();
+                db.Close();
+            }
+        }
+
+
+        /// <summary>
+        /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId
+        /// </summary>
+        /// <param name="dcrMessage">The message object to be updated</param>
+        /// Update BrandName for Discovery Data Holder
+        /// <remarks>
+        /// This is called from Azure DiscoverDataHolders
+        /// </remarks>
+        public async Task UpdateDcrMsgReplaceMessageId(DcrMessage dcrMessage, string replacementMsgId = "")
+        {
+            using (SqlConnection db = new(_dbConn))
+            {
+                db.Open();
+                var sqlQuery = "UPDATE [DcrMessage] SET [MessageId] = @replaceMsgId, [BrandName] = @brandName, [InfosecBaseUri] = @infosecBaseUri, [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE() WHERE [MessageId] = @id";
+                using var sqlCommand = new SqlCommand(sqlQuery, db);
+                sqlCommand.Parameters.AddWithValue("@replaceMsgId", replacementMsgId);
+                sqlCommand.Parameters.AddWithValue("@msgState", dcrMessage.MessageState);
+                sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
+                sqlCommand.Parameters.AddWithValue("@id", dcrMessage.MessageId);
+                sqlCommand.Parameters.AddWithValue("@brandName", string.IsNullOrEmpty(dcrMessage.BrandName) ? DBNull.Value : dcrMessage.BrandName);
+                sqlCommand.Parameters.AddWithValue("@infosecBaseUri", string.IsNullOrEmpty(dcrMessage.InfosecBaseUri) ? DBNull.Value : dcrMessage.InfosecBaseUri);                
                 await sqlCommand.ExecuteNonQueryAsync();
                 db.Close();
             }

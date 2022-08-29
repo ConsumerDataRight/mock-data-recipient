@@ -1,4 +1,4 @@
-// #define TEST_DEBUG_MODE // Run Playwright in non-headless mode for debugging purposes (ie show a browser)
+#define TEST_DEBUG_MODE // Run Playwright in non-headless mode for debugging purposes (ie show a browser)
 
 // In docker (Ubuntu container) Playwright will fail if running in non-headless mode, so we ensure TEST_DEBUG_MODE is undef'ed
 #if !DEBUG
@@ -28,6 +28,8 @@ namespace CDR.DataRecipient.E2ETests
     [DisplayTestMethodName]
     public class BaseTest_v2
     {
+        static public bool RUNNING_IN_CONTAINER => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")?.ToUpper() == "TRUE";
+                
         // Customers
         public const string CUSTOMERID_BANKING = "jwilson";
         public const string CUSTOMERACCOUNTS_BANKING = "Personal Loan xxx-xxx xxxxx987,Transactions and Savings Account xxx-xxx xxxxx988";
