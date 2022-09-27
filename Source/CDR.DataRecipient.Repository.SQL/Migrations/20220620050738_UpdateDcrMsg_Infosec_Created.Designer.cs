@@ -83,7 +83,7 @@ namespace CDR.DataRecipient.Repository.SQL.Migrations
                     b.Property<Guid>("DataHolderBrandId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("InfoSecBaseUri")
+                    b.Property<string>("InfosecBaseUri")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 

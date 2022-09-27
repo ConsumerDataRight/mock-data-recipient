@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2022-09-15
+### Added
+- Logging middleware to create a centralised list of all API requests and responses
+
+### Changed
+- Primary key constraints for registrations. Now combines Client Id and Data Holder Brand Id as the unique constraint.
+
 ## [1.0.1] - 2022-08-30
 ### Changed
 - Updated arrangement revocation to match CDS v1.18. Configuration added based on the date to make functionality available or unavailable.

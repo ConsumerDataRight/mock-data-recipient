@@ -12,9 +12,26 @@ namespace CDR.DataRecipient.Web.Models
 
         public IEnumerable<ConsentArrangement> ConsentArrangements { get; set; }
 
-        [Display(Name = "Registration")]
+        /// <summary>
+		/// This has the format of {ClientId}|||{DataHolderBrandId}
+		/// </summary>
+		[Display(Name = "Registration")]
         [Required]
-        public string ClientId { get; set; }
+        public string RegistrationId { get; set; }
+        public string ClientId
+        {
+            get
+            {
+                return Registration.SplitRegistrationId(RegistrationId).ClientId;
+            }
+        }
+        public string DataHolderBrandId
+        {
+            get
+            {
+                return Registration.SplitRegistrationId(RegistrationId).DataHolderBrandId;
+            }
+        }
 
         [Display(Name = "CDR Arrangement")]
         public string CdrArrangementId { get; set; }

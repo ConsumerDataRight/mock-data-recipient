@@ -24,10 +24,10 @@ namespace CDR.DataRecipient.Repository.SQL
             return await _sqlDataAccess.GetConsentByArrangement(cdrArrangementId);
         }
 
-        public async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string industry = null, string userId = null)
+        public async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string dataHolderBrandId, string userId, string industry = null)
         {                        
             // filter consents by industry.
-            var cdrArrangements = await _sqlDataAccess.GetConsents(clientId, userId);
+            var cdrArrangements = await _sqlDataAccess.GetConsents(clientId, dataHolderBrandId, userId);
             return cdrArrangements.OrderByDescending(x => x.CreatedOn);
         }
 

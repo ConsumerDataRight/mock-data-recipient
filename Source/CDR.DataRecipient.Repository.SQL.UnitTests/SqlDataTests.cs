@@ -99,7 +99,7 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
             sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
-            var data = await consentRepository.GetConsents("");
+            var data = await consentRepository.GetConsents("","","mdr-user");
 
             //Assert            
             Assert.NotNull(data);
@@ -219,7 +219,7 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
             sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
-            var data = await registrationRepository.GetRegistration("bad06794-39e2-400c-9e1b-f15a0bb67f46");
+            var data = await registrationRepository.GetRegistration("bad06794-39e2-400c-9e1b-f15a0bb67f46", "804fc2fb-18a7-4235-9a49-2af393d18bc7");
 
             //Assert            
             Assert.NotNull(data);            
@@ -256,10 +256,11 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
 
             //Act                        
             var ClientId = "bad06794-39e2-400c-9e1b-f15a0bb67f46";
-            await registrationRepository.DeleteRegistration(ClientId);
+            var DataHolderBrandId = "804fc2fb-18a7-4235-9a49-2af393d18bc7";
+            await registrationRepository.DeleteRegistration(ClientId, DataHolderBrandId);
             
             //No data should be returned
-            var afterDeletion = await registrationRepository.GetRegistration("bad06794-39e2-400c-9e1b-f15a0bb67f46");
+            var afterDeletion = await registrationRepository.GetRegistration("bad06794-39e2-400c-9e1b-f15a0bb67f46", "804fc2fb-18a7-4235-9a49-2af393d18bc7");
 
             //Assert            
             Assert.Null(afterDeletion);
@@ -281,7 +282,7 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
             await registrationRepository.PersistRegistration(registration);
 
             //data should be returned
-            var afterInsert = await registrationRepository.GetRegistration(registration.ClientId);
+            var afterInsert = await registrationRepository.GetRegistration(registration.ClientId, registration.DataHolderBrandId);
 
             //Assert            
             Assert.NotNull(afterInsert);
@@ -302,17 +303,18 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
 
             //Act             
             var ClientId = "bad06794-39e2-400c-9e1b-f15a0bb67f46";
-            var data = await registrationRepository.GetRegistration(ClientId);
-            data.DataHolderBrandId = "804fc2fb-18a7-4235-9a49-2af393d18bD8";
+            var DataHolderBrandId = "804fc2fb-18a7-4235-9a49-2af393d18bc7";
+            var data = await registrationRepository.GetRegistration(ClientId, DataHolderBrandId);
+            data.ClientUri = "https://mocksoftware/mybudgetapp2";
             await registrationRepository.UpdateRegistration(data);
-            var afterUpdate = await registrationRepository.GetRegistration(ClientId);
+            var afterUpdate = await registrationRepository.GetRegistration(ClientId, DataHolderBrandId);
 
             //Assert            
             Assert.NotNull(afterUpdate);
             Assert.Equal("bad06794-39e2-400c-9e1b-f15a0bb67f46", afterUpdate.ClientId);
             Assert.Equal("A product to help you manage your budget", afterUpdate.ClientDescription);
-            Assert.Equal("https://mocksoftware/mybudgetapp", afterUpdate.ClientUri);
-            Assert.Equal("804fc2fb-18a7-4235-9a49-2af393d18bD8", afterUpdate.DataHolderBrandId);
+            Assert.Equal("https://mocksoftware/mybudgetapp2", afterUpdate.ClientUri);
+            Assert.Equal("804fc2fb-18a7-4235-9a49-2af393d18bc7", afterUpdate.DataHolderBrandId);
             Assert.Equal(1631835434, afterUpdate.ClientIdIssuedAt);
         }
 

@@ -28,7 +28,8 @@ namespace CDR.DataRecipient.Infrastructure
             modelBuilder.Entity<CdrArrangement>().ToTable("CdrArrangement");
             modelBuilder.Entity<DataHolderBrand>().ToTable("DataHolderBrand");
             modelBuilder.Entity<SoftwareProduct>().ToTable("SoftwareProduct");
-            modelBuilder.Entity<Registration>().ToTable("Registration");
+            modelBuilder.Entity<Registration>().ToTable("Registration")
+                .HasKey(nameof(Registration.ClientId), nameof(Registration.DataHolderBrandId));
         }
     }
 }

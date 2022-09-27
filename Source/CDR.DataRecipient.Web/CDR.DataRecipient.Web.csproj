@@ -5,9 +5,9 @@
 		<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
 		<UserSecretsId>e18cd40c-c7d1-4df4-8448-82de536a628c</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-		<AssemblyVersion>1.0.1</AssemblyVersion>
-		<FileVersion>1.0.1</FileVersion>
-		<Version>1.0.1</Version>
+		<AssemblyVersion>1.1.0</AssemblyVersion>
+		<FileVersion>1.1.0</FileVersion>
+		<Version>1.1.0</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -40,13 +40,14 @@
 		<PackageReference Include="Serilog.Settings.Configuration" Version="3.3.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="4.0.1" />
 		<PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
-		<PackageReference Include="Serilog.Sinks.MSSqlServer" Version="5.6.1" />
+		<PackageReference Include="Serilog.Sinks.MSSqlServer" Version="5.7.1" />
 		<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.2.3" />
 		<PackageReference Include="IdentityModel.OidcClient" Version="5.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="6.0.7" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\CDR.DataRecipient.API.Logger\CDR.DataRecipient.API.Logger.csproj" />
 	  <ProjectReference Include="..\CDR.DataRecipient.Repository.SQL\CDR.DataRecipient.Repository.SQL.csproj" />
 	  <ProjectReference Include="..\CDR.DataRecipient.SDK\CDR.DataRecipient.SDK.csproj" />
 	  <ProjectReference Include="..\CDR.DataRecipient\CDR.DataRecipient.csproj" />

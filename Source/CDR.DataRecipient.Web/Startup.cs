@@ -1,3 +1,4 @@
+using CDR.DataRecipient.API.Logger;
 using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.Repository.SQL;
@@ -217,6 +218,12 @@ namespace CDR.DataRecipient.Web
             });
 
             services.AddFeatureManagement();
+
+            if (_configuration.GetSection("SerilogRequestResponseLogger") != null)
+            {
+                Log.Logger.Information("Adding request response logging middleware");
+                services.AddRequestResponseLogging();
+            }
         }
 
         private bool UseDistributedCache()
@@ -273,6 +280,7 @@ namespace CDR.DataRecipient.Web
             }
 
             app.UseSerilogRequestLogging();
+            app.UseMiddleware<RequestResponseLoggingMiddleware>();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
@@ -347,6 +355,8 @@ namespace CDR.DataRecipient.Web
 
                 File.WriteAllText(HEALTHCHECK_READY_FILENAME, "");  // Create file to indicate MDR is ready, this can be used by Docker/Dockercompose health checks // MJS - Should be using ASPNet health check, not a file
             }
+            
+
         }
 
         /// <summary>
