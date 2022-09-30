@@ -249,14 +249,14 @@ steps:
   condition: always()
   inputs:
     command: login
-    containerRegistry: acrcdrsandboxdev
+    containerRegistry: <<yourContainerRegistryName>>
 
 # Run trx formatter to output .MD and .CSV
 - script: |
     docker run \
       -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults/results.trx:/app/results.trx:ro \
       -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults/formatted/:/app/out/:rw \
-      acrcdrsandboxdev.azurecr.io/trx-formatter -i results.trx -t "MDR" --outputprefix "MDR" -o out/
+      <<yourContainerRegistryName>>.azurecr.io/trx-formatter -i results.trx -t "MDR" --outputprefix "MDR" -o out/
   displayName: 'Run trx-formatter'  
   condition: always()   
 
@@ -271,7 +271,7 @@ steps:
     docker run \
       -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults/results.trx:/app/results.trx:ro \
       -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults/formatted/:/app/out/:rw \
-      acrcdrsandboxdev.azurecr.io/trx-formatter -i results.trx -t "MDR-E2E" --outputprefix "MDR-E2E" -o out/
+      <<yourContainerRegistryName>>.azurecr.io/trx-formatter -i results.trx -t "MDR-E2E" --outputprefix "MDR-E2E" -o out/
   displayName: 'Run trx-formatter'  
   condition: always()   
 
