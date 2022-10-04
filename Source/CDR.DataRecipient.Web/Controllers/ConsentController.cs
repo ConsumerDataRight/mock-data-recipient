@@ -136,14 +136,15 @@ namespace CDR.DataRecipient.Web.Controllers
         [HttpPost]
         [Route("registration/detail")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> RegistrationDetail(string clientId)
+        public async Task<IActionResult> RegistrationDetail(string registrationId)
         {
             // Return the software product detail.
             string message = "";
             string redirectUris = "";
             string scope = "";
 
-            Registration myResponse = await _registrationsRepository.GetRegistration(clientId);
+            var registrationInfo = Registration.SplitRegistrationId(registrationId);
+            Registration myResponse = await _registrationsRepository.GetRegistration(registrationInfo.ClientId, registrationInfo.DataHolderBrandId);
             if (myResponse == null)
             {
                 message = "Registration not found";
@@ -232,7 +233,7 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Consents()
         {
             var model = new ConsentsModel();
-            model.ConsentArrangements = await _consentsRepository.GetConsents("", "", HttpContext.User.GetUserId());
+            model.ConsentArrangements = await _consentsRepository.GetConsents("", "", HttpContext.User.GetUserId(), "");
             return View(model);
         }
 
@@ -511,7 +512,7 @@ namespace CDR.DataRecipient.Web.Controllers
             model.Registrations = await _registrationsRepository.GetRegistrations();
 
             if (model.Registrations != null && model.Registrations.Any())
-                model.RegistrationListItems = model.Registrations.Select(r => new SelectListItem($"DH Brand: {r.BrandName} ({r.DataHolderBrandId}) - ({r.ClientId})", r.ClientId)).ToList();
+                model.RegistrationListItems = model.Registrations.Select(r => new SelectListItem($"DH Brand: {r.BrandName} ({r.DataHolderBrandId}) - ({r.ClientId})", r.GetRegistrationId())).ToList();
             else
                 model.RegistrationListItems = new List<SelectListItem>();
         }

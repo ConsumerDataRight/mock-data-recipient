@@ -105,7 +105,12 @@ namespace CDR.DataRecipient.E2ETests
             };
         }
 
-        static async Task<ConsentAndAuthorisationResponse> NewConsentAndAuthorisationWithPAR(IPage page, string dhClientId, string customerId = CUSTOMERID_BANKING, string customerAccounts = CUSTOMERACCOUNTS_BANKING)
+        static async Task<ConsentAndAuthorisationResponse> NewConsentAndAuthorisationWithPAR(
+            IPage page, 
+            string dhClientId, 
+            string customerId = CUSTOMERID_BANKING, 
+            string customerAccounts = CUSTOMERACCOUNTS_BANKING,
+            string dhBrandId = DH_BRANDID)
         {
             // Arrange - Goto home page, click menu button, check page loaded
             await page.GotoAsync(WEB_URL);
@@ -113,8 +118,8 @@ namespace CDR.DataRecipient.E2ETests
             await page.Locator("h2 >> text=Pushed Authorisation Request (PAR)").TextContentAsync();
 
             // Arrange - Set Client ID
-            await page.Locator("select[name=\"ClientId\"]").SelectOptionAsync(new[] { dhClientId! });
-            await page.Locator("select[name=\"ClientId\"]").ClickAsync();  // there is JS that runs on the click event, so simulate click here
+            await page.Locator("select[name=\"RegistrationId\"]").SelectOptionAsync(new[] { $"{dhClientId!}|||{dhBrandId}"  });
+            await page.Locator("select[name=\"RegistrationId\"]").ClickAsync();  // there is JS that runs on the click event, so simulate click here
             await Task.Delay(2000);
             // Arrange - Set CdrArrangementId
             //await page.Locator("select[name=\"CdrArrangementId\"]").SelectOptionAsync(new[] { cdrArrangement!.CDRArrangementID ?? throw new NullReferenceException(nameof(cdrArrangement.CDRArrangementID)) });
@@ -456,8 +461,8 @@ namespace CDR.DataRecipient.E2ETests
             await page.Locator("h2 >> text=Consent and Authorisation").TextContentAsync();
 
             // Arrange - Set Client ID
-            await page.Locator("select[name=\"ClientId\"]").SelectOptionAsync(dhClientId);
-            await page.Locator("select[name=\"ClientId\"]").ClickAsync();  // there is JS that runs on the click event, so simulate click here
+            await page.Locator("select[name=\"RegistrationId\"]").SelectOptionAsync($"{dhClientId}|||{dhBrandId}");
+            await page.Locator("select[name=\"RegistrationId\"]").ClickAsync();  // there is JS that runs on the click event, so simulate click here
             await Task.Delay(2000);
 
             // Arrange - Set Sharing Duration
@@ -721,8 +726,8 @@ namespace CDR.DataRecipient.E2ETests
                     await page.Locator("h2 >> text=Pushed Authorisation Request (PAR)").TextContentAsync();
 
                     // Arrange - Set Client ID
-                    await page.Locator("select[name=\"ClientId\"]").SelectOptionAsync(new[] { dhClientId! });
-                    await page.Locator("select[name=\"ClientId\"]").ClickAsync();  // there is JS that runs on the click event, so simulate click here
+                    await page.Locator("select[name=\"RegistrationId\"]").SelectOptionAsync(new[] { $"{dhClientId}|||{dhBrandId}" });
+                    await page.Locator("select[name=\"RegistrationId\"]").ClickAsync();  // there is JS that runs on the click event, so simulate click here
                     await Task.Delay(2000);
                     // Arrange - Set CdrArrangementId
                     await page.Locator("select[name=\"CdrArrangementId\"]").SelectOptionAsync(new[] { cdrArrangement!.CDRArrangementID ?? throw new NullReferenceException(nameof(cdrArrangement.CDRArrangementID)) });
@@ -866,7 +871,7 @@ namespace CDR.DataRecipient.E2ETests
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
                     dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
-                    cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts)
+                    cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                         ?? throw new NullReferenceException(nameof(cdrArrangement));
                 });
 
@@ -903,7 +908,7 @@ namespace CDR.DataRecipient.E2ETests
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
                     dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
-                    cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts)
+                    cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                         ?? throw new NullReferenceException(nameof(cdrArrangement));
                 });
 
