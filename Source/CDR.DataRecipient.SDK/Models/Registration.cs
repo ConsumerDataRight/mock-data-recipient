@@ -98,7 +98,12 @@ namespace CDR.DataRecipient.SDK.Models
 		public static (string ClientId, string DataHolderBrandId) SplitRegistrationId(string id)
 		{
 			var idParts = id.Split(IdDelimeter);
-			if (idParts != null && idParts.Length != 2)
+            if (idParts == null)
+            {
+                return (null, null);
+            }
+
+            if (idParts != null && idParts.Length != 2)
 			{
 				return (null, null);
 			}
