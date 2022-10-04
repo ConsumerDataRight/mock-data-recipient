@@ -235,11 +235,6 @@ namespace CDR.DiscoverDataHolders
             var sql = new SqlDataAccess(dbConnString);
             var existingBrands = await sql.GetDataHolderBrands();
 
-            if (existingBrands == null)
-            {
-                log.LogInformation("No existing data holder brands are found");
-            }
-
             foreach (var latestBrand in data)
             {
                 var exists = existingBrands.Any(x => x.DataHolderBrandId.Equals(latestBrand.DataHolderBrandId, StringComparison.OrdinalIgnoreCase));
@@ -256,6 +251,11 @@ namespace CDR.DiscoverDataHolders
                     log.LogInformation("Updating existing data holder brand: {brandId}", latestBrand.DataHolderBrandId);
                     await sql.UpdateDataHolder(latestBrand);
                 }
+            }
+
+            if (existingBrands == null)
+            {
+                log.LogInformation("No existing data holder brands are found");
             }
 
             log.LogInformation("Synchronising existing {count} data holder brands", existingBrands?.Count());
