@@ -6,7 +6,7 @@ namespace CDR.DataRecipient.Repository
 {
 	public interface IConsentsRepository
     {
-        Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string industry = null, string userId = null);
+        Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string dataHolderBrandId, string userId, string industry = null);
         Task<ConsentArrangement> GetConsentByArrangement(string cdrArrangementId);
         Task PersistConsent(ConsentArrangement consentArrangement);
         Task DeleteConsent(string cdrArrangementId);

@@ -64,7 +64,7 @@ namespace CDR.DataRecipient.Web.Controllers
             if (!string.IsNullOrEmpty(model.ClientId))
             {
                 try {
-                    var reg = await _registrationsRepository.GetRegistration(model.ClientId);
+                    var reg = await _registrationsRepository.GetRegistration(model.ClientId, model.DataHolderBrandId);
                     var dhConfig = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(reg.DataHolderBrandId);
                     var sp = _config.GetSoftwareProductConfig();
 
@@ -153,7 +153,7 @@ namespace CDR.DataRecipient.Web.Controllers
         [HttpPost]
         [Route("registration/detail")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> RegistrationDetail(string clientId)
+        public async Task<IActionResult> RegistrationDetail(string registrationId)
         {
             // Return the software product detail.
             string message = "";
@@ -162,7 +162,8 @@ namespace CDR.DataRecipient.Web.Controllers
             List<SelectListItem> arrangements = new();
 
             // Return the RedirectUris for the picked item
-            Registration registration = await _registrationsRepository.GetRegistration(clientId);
+            var registrationInfo = Registration.SplitRegistrationId(registrationId);
+            Registration registration = await _registrationsRepository.GetRegistration(registrationInfo.ClientId, registrationInfo.DataHolderBrandId);
             if (registration == null)
             {
                 message = "Registration not found";
@@ -170,7 +171,7 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Return the Consents(CdrArrangements) for the picked item
-            IEnumerable<ConsentArrangement> cdrArrangements = await _consentsRepository.GetConsents(clientId, "", HttpContext.User.GetUserId());
+            IEnumerable<ConsentArrangement> cdrArrangements = await _consentsRepository.GetConsents(registrationInfo.ClientId, registrationInfo.DataHolderBrandId, HttpContext.User.GetUserId());
             if (cdrArrangements != null && cdrArrangements.Any())
             {
                 arrangements = cdrArrangements.Select(c => new SelectListItem(c.CdrArrangementId, c.CdrArrangementId)).ToList();
@@ -194,7 +195,7 @@ namespace CDR.DataRecipient.Web.Controllers
             if (model.Registrations != null && model.Registrations.Any())
             {
                 model.RegistrationListItems = model.Registrations
-                    .Select(r => new SelectListItem($"DH Brand: {r.BrandName} ({r.DataHolderBrandId}) - ({r.ClientId})", r.ClientId))
+                    .Select(r => new SelectListItem($"DH Brand: {r.BrandName} ({r.DataHolderBrandId}) - ({r.ClientId})", r.GetRegistrationId()))
                     .ToList();
             }
 

@@ -8,9 +8,9 @@ namespace CDR.DataRecipient.Repository
     {
         Task<IEnumerable<Registration>> GetRegistrations();
         Task<IEnumerable<Registration>> GetDcrMessageRegistrations();
-        Task<Registration> GetRegistration(string clientId);
+        Task<Registration> GetRegistration(string clientId, string dataHolderBrandId);
         Task PersistRegistration(Registration registration);
-        Task DeleteRegistration(string clientId);
+        Task DeleteRegistration(string clientId, string dataHolderBrandId);
         Task UpdateRegistration(Registration registration);
     }
 }

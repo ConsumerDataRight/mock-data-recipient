@@ -189,15 +189,15 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IList<KeyValuePair<string, string>>> GetCdrArrangements()
         {
-            var consents = await GetConsents(industry: this.IndustryName, userId: HttpContext.User.GetUserId());
+            var consents = await GetConsents(HttpContext.User.GetUserId(), industry: this.IndustryName);
             return consents
                 .Select(c => new KeyValuePair<string, string>(c.CdrArrangementId, $"{c.CdrArrangementId} (DH Brand: {c.BrandName} {c.DataHolderBrandId})"))
                 .ToList();
         }
 
-        protected virtual async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId = "", string industry = null, string userId = null)
+        protected virtual async Task<IEnumerable<ConsentArrangement>> GetConsents(string userId, string industry = null)
         {
-            return await _consentsRepository.GetConsents("", industry, userId);
+            return await _consentsRepository.GetConsents("", "", userId, industry);
         }
 
         protected virtual void PopulateModel(DataSharingModel model)

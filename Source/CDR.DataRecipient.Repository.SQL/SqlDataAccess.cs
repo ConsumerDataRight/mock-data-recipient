@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Repository.SQL
@@ -62,31 +63,29 @@ namespace CDR.DataRecipient.Repository.SQL
             return null;
         }
 
-        public async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string userId)
+        public async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string dataHolderBrandId, string userId)
         {
             List<ConsentArrangement> cdrArrangements = new();
             using (SqlConnection db = new(_dbConn))
             {
                 db.Open();
 
-                string sqlQuery = "SELECT [CdrArrangementId], [ClientId], [JsonDocument], UserId FROM [CdrArrangement]";
-
-                if (!string.IsNullOrEmpty(clientId) && string.IsNullOrEmpty(userId))
-                    sqlQuery += " WHERE ClientId = @clientId";
-
-                else if (string.IsNullOrEmpty(clientId) && !string.IsNullOrEmpty(userId))
-                    sqlQuery += " WHERE UserId = @userId";
-
-                else if (!string.IsNullOrEmpty(clientId) && !string.IsNullOrEmpty(userId))
-                    sqlQuery += " WHERE ClientId = @clientId AND UserId = @userId";
-
-                using var sqlCommand = new SqlCommand(sqlQuery, db);
+                var sqlQuery = new StringBuilder();
+                sqlQuery.Append("SELECT [CdrArrangementId], [ClientId], [JsonDocument], UserId FROM [CdrArrangement]");
+                sqlQuery.Append(" WHERE UserId = @userId");
 
                 if (!string.IsNullOrEmpty(clientId))
-                    sqlCommand.Parameters.AddWithValue("@clientId", clientId);
+                {
+                    sqlQuery.Append(" AND ClientId = @clientId");
+                }
 
-                if (!string.IsNullOrEmpty(userId))
-                    sqlCommand.Parameters.AddWithValue("@userId", userId);
+                using var sqlCommand = new SqlCommand(sqlQuery.ToString(), db);
+                sqlCommand.Parameters.AddWithValue("@userId", userId);
+
+                if (!string.IsNullOrEmpty(clientId))
+                {
+                    sqlCommand.Parameters.AddWithValue("@clientId", clientId);
+                }
 
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 while (reader.Read())
@@ -94,7 +93,12 @@ namespace CDR.DataRecipient.Repository.SQL
                     var cdrArrangement = new ConsentArrangement();
                     var jsonDocument = Convert.ToString(reader.GetString(2));
                     cdrArrangement = JsonConvert.DeserializeObject<ConsentArrangement>(jsonDocument, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-                    cdrArrangements.Add(cdrArrangement);
+
+                    // Check if the arrangement belongs to the same data holder.
+                    if (string.IsNullOrEmpty(dataHolderBrandId) || cdrArrangement.DataHolderBrandId.Equals(dataHolderBrandId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        cdrArrangements.Add(cdrArrangement);
+                    }
                 }
                 db.Close();
 
@@ -313,14 +317,15 @@ namespace CDR.DataRecipient.Repository.SQL
             return (dhBrandsIns, dhBrandsUpd);
         }
 
-        public async Task<Registration> GetRegistration(string clientId)
+        public async Task<Registration> GetRegistration(string clientId, string dataHolderBrandId)
         {
             using (SqlConnection db = new(_dbConn))
             {
                 db.Open();
 
-                using var sqlCommand = new SqlCommand("SELECT [JsonDocument] FROM [Registration] WHERE [ClientId] = @id", db);
-                sqlCommand.Parameters.AddWithValue("@id", clientId);
+                using var sqlCommand = new SqlCommand("SELECT [JsonDocument] FROM [Registration] WHERE [ClientId] = @clientId AND [DataHolderBrandId] = @dataHolderBrandId", db);
+                sqlCommand.Parameters.AddWithValue("@clientId", clientId);
+                sqlCommand.Parameters.AddWithValue("@dataHolderBrandId", dataHolderBrandId);
 
                 var res = await sqlCommand.ExecuteScalarAsync();
 
@@ -344,6 +349,7 @@ namespace CDR.DataRecipient.Repository.SQL
         /// This is called from Azure DCR Function.
         /// </remarks>
         /// <returns>[true|false]</returns>
+        /// This needs to be string?
         public async Task<Guid> GetRegByDHBrandId(string dhBrandId)
         {
             Guid clientId = Guid.Empty;
@@ -394,15 +400,16 @@ namespace CDR.DataRecipient.Repository.SQL
             }
         }
 
-        public async Task DeleteRegistration(string clientId)
+        public async Task DeleteRegistration(string clientId, string dataHolderBrandId)
         {
             using (SqlConnection db = new(_dbConn))
             {
                 db.Open();
-                var sqlCommand = "DELETE FROM dbo.Registration WHERE ClientId=@id";
+                var sqlCommand = "DELETE FROM dbo.Registration WHERE [ClientId] = @clientId AND [DataHolderBrandId] = @dataHolderBrandId";
 
                 using var command = new SqlCommand(sqlCommand, db);
-                command.Parameters.AddWithValue("@id", clientId);
+                command.Parameters.AddWithValue("@clientId", clientId);
+                command.Parameters.AddWithValue("@dataHolderBrandId", dataHolderBrandId);
                 await command.ExecuteNonQueryAsync();
 
                 db.Close();
@@ -512,10 +519,11 @@ namespace CDR.DataRecipient.Repository.SQL
                 db.Open();
 
                 var jsonDocument = System.Text.Json.JsonSerializer.Serialize(registration);                
-                var sqlQuery = "UPDATE dbo.Registration SET JsonDocument=@jsonDocument WHERE ClientId=@id";
+                var sqlQuery = "UPDATE dbo.Registration SET JsonDocument=@jsonDocument WHERE [ClientId] = @clientId AND [DataHolderBrandId] = @dataHolderBrandId";
 
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
-                sqlCommand.Parameters.AddWithValue("@id", registration.ClientId);
+                sqlCommand.Parameters.AddWithValue("@clientId", registration.ClientId);
+                sqlCommand.Parameters.AddWithValue("@dataHolderBrandId", registration.DataHolderBrandId);
                 sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);                
                 await sqlCommand.ExecuteNonQueryAsync();
 
@@ -737,6 +745,67 @@ namespace CDR.DataRecipient.Repository.SQL
 
                     db.Close();
                 }
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Delete the Data Holder into the repo
+        /// </summary>
+        /// <param name="dataholder">The Data Holder to be deleted</param>
+        /// <remarks>
+        /// This is called from above to delete the Data Holder into the repo.
+        /// This is also called from Azure DiscoverDataHolders Function, it is used to delete the data holder after performing the DCR.
+        /// </remarks>
+        /// <returns>Boolean status only consumed in the Azure Functions DiscoverDataHolders</returns>
+        public async Task<bool> DeleteDataHolder(string dataholderBrndId)
+        {
+            try
+            {
+                using (SqlConnection db = new(_dbConn))
+                {
+                    db.Open();
+                    
+                    var sqlQuery = "SELECT [ClientId] FROM [dbo].[DcrMessage] WHERE [DataHolderBrandId] = @dcrBrandId";                    
+                    using var sqlCommand = new SqlCommand(sqlQuery, db);
+                    sqlCommand.Parameters.AddWithValue("@dcrBrandId", dataholderBrndId);
+                    
+                    var dcrClientId = await sqlCommand.ExecuteScalarAsync();
+
+                    if (!String.IsNullOrEmpty(dcrClientId.ToString()))
+                    {
+                        //Remove cdrArrangements
+                        sqlQuery = "DELETE FROM [CdrArrangement] WHERE [ClientId] = @cdrClientId";
+                        using var sqlCdrCommand = new SqlCommand(sqlQuery, db);
+                        sqlCdrCommand.Parameters.AddWithValue("@cdrClientId", dcrClientId.ToString());
+                        await sqlCdrCommand.ExecuteNonQueryAsync();
+
+                        //Remove Registrations
+                        sqlQuery = "DELETE FROM [Registration] WHERE [ClientId] = @regClientId";
+                        using var sqlRegCommand = new SqlCommand(sqlQuery, db);
+                        sqlRegCommand.Parameters.AddWithValue("@regClientId", dcrClientId.ToString());
+                        await sqlRegCommand.ExecuteNonQueryAsync();
+                    }
+
+                    //Remove DcrMessage 
+                    sqlQuery = "DELETE FROM [dbo].[DcrMessage] WHERE [DataHolderBrandId] = @dcrDataHolderBrandId";
+                    using var sqldcrDhBrandQuery = new SqlCommand(sqlQuery, db);
+                    sqldcrDhBrandQuery.Parameters.AddWithValue("@dcrDataHolderBrandId", dataholderBrndId);
+                    await sqldcrDhBrandQuery.ExecuteNonQueryAsync();
+
+                    //Remove DataHolder brands
+                    sqlQuery = "DELETE FROM [DataHolderBrand] WHERE [DataHolderBrandId] = @dhBrandId";
+                    using var sqldhBrandQuery = new SqlCommand(sqlQuery, db);
+                    sqldhBrandQuery.Parameters.AddWithValue("@dhBrandId", dataholderBrndId);
+                    await sqldhBrandQuery.ExecuteNonQueryAsync();
+
+                    db.Close();
+                }
+
                 return true;
             }
             catch (Exception)
@@ -1087,91 +1156,5 @@ namespace CDR.DataRecipient.Repository.SQL
 
         #endregion
 
-        #region UnitTestSetup
-
-        //For Unit Testing only
-        public bool RecreateDatabaseWithForTests()
-        {
-            using (SqlConnection db = new(_dbConn))
-            {
-                db.Open();
-
-                //Purging all exsiting data
-                string sqlQuery = @"IF EXISTS (SELECT * FROM sysobjects WHERE name='CdrArrangement' AND xtype='U') DROP TABLE IF EXISTS CdrArrangement; 
-                                             IF EXISTS (SELECT * FROM sysobjects WHERE name='DataHolderBrand' AND xtype='U') DROP TABLE IF EXISTS DataHolderBrand; 
-                                             IF EXISTS (SELECT * FROM sysobjects WHERE name='Registration' AND xtype='U') DROP TABLE IF EXISTS Registration;";
-
-                SqlCommand sqlCommand = new(sqlQuery, db);
-                sqlCommand.ExecuteNonQuery();
-
-                //Create fresh db. 
-                sqlCommand.CommandText = @"IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='CdrArrangement' AND xtype='U') CREATE TABLE CdrArrangement ([CdrArrangementId] [uniqueidentifier] NOT NULL, [ClientId] [uniqueidentifier] NOT NULL, JsonDocument VARCHAR(MAX), [UserId] nvarchar(100) NULL);
-                                           IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='DataHolderBrand' AND xtype='U') CREATE TABLE DataHolderBrand ([DataHolderBrandId] [uniqueidentifier] NOT NULL, JsonDocument VARCHAR(MAX));
-                                           IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='Registration' AND xtype='U') CREATE TABLE Registration ([ClientId] [uniqueidentifier] NOT NULL, JsonDocument VARCHAR(MAX), [DataHolderBrandId] [uniqueidentifier] NULL);";
-                sqlCommand.ExecuteNonQuery();
-                db.Close();
-
-                //Insert test data
-                InsertTestData();
-
-                return true;
-            }
-        }
-
-        public bool InsertTestData()
-        {
-            using (SqlConnection db = new(_dbConn))
-            {
-                db.Open();
-
-                //Insert data holders data for testing
-                var brandId = "cf217aba-e00d-48d5-9c3d-03af0b91cb80";
-                var jsonDocument = @"{""_id"":{""$oid"":""613ef59c1a0ee5d9fd426a80""},""DataHolderBrandId"":""cf217aba-e00d-48d5-9c3d-03af0b91cb80"",""BrandName"":""Hall Bank"",""LegalEntity"":{""LegalEntityId"":""924ca498-0f19-402d-ae07-2cb61088f8aa"",""LegalEntityName"":""Hall Bank""},""Status"":""ACTIVE"",""EndpointDetail"":{""Version"":""1"",""PublicBaseUri"":""https://publicapi.hallbank"",""ResourceBaseUri"":""https://api.hallbank"",""InfoSecBaseUri"":""https://idp.hallbank"",""ExtensionBaseUri"":"""",""WebsiteUri"":""https://hallbank/""},""AuthDetails"":[{""RegisterUType"":""SIGNED-JWT"",""JwksEndpoint"":""https://hallbank/idp/jwks""}]}";
-
-                var sqlQuery = "INSERT INTO DataHolderBrand (DataHolderBrandId, JsonDocument) VALUES (@brandId, @jsonDocument)";
-                SqlCommand sqlCommand = new(sqlQuery, db);
-                sqlCommand.Parameters.AddWithValue("@brandId", brandId);
-                sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);
-                sqlCommand.ExecuteNonQuery();
-
-
-                brandId = "cf217aba-e00d-48d5-9c3d-03af0b91cb81";
-                jsonDocument = @"{""_id"":{""$oid"":""613ef59c1a0ee5d9fd426a81""},""DataHolderBrandId"":""cf217aba-e00d-48d5-9c3d-03af0b91cb81"",""BrandName"":""Hall Bank"",""LegalEntity"":{""LegalEntityId"":""924ca498-0f19-402d-ae07-2cb61088f8aa"",""LegalEntityName"":""Hall Bank""},""Status"":""ACTIVE"",""EndpointDetail"":{""Version"":""1"",""PublicBaseUri"":""https://publicapi.hallbank"",""ResourceBaseUri"":""https://api.hallbank"",""InfoSecBaseUri"":""https://idp.hallbank"",""ExtensionBaseUri"":"""",""WebsiteUri"":""https://hallbank/""},""AuthDetails"":[{""RegisterUType"":""SIGNED-JWT"",""JwksEndpoint"":""https://hallbank/idp/jwks""}]}";
-                sqlCommand.CommandText = "INSERT INTO DataHolderBrand (DataHolderBrandId, JsonDocument) VALUES (@bId, @jsondoc)";
-                sqlCommand.Parameters.AddWithValue("@bId", brandId);
-                sqlCommand.Parameters.AddWithValue("@jsondoc", jsonDocument);
-                sqlCommand.ExecuteNonQuery();
-
-                //Insert cdr-arrangments data for testing
-                var clientId = "bad06794-39e2-400c-9e1b-f15a0bb67f46";
-                var cdrArrangementId = "92d260c1-a625-41e2-a777-c0af1912a74a";
-                jsonDocument = @"{""_id"":{""$oid"":""613ef5b11a0ee5d9fd426a99""},""DataHolderBrandId"":""804fc2fb-18a7-4235-9a49-2af393d18bc7"",""ClientId"":""bad06794-39e2-400c-9e1b-f15a0bb67f46"",""SharingDuration"":null,""CdrArrangementId"":""92d260c1-a625-41e2-a777-c0af1912a74a"",""IdToken"":null,""AccessToken"":null,""RefreshToken"":null,""ExpiresIn"":null,""Scope"":null,""TokenType"":null,""CreatedOn"":null}";
-                sqlCommand.CommandText = "INSERT INTO CdrArrangement (CdrArrangementId, ClientId, JsonDocument) VALUES (@aId, @cId, @jdoc)";
-                sqlCommand.Parameters.AddWithValue("@aId", cdrArrangementId);
-                sqlCommand.Parameters.AddWithValue("@cId", clientId);
-                sqlCommand.Parameters.AddWithValue("@jdoc", jsonDocument);
-                sqlCommand.ExecuteNonQuery();
-
-                cdrArrangementId = "92d260c1-a625-41e2-a777-c0af1912a74b";
-                jsonDocument = @"{""_id"":{""$oid"":""613ef5b11a0ee5d9fd426a99""},""DataHolderBrandId"":""804fc2fb-18a7-4235-9a49-2af393d18bc7"",""ClientId"":""bad06794-39e2-400c-9e1b-f15a0bb67f46"",""SharingDuration"":null,""CdrArrangementId"":""92d260c1-a625-41e2-a777-c0af1912a74b"",""IdToken"":null,""AccessToken"":null,""RefreshToken"":null,""ExpiresIn"":null,""Scope"":null,""TokenType"":null,""CreatedOn"":null}";
-                sqlCommand.CommandText = "INSERT INTO CdrArrangement (CdrArrangementId, ClientId, JsonDocument) VALUES (@arrangementId, @clientId, @jd)";
-                sqlCommand.Parameters.AddWithValue("@arrangementId", cdrArrangementId);
-                sqlCommand.Parameters.AddWithValue("@clientId", clientId);
-                sqlCommand.Parameters.AddWithValue("@jd", jsonDocument);
-                sqlCommand.ExecuteNonQuery();
-
-                //Insert cdr-registrations data for testing 
-                jsonDocument = @"{""_id"":{""$oid"":""6143d52c4433e41a861ea58d""},""DataHolderBrandId"":""804fc2fb-18a7-4235-9a49-2af393d18bc7"",""ClientId"":""bad06794-39e2-400c-9e1b-f15a0bb67f46"",""ClientIdIssuedAt"":1631835434,""ClientDescription"":""A product to help you manage your budget"",""ClientUri"":""https://mocksoftware/mybudgetapp"",""OrgId"":""ffb1c8ba-279e-44d8-96f0-1bc34a6b436f"",""OrgName"":""Mock Finance Tools"",""RedirectUris"":[""https://localhost:9001/consent/callback""],""LogoUri"":""https://mocksoftware/mybudgetapp/img/logo.png"",""TosUri"":""https://mocksoftware/mybudgetapp/terms"",""PolicyUri"":""https://mocksoftware/mybudgetapp/policy"",""JwksUri"":""https://localhost:9001/jwks"",""RevocationUri"":""https://localhost:9001/revocation"",""RecipientBaseUri"":""https://localhost:9001"",""TokenEndpointAuthSigningAlg"":""PS256"",""TokenEndpointAuthMethod"":""private_key_jwt"",""GrantTypes"":[""client_credentials"",""authorization_code"",""refresh_token""],""ResponseTypes"":[""code id_token""],""ApplicationType"":""web"",""IdTokenSignedResponseAlg"":""PS256"",""IdTokenEncryptedResponseAlg"":""RSA-OAEP"",""IdTokenEncryptedResponseEnc"":""A256GCM"",""RequestObjectSigningAlg"":""PS256"",""SoftwareStatement"":""eyJhbGciOiJQUzI1NiIsImtpZCI6IjU0MkE5QjkxNjAwNDg4MDg4Q0Q0RDgxNjkxNkE5RjQ0ODhERDI2NTEiLCJ0eXAiOiJKV1QifQ.ew0KICAicmVjaXBpZW50X2Jhc2VfdXJpIjogImh0dHBzOi8vbG9jYWxob3N0OjkwMDEiLA0KICAibGVnYWxfZW50aXR5X2lkIjogIjE4Yjc1YTc2LTU4MjEtNGM5ZS1iNDY1LTQ3MDkyOTFjZjBmNCIsDQogICJsZWdhbF9lbnRpdHlfbmFtZSI6ICJNb2NrIFNvZnR3YXJlIENvbXBhbnkiLA0KICAiaXNzIjogImNkci1yZWdpc3RlciIsDQogICJpYXQiOiAxNjMxODM1NDE3LA0KICAiZXhwIjogMTYzMTgzNjAxNywNCiAgImp0aSI6ICJjNzYzYjU4NzJkNGY0MzIwOWE3NmUzOTU3YTAzMDgwNCIsDQogICJvcmdfaWQiOiAiZmZiMWM4YmEtMjc5ZS00NGQ4LTk2ZjAtMWJjMzRhNmI0MzZmIiwNCiAgIm9yZ19uYW1lIjogIk1vY2sgRmluYW5jZSBUb29scyIsDQogICJjbGllbnRfbmFtZSI6ICJNeUJ1ZGdldEhlbHBlciIsDQogICJjbGllbnRfZGVzY3JpcHRpb24iOiAiQSBwcm9kdWN0IHRvIGhlbHAgeW91IG1hbmFnZSB5b3VyIGJ1ZGdldCIsDQogICJjbGllbnRfdXJpIjogImh0dHBzOi8vbW9ja3NvZnR3YXJlL215YnVkZ2V0YXBwIiwNCiAgInJlZGlyZWN0X3VyaXMiOiBbDQogICAgImh0dHBzOi8vbG9jYWxob3N0OjkwMDEvY29uc2VudC9jYWxsYmFjayINCiAgXSwNCiAgImxvZ29fdXJpIjogImh0dHBzOi8vbW9ja3NvZnR3YXJlL215YnVkZ2V0YXBwL2ltZy9sb2dvLnBuZyIsDQogICJ0b3NfdXJpIjogImh0dHBzOi8vbW9ja3NvZnR3YXJlL215YnVkZ2V0YXBwL3Rlcm1zIiwNCiAgInBvbGljeV91cmkiOiAiaHR0cHM6Ly9tb2Nrc29mdHdhcmUvbXlidWRnZXRhcHAvcG9saWN5IiwNCiAgImp3a3NfdXJpIjogImh0dHBzOi8vbG9jYWxob3N0OjkwMDEvandrcyIsDQogICJyZXZvY2F0aW9uX3VyaSI6ICJodHRwczovL2xvY2FsaG9zdDo5MDAxL3Jldm9jYXRpb24iLA0KICAic29mdHdhcmVfaWQiOiAiYzYzMjdmODctNjg3YS00MzY5LTk5YTQtZWFhY2QzYmI4MjEwIiwNCiAgInNvZnR3YXJlX3JvbGVzIjogImRhdGEtcmVjaXBpZW50LXNvZnR3YXJlLXByb2R1Y3QiLA0KICAic2NvcGUiOiAib3BlbmlkIHByb2ZpbGUgYmFuazphY2NvdW50cy5iYXNpYzpyZWFkIGJhbms6YWNjb3VudHMuZGV0YWlsOnJlYWQgYmFuazp0cmFuc2FjdGlvbnM6cmVhZCBiYW5rOnBheWVlczpyZWFkIGJhbms6cmVndWxhcl9wYXltZW50czpyZWFkIGNvbW1vbjpjdXN0b21lci5iYXNpYzpyZWFkIGNvbW1vbjpjdXN0b21lci5kZXRhaWw6cmVhZCBjZHI6cmVnaXN0cmF0aW9uIg0KfQ.j_UwVV2g28047YN12KdsGxE3pQwXVkF_ZSCwq7_HLdrlnQKZHsReQCprtxk-MV9vH0EGwpMw46WFQV5pTB-mxwZZfhkQx0-U30ufJfmPwvpxxAI90gFl3MFtQbwgC5a8IkkVfjSUoK1-m-pgG3X79rf0zUB9aRZoSigXgVemKfnQeiB-Gx_TI3zi0QkF1Uw052dAATQvUvaZ040oyqWuTFKETG7AzTV6M1ZcxVJYX5gGhemFIoWA0bVqrP3-dEMUOLFhhFwe3otMMB7iaBfOjBmQ9xtlnnmxFGIGvHErBiHouwfGzG0jCqI5dwtKkicjNKoa4uq-ul3EGup8FWY4Vw"",""SoftwareId"":""c6327f87-687a-4369-99a4-eaacd3bb8210"",""Scope"":""openid profile bank:accounts.basic:read bank:transactions:read common:customer.basic:read cdr:registration""}";
-                sqlCommand.CommandText = "INSERT INTO Registration (ClientId, JsonDocument) VALUES (@cltId, @jsDocument)";
-                sqlCommand.Parameters.AddWithValue("@cltId", clientId);
-                sqlCommand.Parameters.AddWithValue("@jsDocument", jsonDocument);
-                sqlCommand.ExecuteNonQuery();
-
-                db.Close();
-                return true;
-            }
-        }
-
-        #endregion
     }
 }

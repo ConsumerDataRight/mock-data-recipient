@@ -1,6 +1,7 @@
 ﻿using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.Extensions.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -17,9 +18,9 @@ namespace CDR.DataRecipient.Repository.SQL
             _sqlDataAccess = new SqlDataAccess(_config, recipientDatabaseContext);
         }
 
-        public async Task<Registration> GetRegistration(string clientId)
+        public async Task<Registration> GetRegistration(string clientId, string dataHolderBrandId)
         {                        
-            return await _sqlDataAccess.GetRegistration(clientId);
+            return await _sqlDataAccess.GetRegistration(clientId, dataHolderBrandId);
         }
 
         public async Task<IEnumerable<Registration>> GetRegistrations()
@@ -32,21 +33,22 @@ namespace CDR.DataRecipient.Repository.SQL
             return await _sqlDataAccess.GetDcrMessageRegistrations();
         }
 
-        public async Task DeleteRegistration(string clientId)
+        public async Task DeleteRegistration(string clientId, string dataHolderBrandId)
         {                        
-            var registration = await GetRegistration(clientId);
+            var registration = await GetRegistration(clientId, dataHolderBrandId);
 
             //Delete existing data. 
             if (!string.IsNullOrEmpty(registration?.ClientId))
             {
-                await _sqlDataAccess.DeleteRegistration(clientId);
+                await _sqlDataAccess.DeleteRegistration(clientId, dataHolderBrandId);
                 await _sqlDataAccess.DeleteCdrArrangementData(clientId);
             }
         }
 
+        //Check is DH id is present
         public async Task PersistRegistration(Registration registration)
         {            
-            var existingRegistration = await GetRegistration(registration.ClientId);
+            var existingRegistration = await GetRegistration(registration.ClientId, registration.DataHolderBrandId);
 
             if (string.IsNullOrEmpty(existingRegistration?.ClientId))
             {
@@ -56,7 +58,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task UpdateRegistration(Registration registration)
         {            
-            var _registration = await GetRegistration(registration.ClientId);
+            var _registration = await GetRegistration(registration.ClientId, registration.DataHolderBrandId);
 
             //Update existing data. 
             if (!string.IsNullOrEmpty(_registration?.ClientId))

@@ -231,7 +231,7 @@ else
                                     <td>
                                         @if (allowDynamicClientRegistration)
                                         {
-                                            <a href="~/dcr?clientId=@reg.ClientId">@reg.ClientId</a>
+                                            <a href="~/dcr?clientId=@reg.ClientId&dataHolderBrandId=@reg.DataHolderBrandId">@reg.ClientId</a>
                                         }
                                         else
                                         {
@@ -247,12 +247,12 @@ else
                                     <td>
                                         @if (allowDynamicClientRegistration)
                                         {
-                                            <a href="/dcr/registrations/@reg.ClientId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId">Delete</a>
-                                            <a href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId">View</a>
+                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId">Delete</a>
+                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId">View</a>
                                         }
                                         else if (!string.IsNullOrEmpty(@reg.ClientId))
                                         {
-                                            <a href="/dcr/registrations/@reg.ClientId" class="btn btn-primary btn-sm view" style="display:inline-block; height:30px;" data-id="@reg.ClientId">View</a>
+                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-primary btn-sm view" style="display:inline-block; height:30px;" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId">View</a>
                                         }
                                     </td>
                                 </tr>

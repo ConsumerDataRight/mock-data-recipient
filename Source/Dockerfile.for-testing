@@ -16,6 +16,7 @@ COPY ./CDR.DataRecipient.Web/. /app/CDR.DataRecipient.Web
 COPY ./CDR.DataRecipient.Repository.SQL/. /app/CDR.DataRecipient.Repository.SQL
 COPY ./CDR.DataRecipient/. /app/CDR.DataRecipient
 COPY ./CDR.DataRecipient.SDK/. /app/CDR.DataRecipient.SDK
+COPY ./CDR.DataRecipient.API.Logger/. /app/CDR.DataRecipient.API.Logger
 
 WORKDIR /app/CDR.DataRecipient.Web
 RUN dotnet publish -c Release -o /app/publish/web
