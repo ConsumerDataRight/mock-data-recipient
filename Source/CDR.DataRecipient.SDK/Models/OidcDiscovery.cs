@@ -77,5 +77,30 @@ namespace CDR.DataRecipient.SDK.Models
 
         [JsonProperty("claims_supported")]
         public string[] ClaimsSupported { get; set; }
+
+        [JsonProperty("mtls_endpoint_aliases")]
+        public MtlsAliases MtlsEndpointAliases { get; set; }
+
+        public class MtlsAliases {
+            [JsonProperty("token_endpoint")]
+            public string TokenEndpoint { get; set; }
+
+            [JsonProperty("revocation_endpoint")]
+            public string RevocationEndpoint { get; set; } 
+
+            [JsonProperty("introspection_endpoint")]
+            public string IntrospectionEndpoint { get; set; } 
+            
+            [JsonProperty("pushed_authorization_request_endpoint")]
+            public string PushedAuthorizationRequestEndpoint { get; set; } 
+        }
+
+        public string PreferentialTokenEndpoint => MtlsEndpointAliases?.TokenEndpoint ?? TokenEndpoint;
+
+        public string PreferentialRevocationEndpoint => MtlsEndpointAliases?.RevocationEndpoint ?? RevocationEndpoint;
+
+        public string PreferentialIntrospectionEndpoint => MtlsEndpointAliases?.IntrospectionEndpoint ?? IntrospectionEndpoint;
+
+        public string PreferentialPushedAuthorizationRequestEndpoint => MtlsEndpointAliases?.PushedAuthorizationRequestEndpoint ?? PushedAuthorizationRequestEndpoint;
     }
 }

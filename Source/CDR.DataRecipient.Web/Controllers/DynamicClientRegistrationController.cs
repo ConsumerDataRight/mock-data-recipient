@@ -228,7 +228,7 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             var tokenResponse = await _dhInfosecService.GetAccessToken(
-                dataHolderDiscovery.TokenEndpoint,
+                dataHolderDiscovery.PreferentialTokenEndpoint,
                 clientId,
                 sp.ClientCertificate.X509Certificate,
                 sp.SigningCertificate.X509Certificate,
@@ -264,7 +264,7 @@ namespace CDR.DataRecipient.Web.Controllers
             var dataHolderDiscovery = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(model.DataHolderBrandId);
 
             var tokenResponse = await _dhInfosecService.GetAccessToken(
-                dataHolderDiscovery.TokenEndpoint,
+                dataHolderDiscovery.PreferentialTokenEndpoint,
                 model.ClientId,
                 sp.ClientCertificate.X509Certificate,
                 sp.SigningCertificate.X509Certificate,
@@ -369,7 +369,7 @@ namespace CDR.DataRecipient.Web.Controllers
             var sp = _config.GetSoftwareProductConfig();
             var dataHolderDiscovery = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(client.DataHolderBrandId);
             var tokenResponse = await _dhInfosecService.GetAccessToken(
-                dataHolderDiscovery.TokenEndpoint,
+                dataHolderDiscovery.PreferentialTokenEndpoint,
                 clientId,
                 sp.ClientCertificate.X509Certificate,
                 sp.SigningCertificate.X509Certificate,
