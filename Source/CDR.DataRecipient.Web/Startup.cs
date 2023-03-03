@@ -39,8 +39,11 @@ namespace CDR.DataRecipient.Web
 {
     public class Startup
     {
+        private bool healthCheckMigration = false;
+        private string healthCheckMigrationMessage = null;
+
         private readonly IConfiguration _configuration;
-        private string AllowSpecificOrigins = "_allowSpecificOrigins";
+        private readonly string AllowSpecificOrigins = "_allowSpecificOrigins";
 
         public Startup(IConfiguration configuration)
         {
@@ -115,6 +118,7 @@ namespace CDR.DataRecipient.Web
 
             string connStr = _configuration.GetConnectionString(DbConstants.ConnectionStringNames.Logging);
             services.AddHealthChecks()
+                    .AddCheck("migration", () => healthCheckMigration ? HealthCheckResult.Healthy(healthCheckMigrationMessage) : HealthCheckResult.Unhealthy(healthCheckMigrationMessage))
                     .AddCheck("sql-connection", () =>
                     {
                         using (var db = new SqlConnection(connStr))
@@ -328,8 +332,7 @@ namespace CDR.DataRecipient.Web
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
-
-            var options = new HealthCheckOptions();
+            
             app.UseHealthChecks("/health", new HealthCheckOptions()
             {
                 ResponseWriter = CustomResponseWriter
@@ -338,11 +341,10 @@ namespace CDR.DataRecipient.Web
             // Migrate the database to the latest version during application startup.
             using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
             {
-                const string HEALTHCHECK_READY_FILENAME = "_healthcheck_ready"; // MJS - Should be using ASPNet health check, not a file
-                File.Delete(HEALTHCHECK_READY_FILENAME);
-
                 if (RunMigrations())
                 {
+                    healthCheckMigrationMessage = "Migration in progress";
+
                     var optionsBuilder = new DbContextOptionsBuilder<RecipientDatabaseContext>();
 
                     // Use DBO connection string since it has DBO rights needed to update db schema
@@ -351,12 +353,11 @@ namespace CDR.DataRecipient.Web
 
                     using var dbContext = new RecipientDatabaseContext(optionsBuilder.Options);
                     dbContext.Database.Migrate();
+
+                    healthCheckMigrationMessage = "Migration completed";
                 }
-
-                File.WriteAllText(HEALTHCHECK_READY_FILENAME, "");  // Create file to indicate MDR is ready, this can be used by Docker/Dockercompose health checks // MJS - Should be using ASPNet health check, not a file
-            }
-            
-
+                healthCheckMigration = true;                                    
+            }          
         }
 
         /// <summary>
@@ -368,7 +369,6 @@ namespace CDR.DataRecipient.Web
             var dbo = _configuration.GetConnectionString(DbConstants.ConnectionStringNames.Migrations);
             return !string.IsNullOrEmpty(dbo);
         }
-
 
         private static Task CustomResponseWriter(HttpContext context, HealthReport healthReport)
         {

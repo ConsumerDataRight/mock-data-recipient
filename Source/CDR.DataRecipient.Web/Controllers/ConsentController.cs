@@ -1,20 +1,30 @@
-﻿using CDR.DataRecipient.Models;
+﻿using Azure;
+using CDR.DataRecipient.Models;
 using CDR.DataRecipient.Repository;
+using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
+using CDR.DataRecipient.SDK.Models.AuthorisationRequest;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.Web.Common;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
 using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Linq;
+using System.Runtime.ConstrainedExecution;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
@@ -30,108 +40,29 @@ namespace CDR.DataRecipient.Web.Controllers
         private readonly IDistributedCache _cache;
         private readonly IInfosecService _dhInfosecService;
         private readonly IRegistrationsRepository _registrationsRepository;
-        private readonly IConsentsRepository _consentsRepository;
-        private readonly IDataHoldersRepository _dhRepository;
+        private readonly IConsentsRepository _consentsRepository;        
         private readonly IDataHolderDiscoveryCache _dataHolderDiscoveryCache;
+        protected readonly ILogger<ConsentController> _logger;        
 
         public ConsentController(
             IConfiguration config,
             IDistributedCache cache,
             IInfosecService dhInfosecService,
             IRegistrationsRepository registrationsRepository,
-            IConsentsRepository consentsRepository,
-            IDataHoldersRepository dhRepository,
-            IDataHolderDiscoveryCache dataHolderDiscoveryCache)
+            IConsentsRepository consentsRepository,            
+            IDataHolderDiscoveryCache dataHolderDiscoveryCache,
+            ILogger<ConsentController> logger)
         {
             _config = config;
             _cache = cache;
             _dhInfosecService = dhInfosecService;
             _registrationsRepository = registrationsRepository;
-            _consentsRepository = consentsRepository;
-            _dhRepository = dhRepository;
+            _consentsRepository = consentsRepository;            
             _dataHolderDiscoveryCache = dataHolderDiscoveryCache;
+            _logger = logger;            
         }
 
-        [HttpGet]
-        [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> Index()
-        {
-            var model = new ConsentModel() { UsePkce = true };
-            await PopulatePicker(model);
-            return View(model);
-        }
-
-        [HttpPost]
-        [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> Index(ConsentModel model)
-        {
-            try
-            {
-                await PopulatePicker(model);
-
-                if (!ModelState.IsValid)
-                {
-                    model.Messages = ModelState.GetErrorMessage();
-                    return View(model);
-                }
-
-                // Build the authorisation uri based on the selected client id.
-                if (!string.IsNullOrEmpty(model.ClientId))
-                {
-                    var sp = _config.GetSoftwareProductConfig();
-                    var client = model.Registrations.FirstOrDefault(c => c.ClientId == model.ClientId);
-
-                    var infosecBaseUri = await GetInfoSecBaseUri(client.DataHolderBrandId);
-                    if (string.IsNullOrEmpty(infosecBaseUri))
-                        throw new CustomException();
-
-                    var stateKey = Guid.NewGuid().ToString();
-                    var nonce = Guid.NewGuid().ToString();
-                    var redirectUri = model.RedirectUris;
-
-                    var authState = new AuthorisationState()
-                    {
-                        StateKey = stateKey,
-                        ClientId = model.ClientId,
-                        SharingDuration = model.SharingDuration,
-                        Scope = model.Scope,
-                        DataHolderBrandId = client.DataHolderBrandId,
-                        DataHolderInfosecBaseUri = infosecBaseUri,
-                        RedirectUri = redirectUri,
-                        UserId = this.HttpContext.User.GetUserId()
-                    };
-
-                    if (model.UsePkce)
-                    {
-                        authState.Pkce = _dhInfosecService.CreatePkceData();
-                    }
-
-                    await _cache.SetAsync(stateKey, authState, DateTimeOffset.Now.AddMinutes(60));
-
-                    model.AuthorisationUri = await _dhInfosecService.BuildAuthorisationRequestUri(
-                        infosecBaseUri,
-                        client.ClientId,
-                        redirectUri,
-                        model.Scope,
-                        stateKey,
-                        nonce,
-                        sp.SigningCertificate.X509Certificate,
-                        model.SharingDuration,
-                        authState.Pkce);
-                }
-            }
-            catch (CustomException)
-            {
-                var msg = $"The Data Holder details do not exist in the repository for ClientId: {model.ClientId}";
-                return View("Error", new ErrorViewModel { Message = msg });
-            }
-            catch (Exception ex)
-            {
-                var msg = $"Unable to create the Consent with ClientId: {model.ClientId} - {ex.Message}";
-                return View("Error", new ErrorViewModel { Message = msg });
-            }
-            return View(model);
-        }
+        
 
         [HttpPost]
         [Route("registration/detail")]
@@ -163,24 +94,26 @@ namespace CDR.DataRecipient.Web.Controllers
             return new JsonResult(new { message, redirectUris, scope }) { };
         }
 
-        [HttpGet]
+        [HttpGet]        
         [HttpPost]
-        [Route("callback")]
+        [Route("callback")]        
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         [AllowAnonymous]
         public async Task<IActionResult> Callback()
         {
             var model = new TokenModel();
-            var isSuccessful = this.Request.Method.Equals("post", StringComparison.OrdinalIgnoreCase) && this.Request.Form != null && this.Request.Form.ContainsKey("id_token");
+            var sp = _config.GetSoftwareProductConfig();
+            
+            (bool isvalid, string authCode, AuthorisationState authState, ErrorList errorList) = await ValidateCallback(this.Request);
 
-            if (isSuccessful)
+            if (errorList != null && errorList.Errors.Any())
             {
-                var sp = _config.GetSoftwareProductConfig();
-                var authCode = this.Request.Form["code"].ToString();
-                var state = this.Request.Form["state"].ToString();
-
-                var authState = await _cache.GetAsync<AuthorisationState>(state);
-
+                model.Messages = "An error has occurred.";
+                model.ErrorList.Errors.AddRange(errorList.Errors);
+            }
+            
+            if (isvalid)
+            {                                
                 // Request a token from the data holder.
                 var tokenEndpoint = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri)).TokenEndpoint;
                 model.TokenResponse = await _dhInfosecService.GetAccessToken(
@@ -203,10 +136,10 @@ namespace CDR.DataRecipient.Web.Controllers
                         DataHolderBrandId = authState.DataHolderBrandId,
                         ClientId = authState.ClientId,
                         SharingDuration = authState.SharingDuration,
-                        CdrArrangementId = model.TokenResponse.Data.CdrArrangementId,
+                        CdrArrangementId = model.TokenResponse.Data.CdrArrangementId ?? String.Empty,
                         IdToken = model.TokenResponse.Data.IdToken,
-                        AccessToken = model.TokenResponse.Data.AccessToken,
-                        RefreshToken = model.TokenResponse.Data.RefreshToken,
+                        AccessToken = model.TokenResponse.Data.AccessToken ?? String.Empty,
+                        RefreshToken = model.TokenResponse.Data.RefreshToken ?? String.Empty,
                         ExpiresIn = model.TokenResponse.Data.ExpiresIn,
                         Scope = model.TokenResponse.Data.Scope,
                         TokenType = model.TokenResponse.Data.TokenType,
@@ -221,10 +154,226 @@ namespace CDR.DataRecipient.Web.Controllers
                 // Error state.
                 var qs = HttpUtility.ParseQueryString(this.Request.QueryString.Value);
                 model.Messages = "An error has occurred.";
-                model.ErrorList.Errors.Add(new SDK.Models.Error(qs["code"], qs["title"], qs["detail"]));
+
+                if (!string.IsNullOrEmpty(qs["title"]))
+                {
+                    model.ErrorList.Errors.Add(new SDK.Models.Error(qs["code"], qs["title"], qs["detail"]));
+                }                
             }
 
             return View(model);
+        }
+
+        private async Task<(bool isvalid, string authCode, AuthorisationState authState, ErrorList errorList)> ValidateCallback(HttpRequest request)
+        {
+            bool isValid = false;
+            string authCode = string.Empty;
+            string state = string.Empty;
+            AuthorisationState authState = null;
+            ErrorList errorList = new ErrorList();
+
+            //GET Request
+            if (request.Method.Equals("get", StringComparison.OrdinalIgnoreCase))
+            {                                                
+                //code, jwt                
+                if (request.QueryString.HasValue && request.QueryString.Value.Contains("response"))
+                {                                        
+                    var responseToken = request.Query["response"].ToString();
+
+                    if (string.IsNullOrEmpty(responseToken))
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingResponse));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    (isValid, authCode, authState, errorList) = await ValidateJARMToken(responseToken);
+                }
+            }
+            //code id_token, form_post
+            //code, form_post.jwt
+            else if (request.Method.Equals("post", StringComparison.OrdinalIgnoreCase) && request.Form != null)
+            {
+                //form_post 
+                if (request.Form.ContainsKey("id_token"))
+                {
+                    authCode = request.Form["code"].ToString();
+                    state = request.Form["state"].ToString();
+                    
+                    if (string.IsNullOrEmpty(state))
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingState));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    authState = await _cache.GetAsync<AuthorisationState>(state);
+
+                    if (authState == null)
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthState));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    if (string.IsNullOrEmpty(authCode))
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthCode));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    isValid = true;
+                }
+                //form_post.jwt is JARM callback
+                else if (request.Form.ContainsKey("response"))
+                {
+                    var responseToken = request.Form["response"].ToString();
+                    
+                    if (string.IsNullOrEmpty(responseToken))
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingResponse));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    (isValid, authCode, authState, errorList) = await ValidateJARMToken(responseToken);
+                }
+                else if (request.Form.ContainsKey("error"))
+                {
+                    // check for error response from form_post
+                    var error = request.Form["error"].ToString();
+                    var errorDescription = request.Form["error_description"].ToString();
+                    var errorCode = request.Form["error_code"].ToString();
+
+                    //error and error_description
+                    if (!string.IsNullOrEmpty(error))
+                    {
+                        errorList.Errors.Add(new Error(code: errorCode, title: error, detail: errorDescription));
+                        isValid = false;
+                        return (isValid, authCode, authState, errorList);
+                    }
+                }
+            }
+
+            return (isValid, authCode, authState, errorList);
+        }
+
+        //Validating JARM token
+        private async Task<(bool isvalid, string authCode, AuthorisationState authState, ErrorList errorList)> ValidateJARMToken(string responseToken)
+        {
+            bool isValid = false;
+            string authCode = string.Empty;
+            string state = string.Empty;
+            AuthorisationState authState = null;
+            ErrorList errorList = new ErrorList();
+
+            var handler = new JwtSecurityTokenHandler();
+            if (handler.CanReadToken(responseToken))
+            {
+                try
+                {
+                    var token = handler.ReadJwtToken(responseToken);
+
+                    // Check if the token is encrypted
+                    if (!string.IsNullOrEmpty(token.Header.Enc))
+                    {
+                        var failedDecryptionError = new Error(code: "", title: ErrorTitles.InvalidResponse, detail: ErrorDescription.FailedDecryption);
+                        // Load the signing certificate and make sure the keys match
+                        var sp = _config.GetSoftwareProductConfig();
+                        var encryptionKeys = sp.SigningCertificate.X509Certificate.GetEncryptionCredentials();
+                        if (!encryptionKeys.TryGetValue(token.Header.Kid, out var encryptionKey) || token.Header.Alg != encryptionKey.Enc)
+                        {
+                            isValid = false;
+                            errorList.Errors.Add(failedDecryptionError);
+                            return (isValid, authCode, authState, errorList);
+                        }
+
+                        // Decrypt the token
+                        var decryptedToken = responseToken.DecryptToken(sp.SigningCertificate.X509Certificate);
+                        if (!handler.CanReadToken(decryptedToken))
+                        {
+                            isValid = false;
+                            errorList.Errors.Add(failedDecryptionError);
+                            return (isValid, authCode, authState, errorList);
+                        }
+
+                        responseToken = decryptedToken;
+                        token = handler.ReadJwtToken(responseToken);
+                    }
+
+                    state = token.Claims.FirstOrDefault(x => x.Type == "state")?.Value ?? "";
+                    if (string.IsNullOrEmpty(state))
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingState));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    authState = await _cache.GetAsync<AuthorisationState>(state);
+
+                    if (authState == null)
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthState));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    //Validate token against JWKS of the Data holder                
+                    var dataholderDiscoveryDocument = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri));
+                    if (dataholderDiscoveryDocument == null)
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingDiscoveryDocument));
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    _logger.LogDebug("Validating token against {jwksUri}.", dataholderDiscoveryDocument.JwksUri);
+
+                    //Validate the token
+                    var validated = await responseToken.ValidateToken(
+                        dataholderDiscoveryDocument.JwksUri,
+                        _logger,
+                        dataholderDiscoveryDocument.Issuer,
+                        new[] { authState.ClientId },
+                        validateLifetime: true,
+                        acceptAnyServerCertificate: _config.IsAcceptingAnyServerCertificate());
+
+                    _logger.LogDebug("Validated token: {isValid}.", validated.IsValid);
+                    isValid = validated.IsValid;
+
+                    var errorTitle = token.Claims.FirstOrDefault(x => x.Type == "error")?.Value ?? validated.validationError?.Title ?? "";
+                    var errorDescription = token.Claims.FirstOrDefault(x => x.Type == "error_description")?.Value ?? validated.validationError?.Detail ?? "";
+                    var errorCode = validated.validationError?.Code;
+
+                    //Error description
+                    if (!string.IsNullOrEmpty(errorTitle))
+                    {
+                        errorList.Errors.Add(new Error(code: errorCode, title: errorTitle, detail: errorDescription));
+                        isValid = false;
+                        return (isValid, authCode, authState, errorList);
+                    }
+
+                    authCode = token.Claims.FirstOrDefault(x => x.Type == "code")?.Value ?? "";
+
+                    if (string.IsNullOrEmpty(authCode))
+                    {
+                        isValid = false;
+                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthCode));
+                        return (isValid, authCode, authState, errorList);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogError(ex, "An error occurred validating the JARM token");
+                    var (errorCode, errorTitle, errorDescription)= ex.Message.ParseErrorString("Token Validation Error", "error", ex.Message);
+                    errorList.Errors.Add(new Error(code: errorCode, title: errorTitle, detail: errorDescription));
+
+                    return (false, authCode, authState, errorList);
+                }
+            }
+
+            return (isValid, authCode, authState, errorList);
         }
 
         [HttpGet]
@@ -506,26 +655,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 Payload = userInfo == null ? null : JsonConvert.SerializeObject(userInfo)
             };
         }
-
-        private async Task PopulatePicker(ConsentModel model)
-        {
-            model.Registrations = await _registrationsRepository.GetRegistrations();
-
-            if (model.Registrations != null && model.Registrations.Any())
-                model.RegistrationListItems = model.Registrations.Select(r => new SelectListItem($"DH Brand: {r.BrandName} ({r.DataHolderBrandId}) - ({r.ClientId})", r.GetRegistrationId())).ToList();
-            else
-                model.RegistrationListItems = new List<SelectListItem>();
-        }
-
-        private async Task<string> GetInfoSecBaseUri(string dataHolderBrandId)
-        {
-            var dh = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
-            if (dh == null)
-                return null;
-
-            return dh.EndpointDetail.InfoSecBaseUri;
-        }
-
+        
         private async Task<ResponseModel> RevokeToken(string cdrArrangementId, string tokenType)
         {
             var sp = _config.GetSoftwareProductConfig();

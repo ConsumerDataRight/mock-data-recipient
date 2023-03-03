@@ -1,6 +1,6 @@
 ﻿namespace CDR.DataRecipient.SDK.Enum
 {
-    public enum MessageEnum
+    public enum Message
     {
         Abandoned,
         DCRComplete,

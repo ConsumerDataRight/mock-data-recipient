@@ -9,12 +9,13 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using CDR.DataRecipient.SDK;
 
 namespace CDR.DataRecipient.SDK.Extensions
 {
     public static class TokenExtensions
     {
-        public static async Task<(bool IsValid, JwtSecurityToken ValidatedToken, ClaimsPrincipal ClaimsPrincipal)> ValidateToken(
+        public static async Task<(bool IsValid, JwtSecurityToken ValidatedToken, ClaimsPrincipal ClaimsPrincipal, Models.Error validationError)> ValidateToken(
             this string jwt,
             string jwksUri,
             ILogger logger,
@@ -29,7 +30,7 @@ namespace CDR.DataRecipient.SDK.Extensions
             if (jwks == null || jwks.Keys.Count == 0)
             {
                 logger.LogDebug("Keys not found in JWKS: {jwksUri}", jwksUri);
-                return (false, null, null);
+                return (false, null, null, new Models.Error("ERR-JWT-003", "keys_not_found", $"Keys not found in JWKS: {jwksUri}"));
             }
 
             logger.LogDebug("Keys found in JWKS: {keys}", string.Join(',', jwks.Keys.Select(k => k.Kid).ToArray()));
@@ -45,22 +46,26 @@ namespace CDR.DataRecipient.SDK.Extensions
                 ValidateAudience = validAudiences != null && validAudiences.Any(),
                 RequireSignedTokens = true,
                 ValidateLifetime = validateLifetime,
-            };
+            };                        
+            logger.LogDebug("Validating token: {jwt}", jwt);
+
+            var errorCode = string.Empty;
+            var errorTitle = string.Empty;
+            var errorDescription = string.Empty;
 
             try
             {
-                logger.LogDebug("Validating token: {jwt}", jwt);
                 var handler = new JwtSecurityTokenHandler();
                 var claimsPrincipal = handler.ValidateToken(jwt, tokenValidationParameters, out var token);
-                return (true, token as JwtSecurityToken, claimsPrincipal);
+                return (true, token as JwtSecurityToken, claimsPrincipal, null);
             }
             catch (Exception ex)
             {
-                // implement logging.
                 logger.LogError(ex, "An error occurred validating the JWT");
+                (errorCode, errorTitle, errorDescription) = ex.Message.ParseErrorString("Token Validation Failed");
             }
 
-            return (false, null, null);
+            return (false, null, null, new Models.Error(errorCode, errorTitle, errorDescription));
         }
 
         public static JwtSecurityToken GetJwt(this string token)
@@ -115,7 +120,7 @@ namespace CDR.DataRecipient.SDK.Extensions
             return tokenHandler.WriteToken(jwt);
         }
 
-        public static string DecryptIdToken(this string idToken, X509Certificate2 privateKeyCertificate)
+        public static string DecryptToken(this string idToken, X509Certificate2 privateKeyCertificate)
         {
             var privateKey = privateKeyCertificate.GetRSAPrivateKey();
             JweToken token = JWE.Decrypt(idToken, privateKey);

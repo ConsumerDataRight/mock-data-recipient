@@ -61,24 +61,15 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             string clientId,
             string request);
-
-        Task<string> BuildAuthorisationRequestUri(
-            string infosecBaseUri,
-            string clientId,
-            string redirectUri,
-            string scope,
-            string state,
-            string nonce,
-            X509Certificate2 signingCertificate,
-            int? sharingDuration = 0,
-            Pkce pkce = null);
+        
 
         Task<string> BuildAuthorisationRequestUri(
             string infosecBaseUri,
             string clientId,
             X509Certificate2 signingCertificate,
             string requestUri,
-            string scope);
+            string scope,
+            string responseType = "code id_token");
 
         string BuildAuthorisationRequestJwt(
             string infosecBaseUri,
@@ -91,7 +82,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             int? sharingDuration = 0,
             string cdrArrangementId = null,
             string responseMode = "form_post",
-            Pkce pkce = null);
+            Pkce pkce = null,
+            string responseType = "code id_token");
 
         Pkce CreatePkceData();
 

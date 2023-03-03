@@ -12,7 +12,7 @@ namespace CDR.DataRecipient.E2ETests
         public Task InitializeAsync()
         {
             // Only install Playwright if not running in container, since Dockerfile.e2e-tests already installed Playwright
-            if (!BaseTest_v2.RUNNING_IN_CONTAINER)
+            if (!BaseTest_v3.RUNNING_IN_CONTAINER)
             {
                 // Ensure that Playwright has been fully installed.
                 Microsoft.Playwright.Program.Main(new string[] { "install" });

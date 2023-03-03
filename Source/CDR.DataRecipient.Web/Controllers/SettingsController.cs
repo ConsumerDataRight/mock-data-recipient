@@ -20,7 +20,7 @@ namespace CDR.DataRecipient.Web.Controllers
             _config = config;
         }
 
-        [FeatureGate(nameof(FeatureFlags.ShowSettings))]
+        [FeatureGate(nameof(Feature.ShowSettings))]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult Index()
         {

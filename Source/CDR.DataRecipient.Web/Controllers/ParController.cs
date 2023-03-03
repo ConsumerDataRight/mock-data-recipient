@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,6 +30,7 @@ namespace CDR.DataRecipient.Web.Controllers
         private readonly IDataHoldersRepository _dhRepository;
         private readonly IDataHolderDiscoveryCache _dataHolderDiscoveryCache;
         private readonly IRegistrationsRepository _registrationsRepository;
+        private readonly ILogger<ParController> _logger;
 
         public ParController(
             IConfiguration config,
@@ -37,7 +39,8 @@ namespace CDR.DataRecipient.Web.Controllers
             IDataHolderDiscoveryCache dataHolderDiscoveryCache,
             IConsentsRepository consentsRepository,
             IDataHoldersRepository dhRepository,
-            IRegistrationsRepository registrationsRepository)
+            IRegistrationsRepository registrationsRepository,
+            ILogger<ParController> logger)
         {
             _config = config;
             _cache = cache;
@@ -46,13 +49,14 @@ namespace CDR.DataRecipient.Web.Controllers
             _consentsRepository = consentsRepository;
             _dhRepository = dhRepository;
             _registrationsRepository = registrationsRepository;
+            _logger=logger;
         }
 
         [HttpGet]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index()
         {
-            var model = new ParModel() { UsePkce = true };
+            var model = new ParModel() { UsePkce = true, ResponseType = "code id_token", ResponseMode = "fragment" };
             await PopulatePickers(model);
             return View(model);
         }
@@ -74,7 +78,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
                     var stateKey = Guid.NewGuid().ToString();
                     var nonce = Guid.NewGuid().ToString();
-                    var redirectUri = model.RedirectUris;
+                    var redirectUri = reg.RedirectUris.FirstOrDefault();
 
                     var authState = new AuthorisationState()
                     {
@@ -91,6 +95,8 @@ namespace CDR.DataRecipient.Web.Controllers
                     if (model.UsePkce)
                         authState.Pkce = _dhInfoSecService.CreatePkceData();
 
+                    _logger.LogDebug("saving AuthorisationState of {@authState} to cache",authState);
+
                     await _cache.SetAsync(stateKey, authState, DateTimeOffset.UtcNow.AddMinutes(60));
 
                     // Build the authentication request JWT.
@@ -103,9 +109,10 @@ namespace CDR.DataRecipient.Web.Controllers
                         nonce,
                         sp.SigningCertificate.X509Certificate,
                         model.SharingDuration,
-                        model.CdrArrangementId,
-                        "form_post",
-                        authState.Pkce);
+                        model.CdrArrangementId,                        
+                        model.ResponseMode,
+                        authState.Pkce, 
+                        model.ResponseType);
 
                     var parResponse = await _dhInfoSecService.PushedAuthorisationRequest(
                         dhConfig.PushedAuthorizationRequestEndpoint,
@@ -127,7 +134,8 @@ namespace CDR.DataRecipient.Web.Controllers
                             model.ClientId,
                             sp.SigningCertificate.X509Certificate,
                             model.PushedAuthorisation.RequestUri,
-                            model.Scope);
+                            model.Scope, 
+                            model.ResponseType);
                     }
                     else
                     {

@@ -100,14 +100,15 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             int? sharingDuration = 0,
             string cdrArrangementId = null,
             string responseMode = "form_post",
-            Pkce pkce = null)
+            Pkce pkce = null,
+            string responseType = "code id_token")
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestJwt)}.");
 
             // Build the list of claims to include in the authorisation request jwt.
             var authorisationRequestClaims = new Dictionary<string, object>
-            {
-                { "response_type", "code id_token" },
+            {                
+                { "response_type", responseType },
                 { "client_id", clientId },
                 { "redirect_uri", redirectUri },
                 { "response_mode", responseMode},
@@ -125,38 +126,15 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             return authorisationRequestClaims.GenerateJwt(clientId, infosecBaseUri, signingCertificate);
         }
-
-        public async Task<string> BuildAuthorisationRequestUri(
-            string infosecBaseUri,
-            string clientId,
-            string redirectUri,
-            string scope,
-            string state,
-            string nonce,
-            X509Certificate2 signingCertificate,
-            int? sharingDuration = 0,
-            Pkce pkce = null)
-        {
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestUri)}.");
-
-            var jwt = BuildAuthorisationRequestJwt(infosecBaseUri, clientId, redirectUri, scope, state, nonce, signingCertificate, sharingDuration, pkce: pkce);
-            var config = (await GetOidcDiscovery(infosecBaseUri)).Data;
-
-            var authRequestUri = config.AuthorizationEndpoint
-                .AppendQueryString("client_id", clientId)
-                .AppendQueryString("scope", scope)
-                .AppendQueryString("response_type", "code id_token")
-                .AppendQueryString("request", jwt);
-
-            return authRequestUri;
-        }
+        
 
         public async Task<string> BuildAuthorisationRequestUri(
             string infosecBaseUri,
             string clientId,
             X509Certificate2 signingCertificate,
             string requestUri,
-            string scope)
+            string scope, 
+            string responseType = "code id_token")
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestUri)}.");
 
@@ -165,7 +143,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string authRequestUri = config.AuthorizationEndpoint
                 .AppendQueryString("client_id", clientId)
                 .AppendQueryString("scope", scope)
-                .AppendQueryString("response_type", "code id_token")
+                .AppendQueryString("response_type", responseType)
                 .AppendQueryString("request_uri", requestUri);
 
             return authRequestUri;

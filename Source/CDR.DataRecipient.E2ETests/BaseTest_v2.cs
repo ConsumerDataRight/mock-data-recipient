@@ -1,3 +1,6 @@
+#undef DEPRECATED  // instead see BaseTest_v3
+#if DEPRECATED
+
 #define TEST_DEBUG_MODE // Run Playwright in non-headless mode for debugging purposes (ie show a browser)
 
 // In docker (Ubuntu container) Playwright will fail if running in non-headless mode, so we ensure TEST_DEBUG_MODE is undef'ed
@@ -272,10 +275,10 @@ namespace CDR.DataRecipient.E2ETests
             await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
                 SlowMo = 250,
-#if TEST_DEBUG_MODE                
+#if TEST_DEBUG_MODE
                 Headless = false,
                 Timeout = 5000 // DEBUG - 5 seconds
-#endif                
+#endif
             });
 
             // Setup browser context
@@ -552,3 +555,4 @@ namespace CDR.DataRecipient.E2ETests
         }
     }
 }
+#endif

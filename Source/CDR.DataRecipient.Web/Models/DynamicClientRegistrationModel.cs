@@ -61,6 +61,13 @@ namespace CDR.DataRecipient.Web.Models
         [Display(Name = "Request Object Signing Alg")]
         public string RequestObjectSigningAlg { get; set; }
 
+        [Display(Name = "Authorization Signed Response Alg")]
+        public string AuthorizationSignedResponseAlg { get; set; }
+        [Display(Name = "Authorization Encrypted Response Alg")]
+        public string AuthorizationEncryptedResponseAlg { get; set; }
+        [Display(Name = "Authorization Encrypted Response Enc")]
+        public string AuthorizationEncryptedResponseEnc { get; set; }
+
         public List<SelectListItem> DataHolderBrands { get; set; }
         public List<SelectListItem> DataRecipients { get; set; }
 

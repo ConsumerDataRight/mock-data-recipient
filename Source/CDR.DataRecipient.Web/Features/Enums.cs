@@ -1,6 +1,6 @@
 ﻿namespace CDR.DataRecipient.Web.Features
 {
-    public enum FeatureFlags
+    public enum Feature
     {
         AllowDataHolderRefresh,
         AllowDynamicClientRegistration,

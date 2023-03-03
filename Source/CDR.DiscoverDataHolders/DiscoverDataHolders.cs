@@ -39,9 +39,7 @@ namespace CDR.DiscoverDataHolders
                 {
                     configBuilder = configBuilder.AddJsonFile("local.settings.json", optional: false, reloadOnChange: true);
                 }
-
-                var config = configBuilder.AddEnvironmentVariables().Build();
-
+                
                 // Get environment variables.
                 string qConnString = Environment.GetEnvironmentVariable("StorageConnectionString");
                 string dbConnString = Environment.GetEnvironmentVariable("DataRecipient_DB_ConnectionString");
@@ -162,7 +160,7 @@ namespace CDR.DiscoverDataHolders
                                     {
                                         // ADD to EMPTY QUEUE
                                         var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to EMPTY QUEUE)");
-                                        await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, MessageEnum.Pending, newMsgId, "UPDATE DcrMessage table");
+                                        await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, Message.Pending, newMsgId, "UPDATE DcrMessage table");
                                         pendingReg++;
                                     }
 
@@ -170,9 +168,9 @@ namespace CDR.DiscoverDataHolders
                                     else if (qCount < 33)
                                     {
                                         var ifExist = await IsMessageInQueue(dcrMsgId, qConnString, qName);
-                                        if (!ifExist && (dcrMsgState.Equals(MessageEnum.Pending.ToString()) || dcrMsgState.Equals(MessageEnum.DCRFailed.ToString())) )
+                                        if (!ifExist && (dcrMsgState.Equals(Message.Pending.ToString()) || dcrMsgState.Equals(Message.DCRFailed.ToString())) )
                                         {
-                                            Enum.TryParse(dcrMsgState, out MessageEnum dcrMsgStatus);
+                                            Enum.TryParse(dcrMsgState, out Message dcrMsgStatus);
 
                                             // DcrMessage STATE = Pending -> ADD MESSAGE to the QUEUE
                                             var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to QUEUE)");
@@ -260,19 +258,18 @@ namespace CDR.DiscoverDataHolders
             }
 
             log.LogInformation("Synchronising existing {count} data holder brands", existingBrands?.Count());
-            
             foreach (var existingDataHolderBrand in existingBrands)
-            {
+            {                
                 //existing data holders that don't exist in mdh should be removed from the mdr
                 var exists = data.Any(x => x.DataHolderBrandId.Equals(existingDataHolderBrand.DataHolderBrandId, StringComparison.OrdinalIgnoreCase));
-
+                
                 //Remove additional or extra brands to reflect correct brand data
                 if (!exists)
                 {
                     log.LogInformation("Deleting existing data holder brand: {brandId}", existingDataHolderBrand.DataHolderBrandId);
-                    await sql.DeleteDataHolder(existingDataHolderBrand.DataHolderBrandId);
+                    await sql.DeleteDataHolder(existingDataHolderBrand.DataHolderBrandId);                    
                 }
-            }            
+            }
         }
 
         /// <summary>
@@ -423,7 +420,7 @@ namespace CDR.DiscoverDataHolders
                 BrandName = brandName,
                 InfosecBaseUri = infosecBaseUri,
                 MessageId = msgId,
-                MessageState = MessageEnum.Pending.ToString()
+                MessageState = Message.Pending.ToString()
             };
             await new SqlDataAccess(dbConnString).InsertDcrMessage(dcrMsg);
 
@@ -439,7 +436,7 @@ namespace CDR.DiscoverDataHolders
         /// Update the DcrMessage table
         /// </summary>
         /// <returns>Message Id</returns>
-        private static async Task UpdateDcrMessage(ILogger log, string dbConnString, string dhBrandId, string brandName, string infosecBaseUri, string msgId, MessageEnum messageState, string newMsgId, string proc)
+        private static async Task UpdateDcrMessage(ILogger log, string dbConnString, string dhBrandId, string brandName, string infosecBaseUri, string msgId, Message messageState, string newMsgId, string proc)
         {
             DcrMessage dcrMsg = new()
             {

@@ -1,7 +1,7 @@
 ﻿@using CDR.DataRecipient.SDK.Enumerations
 @{
     ViewData["Title"] = "SSA";
-	var linkToExternalJwt = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.LinkToExternalJwt));
+	var linkToExternalJwt = await _featureManager.IsEnabledAsync(nameof(Feature.LinkToExternalJwt));
 }
 @using CDR.DataRecipient.Web.Extensions
 @using CDR.DataRecipient.Web.Features

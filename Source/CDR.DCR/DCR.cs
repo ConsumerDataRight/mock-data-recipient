@@ -5,12 +5,12 @@ using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.SDK.Enum;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
-using Microsoft.Azure.Storage.Queue;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Azure.Storage.Queue;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -21,11 +21,15 @@ using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace CDR.DCR
 {
     public static class DynamicClientRegistrationFunction
     {
+        // Error - Unable to perform DCR as there are no mutually supported values in the mandatory claim [CLAIM_NAME]
+        private const string ErrorMessage = "Unable to perform DCR as there are no mutually supported values in the mandatory claim";
+
         /// <summary>
         /// Dynamic Client Registration Function
         /// </summary>
@@ -50,8 +54,6 @@ namespace CDR.DCR
                     configBuilder = configBuilder.AddJsonFile("local.settings.json", optional: false, reloadOnChange: true);
                 }
 
-                var config = configBuilder.AddEnvironmentVariables().Build();
-
                 // Get environment variables.
                 string qConnString = Environment.GetEnvironmentVariable("StorageConnectionString");
                 string dbConnString = Environment.GetEnvironmentVariable("DataRecipient_DB_ConnectionString");
@@ -61,7 +63,7 @@ namespace CDR.DCR
                 string xv = Environment.GetEnvironmentVariable("Register_Get_SSA_XV");
                 string brandId = Environment.GetEnvironmentVariable("Brand_Id");
                 string softwareProductId = Environment.GetEnvironmentVariable("Software_Product_Id");
-                string redirectUri = Environment.GetEnvironmentVariable("Redirect_Uri");
+                string redirectUris = Environment.GetEnvironmentVariable("Redirect_Uris");
                 string clientCert = Environment.GetEnvironmentVariable("Client_Certificate");
                 string clientCertPwd = Environment.GetEnvironmentVariable("Client_Certificate_Password");
                 string signCert = Environment.GetEnvironmentVariable("Signing_Certificate");
@@ -113,7 +115,7 @@ namespace CDR.DCR
                                     {
                                         DataHolderBrandId = Guid.Empty,
                                         MessageId = dcrMsgId,
-                                        MessageState = MessageEnum.DCRFailed.ToString(),
+                                        MessageState = Message.DCRFailed.ToString(),
                                         MessageError = $"{msg} - does not exist in the repo"
                                     };
                                     await new SqlDataAccess(dbConnString).UpdateDcrMsgReplaceMessageIdWithoutBrand(dcrMsg, myQueueItem.Id);
@@ -124,8 +126,8 @@ namespace CDR.DCR
                             {
                                 dataHolderBrandName = dh.BrandName;                                
                                 // YES - DOES a Registration already exist for the DataHolderBrandId in the local repo?
-                                Guid clientId = await new SqlDataAccess(dbConnString).GetRegByDHBrandId(dh.DataHolderBrandId);
-                                if (clientId == Guid.Empty)
+                                string clientId = await new SqlDataAccess(dbConnString).GetRegByDHBrandId(dh.DataHolderBrandId);
+                                if (clientId == string.Empty)
                                 {
                                     // NO - register this Data Holder Brand
                                     infosecBaseUri = dh.EndpointDetail.InfoSecBaseUri;
@@ -133,7 +135,13 @@ namespace CDR.DCR
                                     if (oidcDiscovery != null)
                                     {
                                         regEndpoint = oidcDiscovery.RegistrationEndpoint;
-                                        var dcrRequestJwt = PopulateDCRRequestJwt(softwareProductId, redirectUri, ssa.Data, oidcDiscovery.Issuer, signCertificate);
+                                        
+                                        (string errorMessage, string dcrRequestJwt) = PopulateDCRRequestJwt(softwareProductId, redirectUris, ssa.Data, oidcDiscovery.Issuer,
+                                            oidcDiscovery.ResponseTypesSupported,
+                                            oidcDiscovery.AuthorizationSigningResponseAlgValuesSupported,
+                                            oidcDiscovery.AuthorizationEncryptionResponseEncValuesSupported,
+                                            oidcDiscovery.AuthorizationEncryptionResponseAlgValuesSupported,
+                                            signCertificate);
 
                                         // Process Registration - retry 3 times
                                         bool regSuccess = false;
@@ -141,26 +149,31 @@ namespace CDR.DCR
                                         string regMessage = "";
                                         string regClientId = "";
                                         string jsonDoc = "";
-                                        do
+                                                                                
+                                        // DO NOT register if FAPI claims are invalid
+                                        if (string.IsNullOrEmpty(errorMessage))
                                         {
-                                            var dcrResponse = await Register(regEndpoint, clientCertificate, dcrRequestJwt, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
-                                            if (dcrResponse.IsSuccessful)
+                                            do
                                             {
-                                                regSuccess = true;
-                                                regClientId = dcrResponse.Data.ClientId;
-                                                dcrResponse.Data.DataHolderBrandId = dh.DataHolderBrandId;
-                                                jsonDoc = System.Text.Json.JsonSerializer.Serialize(dcrResponse.Data);
-                                            }
-                                            else
-                                            {
-                                                regStatusCode = dcrResponse.StatusCode.ToString();
-                                                regMessage = dcrResponse.Message;
-                                                retries--;
-                                            }
-                                        } while (!regSuccess && retries > 0);
-
+                                                var dcrResponse = await Register(regEndpoint, clientCertificate, dcrRequestJwt, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
+                                                if (dcrResponse.IsSuccessful)
+                                                {
+                                                    regSuccess = true;
+                                                    regClientId = dcrResponse.Data.ClientId;
+                                                    dcrResponse.Data.DataHolderBrandId = dh.DataHolderBrandId;
+                                                    jsonDoc = System.Text.Json.JsonSerializer.Serialize(dcrResponse.Data);
+                                                }
+                                                else
+                                                {
+                                                    regStatusCode = dcrResponse.StatusCode.ToString();
+                                                    regMessage = dcrResponse.Message;
+                                                    retries--;
+                                                }
+                                            } while (!regSuccess && retries > 0);
+                                        }
                                         // Successful -> Update DcrMessage and Insert into Data Holder Registration repo
-                                        if (regSuccess)
+                                        // DO NOT register if FAPI claims are invalid
+                                        if (regSuccess && string.IsNullOrEmpty(errorMessage))
                                         {
                                             DcrMessage dcrMsg = new()
                                             {
@@ -168,7 +181,7 @@ namespace CDR.DCR
                                                 DataHolderBrandId = new Guid(dh.DataHolderBrandId),
                                                 BrandName = dh.BrandName,
                                                 InfosecBaseUri = infosecBaseUri,
-                                                MessageState = MessageEnum.DCRComplete.ToString()
+                                                MessageState = Message.DCRComplete.ToString()
                                             };
                                             await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
 
@@ -180,7 +193,21 @@ namespace CDR.DCR
                                         }
 
                                         // FAILED -> Update DcrMessage as DCRFailed
-                                        else
+                                        // FAPI 1.0 validation errors should also be logged
+                                        else if (!string.IsNullOrEmpty(errorMessage))
+                                        {                                            
+                                            DcrMessage dcrMsg = new()
+                                            {
+                                                DataHolderBrandId = new Guid(dh.DataHolderBrandId),
+                                                BrandName = dh.BrandName,
+                                                InfosecBaseUri = infosecBaseUri,
+                                                MessageState = Message.DCRFailed.ToString(),
+                                                MessageError = $"{errorMessage}"
+                                            };
+                                            await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
+                                            await InsertLog(log, dbConnString, $"{msg}, REGISTRATION CLAIMS VALIDATIONS FAILED, {errorMessage}", "Error", "DCR");
+                                        }
+                                        else if (!regSuccess)
                                         {
                                             regMessage = regMessage.Replace("'", "");
                                             DcrMessage dcrMsg = new()
@@ -188,7 +215,7 @@ namespace CDR.DCR
                                                 DataHolderBrandId = new Guid(dh.DataHolderBrandId),
                                                 BrandName = dh.BrandName,
                                                 InfosecBaseUri = infosecBaseUri,
-                                                MessageState = MessageEnum.DCRFailed.ToString(),
+                                                MessageState = Message.DCRFailed.ToString(),
                                                 MessageError = $"StatusCode: {regStatusCode}, {regMessage}"
                                             };
                                             await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
@@ -203,7 +230,7 @@ namespace CDR.DCR
                                             DataHolderBrandId = new Guid(myQMsg.DataHolderBrandId),
                                             BrandName = dh.BrandName,
                                             InfosecBaseUri = infosecBaseUri,
-                                            MessageState = MessageEnum.DCRFailed.ToString(),
+                                            MessageState = Message.DCRFailed.ToString(),
                                             MessageError = "OidcDiscovery failed InfosecBaseUri: " + infosecBaseUri
                                         };
                                         await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
@@ -243,7 +270,7 @@ namespace CDR.DCR
                     DataHolderBrandId = new Guid(myQMsg.DataHolderBrandId),
                     BrandName = dataHolderBrandName,
                     InfosecBaseUri = infosecBaseUri,
-                    MessageState = MessageEnum.DCRFailed.ToString(),
+                    MessageState = Message.DCRFailed.ToString(),
                     MessageError = ex.Message
                 };
                 await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
@@ -257,7 +284,7 @@ namespace CDR.DCR
 
                 if (ex is JsonReaderException)
                 {
-                    await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED: OidcDiscovery can't be desiearlized {extraMsg}", "Exception", "DCR", ex);
+                    await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED: OidcDiscovery can't be deserialized {extraMsg}", "Exception", "DCR", ex);
                 }
                 else 
                     await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR", ex);
@@ -381,8 +408,14 @@ namespace CDR.DCR
         /// <summary>
         /// Generate the DCR Request JWT
         /// </summary>
-        private static string PopulateDCRRequestJwt(string softwareProductId, string redirectUris, string ssa, string audience, X509Certificate2 signCertificate)
+        private static (string, string) PopulateDCRRequestJwt(string softwareProductId, string redirectUris, string ssa, string audience,
+            string[]  responseTypesSupported,
+            string[] authorizationSigningResponseAlgValuesSupported, 
+            string[] authorizationEncryptionResponseEncValuesSupported,
+            string[] authorizationEncryptionResponseAlgValuesSupported,
+            X509Certificate2 signCertificate)
         {
+            string errorMessage = string.Empty;
             var claims = new List<Claim>
             {
                 new Claim("jti", Guid.NewGuid().ToString()),
@@ -394,13 +427,112 @@ namespace CDR.DCR
                 new Claim("id_token_encrypted_response_alg", "RSA-OAEP"),
                 new Claim("id_token_encrypted_response_enc", "A256GCM"),
                 new Claim("request_object_signing_alg", "PS256"),
-                new Claim("software_statement", ssa ?? ""),
-                new Claim("redirect_uris", redirectUris),
+                new Claim("software_statement", ssa ?? ""),                
                 new Claim("grant_types", "client_credentials"),
                 new Claim("grant_types", "authorization_code"),
-                new Claim("grant_types", "refresh_token"),
-                new Claim("response_types", "code id_token")
+                new Claim("grant_types", "refresh_token")                
             };
+
+            // response_types updated below "code, code id_token" both types are returned and added below
+            // A response type is mandatory
+            if (!responseTypesSupported.Contains("code") && !responseTypesSupported.Contains("code id_token"))
+            {
+                // Return the error                 
+                errorMessage = ErrorMessage + " response_types";
+                return (errorMessage, "");
+            }
+
+            foreach (var responseType in responseTypesSupported)
+            {
+                // Only these are allowed. 
+                if (string.Equals(responseType, "code", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(responseType, "code id_token", StringComparison.OrdinalIgnoreCase))
+                {
+                    claims.Add(new Claim("response_types", responseType));
+                }                
+            }
+
+            var isCodeFlow = responseTypesSupported.Contains("code");
+            if (isCodeFlow && !authorizationSigningResponseAlgValuesSupported.Any())
+            {
+                // Log error message to the mandatory claim missing
+                errorMessage = ErrorMessage + " authorization_signed_response_alg";
+                return (errorMessage, "");
+            }
+
+            // Mandatory for code flow
+            if (isCodeFlow)
+            {
+                if (!authorizationSigningResponseAlgValuesSupported.Contains("PS256") && !authorizationSigningResponseAlgValuesSupported.Contains("ES256"))
+                {
+                    // Return the error
+                    errorMessage = ErrorMessage + " authorization_signed_response_alg";
+                    return (errorMessage, "");
+                }
+                
+                if (authorizationSigningResponseAlgValuesSupported.Contains("PS256"))
+                {                    
+                    claims.Add(new Claim("authorization_signed_response_alg", "PS256"));
+                }
+                else if (authorizationSigningResponseAlgValuesSupported.Contains("ES256"))
+                {                    
+                    claims.Add(new Claim("authorization_signed_response_alg", "ES256"));
+                }
+            }
+
+            // Check if the enc is empty but a alg is specified.
+            if ((authorizationEncryptionResponseEncValuesSupported == null || !authorizationEncryptionResponseEncValuesSupported.Any()) // No enc specified
+                && authorizationEncryptionResponseAlgValuesSupported != null && authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256") 
+                && authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP")) // but alg specified.
+            {                
+                errorMessage = ErrorMessage + " authorization_encrypted_response_enc";
+                return (errorMessage, "");
+            }
+
+
+            if (authorizationEncryptionResponseEncValuesSupported != null && authorizationEncryptionResponseEncValuesSupported.Contains("A128CBC-HS256"))
+            {
+                claims.Add(new Claim("authorization_encrypted_response_enc", "A128CBC-HS256"));
+            }
+            else if (authorizationEncryptionResponseEncValuesSupported != null && authorizationEncryptionResponseEncValuesSupported.Contains("A256GCM"))
+            {
+                claims.Add(new Claim("authorization_encrypted_response_enc", "A256GCM"));
+            }
+
+            // Conditional: Optional for response_type "code" if authorization_encryption_enc_values_supported is present            
+            if (isCodeFlow && authorizationEncryptionResponseAlgValuesSupported != null && authorizationEncryptionResponseAlgValuesSupported.Any())
+            {                
+                if (authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256"))
+                {                    
+                    claims.Add(new Claim("authorization_encrypted_response_alg", "RSA-OAEP-256"));
+                }
+                else if (authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP"))
+                {                    
+                    claims.Add(new Claim("authorization_encrypted_response_alg", "RSA-OAEP"));
+                }
+            }
+
+            if (!string.IsNullOrEmpty(redirectUris))
+            {
+                if (redirectUris.Contains(','))
+                {
+                    foreach (var redirectUri in redirectUris.Split(','))
+                    {
+                        claims.Add(new Claim("redirect_uris", redirectUri));
+                    }                    
+                }
+                else if (redirectUris.Contains(' '))
+                {
+                    foreach (var redirectUri in redirectUris.Split(' '))
+                    {
+                        claims.Add(new Claim("redirect_uris", redirectUri));
+                    }
+                }
+                else
+                {
+                    claims.Add(new Claim("redirect_uris", redirectUris));
+                }
+            }
 
             var jwt = new JwtSecurityToken(
                 issuer: softwareProductId,
@@ -410,7 +542,7 @@ namespace CDR.DCR
                 signingCredentials: new X509SigningCredentials(signCertificate, SecurityAlgorithms.RsaSsaPssSha256));
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            return tokenHandler.WriteToken(jwt);
+            return (errorMessage, tokenHandler.WriteToken(jwt));            
         }
 
         /// <summary>
@@ -501,7 +633,7 @@ namespace CDR.DCR
             DcrMessage dcrMsg = new()
             {
                 MessageId = myQueueItem.Id,
-                MessageState = MessageEnum.Abandoned.ToString(),
+                MessageState = Message.Abandoned.ToString(),
                 MessageError = $"DCR - {qCount} items queued, this DataHolderBrandId is malformed"
             };
             await new SqlDataAccess(dbConnString).UpdateDcrMsgByMessageId(dcrMsg);

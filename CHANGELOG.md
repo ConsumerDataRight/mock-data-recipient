@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2023-02-16
+### Changed 
+- Updated to be compliant with FAPI 1.0 phase 3.
+- Dynamic Client Registration Azure Function updated to be compliant with FAPI 1.0 phase 3.
+- Home page html content to reflect latest version
+
+## [1.1.3] - 2022-11-24
+### Fixed 
+- Add body to post requests. [Sandbox Issue 15](https://github.com/ConsumerDataRight/sandbox/issues/15)
+
+## [1.1.2] - 2022-10-27
+### Fixed 
+- Fixed data conversion error when saving Cdr Arrangement. [Sandbox Issue 14](https://github.com/ConsumerDataRight/sandbox/issues/14)
+
+## [1.1.1] - 2022-10-19
+### Fixed
+- Send redirect_uris as an array instead of string when performing background Dynamic Client Registration requests. [Issue 50](https://github.com/ConsumerDataRight/mock-data-recipient/issues/50)
+- Changed CdrArrangement.ClientId database column data type from UniqueIdentifier to nvarchar(100).
+- Intermittent issue where redirect_uri in consent and PAR JWT is null. [Sandbox Issue 11](https://github.com/ConsumerDataRight/sandbox/issues/11)
+- mtls_endpoint_aliases not used as per RFC 8705 in PAR and token exchange. [Sandbox Issue 12](https://github.com/ConsumerDataRight/sandbox/issues/12)
+
 ## [1.1.0] - 2022-10-05
 ### Added
 - Logging middleware to create a centralised list of all API requests and responses

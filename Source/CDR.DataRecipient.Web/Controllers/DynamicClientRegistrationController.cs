@@ -3,6 +3,7 @@ using CDR.DataRecipient.Repository.SQL;
 using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
+using CDR.DataRecipient.SDK.Models.AuthorisationRequest;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.SDK.Services.Register;
 using CDR.DataRecipient.Web.Caching;
@@ -84,7 +85,7 @@ namespace CDR.DataRecipient.Web.Controllers
             return View(model);
         }
 
-        [FeatureGate(nameof(FeatureFlags.AllowDynamicClientRegistration))]
+        [FeatureGate(nameof(Feature.AllowDynamicClientRegistration))]
         [HttpPost]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index(DynamicClientRegistrationModel model)
@@ -113,7 +114,7 @@ namespace CDR.DataRecipient.Web.Controllers
             return View(model);
         }
 
-        [FeatureGate(nameof(FeatureFlags.AllowDynamicClientRegistration))]
+        [FeatureGate(nameof(Feature.AllowDynamicClientRegistration))]
         [HttpDelete]
         [Route("registrations/{clientId}/{dataHolderBrandId}")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
@@ -316,6 +317,9 @@ namespace CDR.DataRecipient.Web.Controllers
             claims.Add(new Claim("id_token_encrypted_response_enc", model.IdTokenEncryptedResponseEnc ?? ""));
             claims.Add(new Claim("request_object_signing_alg", model.RequestObjectSigningAlg ?? ""));
             claims.Add(new Claim("software_statement", ssa ?? ""));
+            claims.Add(new Claim("authorization_signed_response_alg", model.AuthorizationSignedResponseAlg ?? ""));
+            claims.Add(new Claim("authorization_encrypted_response_alg", model.AuthorizationEncryptedResponseAlg ?? ""));
+            claims.Add(new Claim("authorization_encrypted_response_enc", model.AuthorizationEncryptedResponseEnc ?? ""));
 
             if (!string.IsNullOrEmpty(model.RedirectUris))
             {
@@ -344,10 +348,14 @@ namespace CDR.DataRecipient.Web.Controllers
                 claims.Add(new Claim("grant_types", grantType));
             }
 
-            foreach (var responseType in model.ResponseTypes.Split(','))
+            if (!string.IsNullOrEmpty(model.ResponseTypes))
             {
-                claims.Add(new Claim("response_types", responseType));
+                foreach (var responseType in model.ResponseTypes.Split(','))
+                {
+                    claims.Add(new Claim("response_types", responseType));
+                }
             }
+                
 
             // algorithm to be adaptable.
             var jwt = new JwtSecurityToken(
@@ -443,7 +451,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
         private async Task PopulateFormDetail(DynamicClientRegistrationModel model)
         {
-            var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
+            var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDynamicClientRegistration));
             if (allowDynamicClientRegistration)
             {
                 // Return any from the Registration table repository.
@@ -496,6 +504,9 @@ namespace CDR.DataRecipient.Web.Controllers
             model.IdTokenEncryptedResponseAlg = "RSA-OAEP";
             model.IdTokenEncryptedResponseEnc = "A256GCM";
             model.RequestObjectSigningAlg = sp.DefaultSigningAlgorithm;
+            model.AuthorizationSignedResponseAlg = sp.DefaultSigningAlgorithm;
+            model.AuthorizationEncryptedResponseAlg = "";
+            model.AuthorizationEncryptedResponseEnc = "";
             model.SsaVersion = "3";
             model.Messages = "Waiting...";
         }
@@ -510,12 +521,15 @@ namespace CDR.DataRecipient.Web.Controllers
             model.TokenEndpointAuthSigningAlg = sp.DefaultSigningAlgorithm;
             model.TokenEndpointAuthMethod = "private_key_jwt";
             model.GrantTypes = "client_credentials,authorization_code,refresh_token";
-            model.ResponseTypes = "code id_token";
+            model.ResponseTypes = string.Join(",", client.ResponseTypes);            
             model.ApplicationType = "web";
             model.IdTokenSignedResponseAlg = sp.DefaultSigningAlgorithm;
             model.IdTokenEncryptedResponseAlg = "RSA-OAEP";
             model.IdTokenEncryptedResponseEnc = "A256GCM";
             model.RequestObjectSigningAlg = sp.DefaultSigningAlgorithm;
+            model.AuthorizationSignedResponseAlg = client.AuthorizationSignedResponseAlg;
+            model.AuthorizationEncryptedResponseAlg = client.AuthorizationEncryptedResponseAlg;
+            model.AuthorizationEncryptedResponseEnc = client.AuthorizationEncryptedResponseEnc;
             model.Messages = "Waiting...";
         }
     }

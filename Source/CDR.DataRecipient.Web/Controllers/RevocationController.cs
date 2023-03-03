@@ -141,13 +141,15 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Validate the cdr_arrangement_jwt either using "full" or "minimal" validation.
             var jwksUri = await GetJwksUri();
+
+
             var validated = await revocationModel.CdrArrangementJwt.ValidateToken(
-                jwksUri,
-                _logger,
-                validIssuer: validIssuer,
-                validAudiences: validAudience != null ? new string[] { validAudience } : null,
-                validateLifetime: validateLifetime,
-                acceptAnyServerCertificate: _config.IsAcceptingAnyServerCertificate());
+            jwksUri,
+            _logger,
+            validIssuer: validIssuer,
+            validAudiences: validAudience != null ? new string[] { validAudience } : null,
+            validateLifetime: validateLifetime,
+            acceptAnyServerCertificate: _config.IsAcceptingAnyServerCertificate());
 
             if (!validated.IsValid)
             {

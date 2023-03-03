@@ -7,19 +7,16 @@ using System.Threading.Tasks;
 namespace CDR.DataRecipient.Web.Caching
 {
     public class CacheManager : ICacheManager
-    {
-        private readonly IDistributedCache _cache;
+    {        
         private readonly IMemoryCache _memCache;
         private readonly ILogger<CacheManager> _logger;
         private readonly IInfosecService _infosecService;
 
         public CacheManager(
-            IDistributedCache cache,
             IMemoryCache memCache,
             ILogger<CacheManager> logger,
             IInfosecService infosecService)
-        {
-            _cache = cache;
+        {            
             _memCache = memCache;
             _logger = logger;
             _infosecService = infosecService;

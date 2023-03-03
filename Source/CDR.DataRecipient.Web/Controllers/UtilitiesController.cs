@@ -52,7 +52,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
             try
             {
-                model.IdTokenDecrypted = model.IdTokenEncrypted.DecryptIdToken(sp.SigningCertificate.X509Certificate);
+                model.IdTokenDecrypted = model.IdTokenEncrypted.DecryptToken(sp.SigningCertificate.X509Certificate);
                 model.IdTokenClaims = model.IdTokenDecrypted.GetTokenClaims();
             }
             catch (Exception)

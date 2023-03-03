@@ -78,7 +78,16 @@ namespace CDR.DataRecipient.SDK.Models
 		[JsonProperty("id_token_encrypted_response_enc")]
 		public string IdTokenEncryptedResponseEnc { get; set; }
 
-		[JsonProperty("request_object_signing_alg")]
+        [JsonProperty("authorization_signed_response_alg")]
+        public string AuthorizationSignedResponseAlg { get; set; }
+
+        [JsonProperty("authorization_encrypted_response_alg")]
+        public string AuthorizationEncryptedResponseAlg { get; set; }
+
+        [JsonProperty("authorization_encrypted_response_enc")]
+        public string AuthorizationEncryptedResponseEnc { get; set; }
+
+        [JsonProperty("request_object_signing_alg")]
 		public string RequestObjectSigningAlg { get; set; }
 
 		[JsonProperty("software_statement")]
@@ -97,13 +106,13 @@ namespace CDR.DataRecipient.SDK.Models
 		}
 		public static (string ClientId, string DataHolderBrandId) SplitRegistrationId(string id)
 		{
-			var idParts = id.Split(IdDelimeter);
+			var idParts = id?.Split(IdDelimeter);
             if (idParts == null)
             {
                 return (null, null);
             }
 
-            if (idParts != null && idParts.Length != 2)
+            if (idParts.Length != 2)
 			{
 				return (null, null);
 			}

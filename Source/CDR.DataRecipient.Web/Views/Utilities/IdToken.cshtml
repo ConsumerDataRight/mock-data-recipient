@@ -2,7 +2,7 @@
 @using Microsoft.FeatureManagement
 @{
     ViewData["Title"] = "ID Token Helper";
-	var linkToExternalJwt = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.LinkToExternalJwt));
+	var linkToExternalJwt = await _featureManager.IsEnabledAsync(nameof(Feature.LinkToExternalJwt));
 }
 @model IdTokenModel
 @inject IFeatureManager _featureManager
