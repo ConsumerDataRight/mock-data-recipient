@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2023-02-16
+## [1.2.0] - 2023-03-21
 ### Changed 
 - Updated to be compliant with FAPI 1.0 phase 3.
 - Dynamic Client Registration Azure Function updated to be compliant with FAPI 1.0 phase 3.
