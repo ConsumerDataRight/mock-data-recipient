@@ -1,67 +1,65 @@
-<h2>To get started, clone the source code</h2>
-<div style="margin-left:18px;">
-1. Create a folder called CDR<br />
-2. Navigate to this folder<br />
-3. Clone the repo as a subfolder of this folder using the following command;<br />
-<div style="margin-left:18px;">
-git clone https://github.com/ConsumerDataRight/mock-data-recipient.git<br />
-</div>
-4. Install the required certificates. See certificate details <a href="../../CertificateManagement/README.md" title="Certificate Management" alt="Certificate Management - CertificateManagement/README.md"> here</a>.<br />
-5. Start the projects in the solution, can be done in multiple ways, examples below are from .Net command line and using MS Visual Studio<br />
-</div>
+# Getting Started
+To get started, clone the source code from the GitHub repositories by following the steps below:
 
-<h2>.Net command line</h2>
-<div style="margin-left:18px;">
-<p>1. Download and install the free <a href="https://docs.microsoft.com/en-us/windows/terminal/get-started" title="Download the free Windows Terminal here" alt="Download the free MS Windows Terminal here">MS Windows Terminal</a>
-<br />
-2. Use the <a href="../../Source/Start-Data-Recipient.bat" title="Use the Start-Data-Recipient .Net CLI batch file here" alt="Use the Start-Data-Recipient .Net CLI batch file here">Start-Data-Recipient</a> batch file to build and run the required projects to start the Mock Data Recipient,
-<br />
-this will create the LocalDB instance by default and seed the database with the supplied sample data.
-</p>
+1. Create a folder called CDR.
+2. Navigate to this folder.
+3. Clone the repo as a subfolder of this folder using the following command:
+```
+git clone https://github.com/ConsumerDataRight/mock-data-recipient.git
+```
+4. Install the required certificates. See certificate details [here](../../CertificateManagement/README.md "Certificate Management").  
+5. Start the projects in the solution. This can be done in multiple ways. This guide explains how to do this using .Net command line and using MS Visual Studio.
 
-[<img src="./images/DotNet-CLI-Running.png" height='180' width='800' alt="Start projects from .Net CLI"/>](./images/DotNet-CLI-Running.png)
+## Run solution using .Net command line
 
-<p>LocalDB is installed as part of MS Visual Studio if using MS VSCode then adding the MS SQL extension includes the LocalDB Instance.</p>
-<p>You can connect to the database from MS Visual Studio using the SQL Explorer, or from MS SQL Server Management Studio (SSMS) using
-	the following settings; <br />
-	Server type: Database Engine <br />
-	Server name: (LocalDB)\MSSQLLocalDB <br />
-	Authentication: Windows Authentication<br />
-</p>
-</div>
+1. Download and install the free [MS Windows Terminal](https://docs.microsoft.com/en-us/windows/terminal/get-started "Download the free Windows Terminal here").  
+2. Use the [Start-Data-Recipient](../../Source/Start-Data-Recipient.bat "Use the Start-Data-Recipient .Net CLI batch file here") batch file to build and run the required projects to start the Mock Data Recipient.
 
-<h2>MS Visual Studio</h2>
-<div style="margin-left:18px;">
-<p>To launch the application using MS Visual Studio,</p>
+[<img src="./images/DotNet-CLI-Running.png" width='625' alt="Start projects from .Net CLI"/>](./images/DotNet-CLI-Running.png)
 
-<p>1. Select the project to start.</p>
+The browser window will be started with the Mock Data Recipient solution.
 
-[<img src="./images/MS-Visual-Studio-Start.png" height='300' width='600' alt="Start the projects"/>](./images/MS-Visual-Studio-Start.png)
+[<img src="./images/Launch-application-in-browser.png" width='625' alt="Mock Data Recipient Running."/>](./images/Launch-application-in-browser.png)
 
-<p>2. Then start the project (Ctrl + F5 or F5 or Debug > Start Debugging).</p>
+This will create the LocalDB instance by default and seed the database with the supplied sample data.
 
-[<img src="./images/MS-Visual-Studio-Running.png" height='300' width='600' alt="Projects running"/>](./images/MS-Visual-Studio-Running.png)
+LocalDB is installed as part of MS Visual Studio. If using MS VSCode, the MS SQL extension will need to be installed.
 
-An output window will be launched for the selected project started.<br />
-This will show the logging messages as sent to the console of the running project.
-<br />
+You can connect to the database from MS Visual Studio using the SQL Explorer, or from MS SQL Server Management Studio (SSMS) using the following settings:
+```
+Server type: Database Engine  
+Server name: (LocalDB)\\MSSQLLocalDB  
+Authentication: Windows Authentication  
+```
 
-<p><h3>Debugging the running project using MS Visual Studio can be performed as follows;</h3>
 
-<p>1. Select the project you want to debug and place the appropriate breakpoints as desired.</p>
+## Run solution using MS Visual Studio
 
-[<img src="./images/Debug-using-MS-Visual-Studio-pt1.png" height='300' width='600' alt="Place breakpoint(s) in the projects"/>](./images/Debug-using-MS-Visual-Studio-pt1.png)
+### Start the Mock Data Recipient
 
-<p>2. Start a new debug instance for the selected project (F5 or Debug > Start Debugging).</p>
-<div style="margin-left:18px;margin-top:-12px;">
-	A new output window for the debug project will be started.
-</div>
-<br />
+The following steps outline describe how to launch the Mock Data Recipient solution using MS Visual Studio:
 
-[<img src="./images/Debug-using-MS-Visual-Studio-pt2.png" height='300' width='600' alt="Start a new debug instance"/>](./images/Debug-using-MS-Visual-Studio-pt2.png)
+1. Open the Mock Data Recipient solution using MS Visual Studio.
 
-<p>The browser window will be started with the Mock Data Recipient solution.</p>
+2. Select the 'CDR.DataRecipient.WEB' project.
 
-[<img src="./images/Launch-application-in-browser.png" height='300' width='600' alt="Newly started output window"/>](./images/Launch-application-in-browser.png)
+[<img src="./images/MS-Visual-Studio-Select-Project.png" width='625' alt="Select the project"/>](./images/MS-Visual-Studio-Select-Project.png)
 
-</div>
+2. Click "Start" to start the Mock Data Recipient solution.
+
+[<img src="./images/MS-Visual-Studio-Start.png" width='625' alt="Start the projects"/>](./images/MS-Visual-Studio-Start.png)
+
+An output window will be launched for the Mock Data Recipient showing the logging messages as sent to the console. E.g.
+
+[<img src="./images/MS-Visual-Studio-Running.png" width='625' alt="Projects running"/>](./images/MS-Visual-Studio-Running.png)
+
+The browser window will be started with the Mock Data Recipient solution.
+
+[<img src="./images/Launch-application-in-browser.png" width='625' alt="Mock Data Recipient Running"/>](./images/Launch-application-in-browser.png)
+
+
+### Debugging using MS Visual Studio
+
+To run the Mock Data Recipient in debug mode, simply follow the steps outlined above and click on the "Start" button as shown in the image below:
+
+[<img src="./images/MS-Visual-Studio-Start-Debug.png" width='625' alt="Debug Mock Data Recipient"/>](./images/MS-Visual-Studio-Start-Debug.png)

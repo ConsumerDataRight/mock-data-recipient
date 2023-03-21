@@ -32,6 +32,9 @@ COPY --from=publish /app/publish/web ./web
 RUN apt-get update && apt-get install -y supervisor
 RUN apt-get update && apt-get install -y sudo
 
+# Install wget for use in health checks
+RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+
 RUN sudo cp ./web/Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
 RUN sudo update-ca-certificates
 

@@ -8,11 +8,6 @@
 <p>This page allows you to use the Mock Data Recipient to commence the PAR process with a data holder.</p>  
 <p>The outcome of this process will be an access token that can then be used for consumer data sharing.</p>
 
-<strong>
-    <em>
-        <p>Note: PKCE support has been added in order to test Data Holder implementations in preparation for FAPI 1.0 adoption.</p>
-    </em>
-</strong>
 
 <br/> 
 <div class="card">
@@ -22,13 +17,14 @@
 
             @using (Html.BeginForm())
             {
-                @Html.HiddenFor(m => m.RedirectUris)
-
                 <div class="form">
                     <div class="row mb-3">
                         @Html.LabelFor(m => m.RegistrationId, new { @class = "col-sm-2 col-form-label" })
                         <div class="col-sm-10">
                             @Html.DropDownListFor(m => m.RegistrationId, Model.RegistrationListItems, "Select registration...", new { @class = "form-control" })
+                            <div id="registrationid-validation-message">
+                            @Html.ValidationMessageFor(model => model.RegistrationId, "", new {@class = "text-danger"})
+                            </div>
                         </div>
                     </div>
 
@@ -44,6 +40,7 @@
                             @Html.LabelFor(m => m.SharingDuration, "SharingDuration (in Seconds)", htmlAttributes: new { @class = "col-sm-2 col-form-label" })
                             <div class="col-sm-10">
                                 @Html.TextBoxFor(m => m.SharingDuration, new { @class = "form-control" })
+                                <small><i>* Maximum Sharing Period is 12 months</i></small>
                             </div>
                         </div>
 
@@ -60,6 +57,20 @@
                                     @Html.CheckBoxFor(m => m.UsePkce, new { @class = "form-check-input" })
                                     @Html.LabelFor(m => m.UsePkce, new { @class = "form-check-label" })
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            @Html.LabelFor(m => m.ResponseType, new { @class = "col-sm-2 col-form-label" })
+                            <div class="col-sm-10">
+                                @Html.TextBoxFor(m => m.ResponseType, new { @class = "form-control" })
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            @Html.LabelFor(m => m.ResponseMode, new { @class = "col-sm-2 col-form-label" })
+                            <div class="col-sm-10">
+                                @Html.TextBoxFor(m => m.ResponseMode, new { @class = "form-control" })
                             </div>
                         </div>
 
@@ -126,6 +137,7 @@
 			$('#RegistrationId').click(function () {
 				var registrationId = $('#RegistrationId option:selected').val();
 				if (registrationId !== null && registrationId !== '') {
+                    $('#registrationid-validation-message').hide();
                     $.ajax({
                         url: '/par/registration/detail',
                         type: 'POST',
@@ -137,7 +149,6 @@
                                 modal.show();
                                 $('#modal-messages').html(result.message);
                             } else {
-                                $('#RedirectUris').val(result.redirectUris);
                                 $('#Scope').val(result.scope);
 
                                 var $select = $("#CdrArrangementId");

@@ -6,9 +6,11 @@ namespace CDR.DataRecipient.Repository.SQL.Entities
     public class CdrArrangement
     {
         [Key]
-        public Guid CdrArrangementId { get; set; }
-
-        public Guid ClientId { get; set; }
+        [MaxLength(100)]
+        public string CdrArrangementId { get; set; }
+        
+        [MaxLength(100)]
+        public string ClientId { get; set; }
 
         public string UserId { get; set; }
 

@@ -1,6 +1,6 @@
 ﻿@{
 	ViewData["Title"] = "Data Holders";
-	var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDataHolderRefresh));
+	var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDataHolderRefresh));
 }
 @using CDR.DataRecipient.SDK.Enumerations
 @using CDR.DataRecipient.Web.Extensions

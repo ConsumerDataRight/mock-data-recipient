@@ -7,9 +7,9 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure.API2
 {
     public class ClientAssertion
     {
-        public string? CertificateFilename { get; init; } //= BaseTest.CERTIFICATE_FILENAME;
-        public string? CertificatePassword { get; init; } //= BaseTest.CERTIFICATE_PASSWORD;
-        public string? Iss { get; init; } // = BaseTest.SOFTWAREPRODUCT_ID.ToLower();
+        public string? CertificateFilename { get; init; } 
+        public string? CertificatePassword { get; init; } 
+        public string? Iss { get; init; } 
         public string? Aud { get; init; }
         public string? Kid { get; init; }
 

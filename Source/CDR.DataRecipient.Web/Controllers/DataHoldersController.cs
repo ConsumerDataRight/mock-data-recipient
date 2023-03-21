@@ -53,7 +53,7 @@ namespace CDR.DataRecipient.Web.Controllers
             return View(model);
         }
 
-        [FeatureGate(nameof(FeatureFlags.AllowDataHolderRefresh))]
+        [FeatureGate(nameof(Feature.AllowDataHolderRefresh))]
         [HttpPost]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index(DataHoldersModel model)
@@ -114,7 +114,7 @@ namespace CDR.DataRecipient.Web.Controllers
             model.Messages = $"{statusCode}: {inserted} data holder brands added.  {updated} data holder brands updated.";
         }
 
-        [FeatureGate(nameof(FeatureFlags.AllowDataHolderRefresh))]
+        [FeatureGate(nameof(Feature.AllowDataHolderRefresh))]
         [HttpPost]
         [Route("reset/dataholderbrands")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
@@ -127,7 +127,7 @@ namespace CDR.DataRecipient.Web.Controllers
         private async Task PopulateModel(DataHoldersModel model)
         {
             var reg = _config.GetRegisterConfig();
-            var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDataHolderRefresh));
+            var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDataHolderRefresh));
 
             model.DataHolders = (await _repository.GetDataHolderBrands()).OrderByMockDataHolders(allowDataHolderRefresh);
 

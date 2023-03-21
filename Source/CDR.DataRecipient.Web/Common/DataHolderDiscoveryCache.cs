@@ -13,23 +13,20 @@ using Microsoft.FeatureManagement;
 namespace CDR.DataRecipient.Web.Common
 {
     public class DataHolderDiscoveryCache : IDataHolderDiscoveryCache
-    {
-        private readonly IConfiguration _configuration;
+    {        
         private readonly IDistributedCache _cache;
         private readonly IInfosecService _dhInfosecService;
         private readonly IDataHoldersRepository _dhRepository;
         private readonly IFeatureManager _featureManager;
         private readonly ILogger<DataHolderDiscoveryCache> _logger;
 
-        public DataHolderDiscoveryCache(
-            IConfiguration configuration,
+        public DataHolderDiscoveryCache(            
             IDistributedCache cache,
             IInfosecService dhInfosecService,
             IDataHoldersRepository dhRepository,
             IFeatureManager featureManager,
             ILogger<DataHolderDiscoveryCache> logger)
-        {
-            _configuration = configuration;
+        {            
             _cache = cache;
             _dhInfosecService = dhInfosecService;
             _dhRepository = dhRepository;
@@ -46,7 +43,7 @@ namespace CDR.DataRecipient.Web.Common
                 _logger.LogDebug("Discovery document for {dataHolderBrandId} not found in cache.  Retrieving...", dataHolderBrandId);
 
                 DataHolderBrand dataHolder;
-                var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
+                var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDynamicClientRegistration));
                 if (allowDynamicClientRegistration)
                     dataHolder = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
                 else

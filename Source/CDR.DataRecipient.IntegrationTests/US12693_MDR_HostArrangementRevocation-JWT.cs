@@ -573,48 +573,6 @@ namespace CDR.DataRecipient.IntegrationTests
             }
         }
 
-        // TODO: this is an interesting case.  Having a non-matching kid (key id) does not break the validation.
-        // It appears like the MS library will validate the signature anyway with the key values in the JWKS even if the kid doesn't directly match.
-        //[Fact]
-        //public async Task AC08_Post_WithInvalidSignatureCDRArrangementJwt_ShouldRespondWith_400InvalidField_ErrorResponse()
-        //{
-        //    // Arrange 
-        //    var cdrArrangementId = await Arrange();
-        //    var cdrArrangementJwt = CreateCdrArrangementJwt(cdrArrangementId, kid: "foo");
-        //    var apiCall = new Infrastructure.API
-        //    {
-        //        CertificateFilename = DATAHOLDER_CERTIFICATE_FILENAME,
-        //        CertificatePassword = DATAHOLDER_CERTIFICATE_PASSWORD,
-        //        HttpMethod = HttpMethod.Post,
-        //        URL = DATARECIPIENT_ARRANGEMENTS_REVOKE_URL,
-        //        AccessToken = GetClientAssertion(),
-        //        Content = new FormUrlEncodedContent(new List<KeyValuePair<string?, string?>>
-        //            {
-        //                new KeyValuePair<string?, string?>("cdr_arrangement_jwt", cdrArrangementJwt)
-        //            }),
-        //        ContentType = MediaTypeHeaderValue.Parse("application/x-www-form-urlencoded"),
-        //    };
-
-        //    // Act
-        //    var response = await apiCall.SendAsync();
-
-        //    // Assert
-        //    using (new AssertionScope())
-        //    {
-        //        // Assert - Check status code
-        //        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-        //        var expectedContent = @"{
-        //                ""errors"": [{
-        //                    ""code"": ""urn:au-cds:error:cds-all:Field/Invalid"",
-        //                    ""title"": ""Invalid Field"",
-        //                    ""detail"": ""cdr_arrangement_jwt""
-        //                }]
-        //            }";
-        //        await Assert_HasContent_Json(expectedContent, response.Content);
-        //    }
-        //}
-
         [Fact]
         public async Task AC08b_Post_WithInvalidSignatureCDRArrangementJwt_ShouldRespondWith_400InvalidField_ErrorResponse()
         {
@@ -763,10 +721,7 @@ namespace CDR.DataRecipient.IntegrationTests
                 response.StatusCode.Should().Be(HttpStatusCode.NoContent);
             }
         }
-
-        //
-        // TODO: The tests below should kick in from 15/11/2022
-        //
+      
         [Fact]
         public async Task AC12_Post_WithInvalidClaimsValuesInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
         {

@@ -1,4 +1,7 @@
-﻿namespace CDR.DataRecipient.Web.Common
+﻿using Microsoft.AspNetCore.Components;
+using System.Net.NetworkInformation;
+
+namespace CDR.DataRecipient.Web.Common
 {
     public static class Constants
     {
@@ -97,12 +100,23 @@
             public const string InvalidField = "Invalid Field";
             public const string InvalidArrangement = "Invalid Consent Arrangement";
             public const string InvalidHeader = "Invalid Header";
+            public const string InvalidResponse = "Invalid Response";
         }
 
         public static class CdrArrangementRevocationRequest
         {
             public const string CdrArrangementId = "cdr_arrangement_id";
             public const string CdrArrangementJwt = "cdr_arrangement_jwt";
+        }
+
+        public static class ErrorDescription 
+        {            
+            public const string MissingAuthCode = "authCode is missing";
+            public const string MissingState= "state is missing";
+            public const string MissingAuthState = "authState is missing";
+            public const string MissingDiscoveryDocument = "data holder document not found";
+            public const string MissingResponse = "response is missing";
+            public const string FailedDecryption = "Failed to decrypt response JWT";
         }
 
         public static class Defaults

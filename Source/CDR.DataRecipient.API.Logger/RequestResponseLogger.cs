@@ -8,15 +8,10 @@
     public class RequestResponseLogger : IRequestResponseLogger, IDisposable
     {
         private readonly Logger _logger;
-        private readonly IConfiguration _configuration;
-
         public ILogger Log { get { return _logger; } }
 
         public RequestResponseLogger(IConfiguration configuration)
         {
-
-            _configuration = configuration;
-
             _logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration, sectionName: "SerilogRequestResponseLogger")
                 .Enrich.WithProperty("RequestMethod", "")
@@ -32,6 +27,7 @@
                 .Enrich.WithProperty("RequestIpAddress", "")
                 .Enrich.WithProperty("ClientId", "")
                 .Enrich.WithProperty("SoftwareId", "")
+                .Enrich.WithProperty("DataHolderBrandId", "")
                 .Enrich.WithProperty("FapiInteractionId", "")
                 .CreateLogger();
         }

@@ -13,13 +13,14 @@ services:
       - "7006:7006"
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
-    volumes:
-      - "./_temp/mock-register/tmp:/tmp"      
+    # FIXME - MJS - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user                  
+    # volumes:
+    #   - "./_temp/mock-register/tmp:/tmp"      
     healthcheck:
-      test: test -f /app/admin/_healthcheck_ready || exit 1
+      test: wget --no-check-certificate --no-verbose --spider https://localhost:7006/health || exit 1
       timeout: 5s
       interval: 5s
-      retries: 100
+      retries: 50
     depends_on:
       mssql:
         condition: service_healthy
@@ -33,15 +34,21 @@ services:
       - "8001:8001"
       - "8002:8002"
       - "8005:8005"
+      # auth ui
+      - "3000:3000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
-    volumes:
-      - "./_temp/mock-data-holder/tmp:/tmp"      
+      # tests need expiry of 3600
+      - CdrAuthServer__AccessTokenExpirySeconds=3600
+      - CdrAuthServer__SupportJarmEncryption=true
+    # FIXME - MJS - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user                  
+    # volumes:
+    #   - "./_temp/mock-data-holder/tmp:/tmp"      
     healthcheck:
-      test: test -f /app/manage/_healthcheck_ready || exit 1
+      test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8005/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:8001/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:3000)) || exit 1      
       timeout: 5s
       interval: 5s
-      retries: 100    
+      retries: 50    
     depends_on:
       mock-register:
         condition: service_healthy        
@@ -54,38 +61,45 @@ services:
       - "8100:8100"
       - "8101:8101"
       - "8102:8102"
-      - "8105:8005"
+      - "8105:8105"
+      # auth ui
+      - "3100:3100"
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
-    volumes:
-      - "./_temp/mock-data-holder-energy/tmp:/tmp"      
+      # tests need expiry of 3600
+      - CdrAuthServer__AccessTokenExpirySeconds=3600
+      - CdrAuthServer__SupportJarmEncryption=true
+    # FIXME - MJS - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user                  
+    # volumes:
+    #   - "./_temp/mock-data-holder-energy/tmp:/tmp"      
     healthcheck:
-      test: test -f /app/manage/_healthcheck_ready || exit 1
+      test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8105/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:8101/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:3100)) || exit 1      
       timeout: 5s
       interval: 5s
-      retries: 100    
+      retries: 50    
     depends_on:
       mock-data-holder:
         condition: service_healthy       
 
   mock-data-recipient:
-    container_name: mock-data-recipient-for-testing
-    image: mock-data-recipient-for-testing
+    container_name: mock-data-recipient
+    image: mock-data-recipient
     hostname: mock-data-recipient
     ports: 
       - "9001:9001"
     build:
       context: .
-      dockerfile: Dockerfile.for-testing
+      dockerfile: Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
-    volumes:
-      - "./_temp/mock-data-recipient/tmp:/tmp"      
+    # FIXME - MJS - commented out volumes below as volume is mounted as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops container from starting because of different user                  
+    # volumes:
+    #   - "./_temp/mock-data-recipient/tmp:/tmp"      
     healthcheck:
-      test: test -f /app/web/_healthcheck_ready || exit 1
+      test: wget --no-check-certificate --no-verbose --spider https://localhost:9001/health || exit 1
       timeout: 5s
       interval: 5s
-      retries: 100    
+      retries: 50
     depends_on:
       mock-data-holder-energy:
         condition: service_healthy
@@ -110,7 +124,6 @@ services:
     image: 'mcr.microsoft.com/mssql/server:2019-latest'
     ports: 
       - "1433:1433"
-      - "9933:1433"
     environment:
       - ACCEPT_EULA=Y
       - SA_PASSWORD=Pa{}w0rd2019
@@ -118,4 +131,4 @@ services:
       test: /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "Pa{}w0rd2019" -Q "SELECT 1" || exit 1 
       timeout: 5s
       interval: 5s
-      retries: 100    
+      retries: 20    
