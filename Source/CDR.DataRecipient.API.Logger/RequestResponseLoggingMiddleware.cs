@@ -83,7 +83,8 @@ namespace CDR.DataRecipient.API.Logger
                 .ForContext("ResponseBody", _responseBody)
                 .ForContext("ClientId", _clientId)
                 .ForContext("SoftwareId", _softwareId)
-                .ForContext("FapiInteractionId", _fapiInteractionId);
+                .ForContext("FapiInteractionId", _fapiInteractionId)
+                .ForContext("DataHolderBrandId", _dataHolderBrandId);
 
             if (!string.IsNullOrEmpty(_exceptionMessage))
             {
@@ -115,7 +116,7 @@ namespace CDR.DataRecipient.API.Logger
                 _requestQueryString = context.Request.QueryString.ToString();
                 _requestPathBase = context.Request.PathBase.ToString();
 
-                IEnumerable<string> keyValues = context.Request.Headers.Keys.Select(key => key + ": " + string.Join(",", context.Request.Headers[key]));
+                IEnumerable<string> keyValues = context.Request.Headers.Keys.Select(key => key + ": " + string.Join(",", context.Request.Headers[key].ToArray()));
                 _requestHeaders = string.Join(Environment.NewLine, keyValues);
 
                 ExtractIdFromRequest(context.Request);
@@ -126,17 +127,15 @@ namespace CDR.DataRecipient.API.Logger
             }
         }
 
-        class ClaimIdentifiers
+        static class ClaimIdentifiers
         {
-            public const string ClientId = "client_id";
-            public const string SoftwareId = "software_id";
             public const string Iss = "iss";
         }
 
-        void SetIdFromJwt(string jwt, string identifierType, ref string idToSet)
+        private static void SetIdFromJwt(string jwt, string identifierType, ref string idToSet)
         {
             var handler = new JwtSecurityTokenHandler();
-            if (handler.CanReadToken(jwt) == true)
+            if (handler.CanReadToken(jwt))
             {
                 var decodedJwt = handler.ReadJwtToken(jwt);
                 var id = decodedJwt.Claims.FirstOrDefault(x => x.Type == identifierType)?.Value ?? String.Empty;
@@ -223,7 +222,7 @@ namespace CDR.DataRecipient.API.Logger
                 _responseBody = await new StreamReader(responseBody).ReadToEndAsync();
                 responseBody.Seek(0, SeekOrigin.Begin);
 
-                IEnumerable<string> keyValues = httpContext.Response.Headers.Keys.Select(key => key + ": " + string.Join(",", httpContext.Response.Headers[key]));
+                IEnumerable<string> keyValues = httpContext.Response.Headers.Keys.Select(key => key + ": " + string.Join(",", httpContext.Response.Headers[key].ToArray()));
                 _responseHeaders = string.Join(System.Environment.NewLine, keyValues);
 
                 _statusCode = httpContext.Response.StatusCode.ToString();

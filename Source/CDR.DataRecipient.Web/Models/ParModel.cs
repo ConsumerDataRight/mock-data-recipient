@@ -16,7 +16,7 @@ namespace CDR.DataRecipient.Web.Models
 		/// This has the format of {ClientId}|||{DataHolderBrandId}
 		/// </summary>
 		[Display(Name = "Registration")]
-        [Required]
+        [Required(ErrorMessage = "Please select a registration")]
         public string RegistrationId { get; set; }
         public string ClientId
         {
@@ -39,8 +39,6 @@ namespace CDR.DataRecipient.Web.Models
         [Display(Name = "Sharing Duration")]
         public int? SharingDuration { get; set; }
 
-        public string RedirectUris { get; set; }
-
         [Display(Name = "Scope")]
         [Required]
         public string Scope { get; set; }
@@ -48,6 +46,12 @@ namespace CDR.DataRecipient.Web.Models
         [Display(Name = "Use PKCE")]
         public bool UsePkce { get; set; }
 
+        [Display(Name = "Response Type")]
+        public string ResponseType { get; set; }
+
+        [Display(Name = "Response Mode")]
+        public string ResponseMode { get; set; }
+        
         public IEnumerable<SelectListItem> RegistrationListItems { get; set; }
 
         public IEnumerable<SelectListItem> ConsentArrangementListItems { get; set; }

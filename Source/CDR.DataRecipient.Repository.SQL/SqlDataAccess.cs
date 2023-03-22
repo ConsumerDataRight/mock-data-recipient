@@ -119,7 +119,6 @@ namespace CDR.DataRecipient.Repository.SQL
             {
                 db.Open();
 
-                var clientId = new Guid(consentArrangement.ClientId);
                 var jsonDocument = JsonConvert.SerializeObject(consentArrangement);
 
                 //special case for CdrArrangements
@@ -134,7 +133,7 @@ namespace CDR.DataRecipient.Repository.SQL
                                 
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@arrangementId", consentArrangement.CdrArrangementId);
-                sqlCommand.Parameters.AddWithValue("@clientId", clientId);
+                sqlCommand.Parameters.AddWithValue("@clientId", consentArrangement.ClientId);
                 sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);
                     
                 if (!string.IsNullOrEmpty(consentArrangement.UserId))
@@ -350,9 +349,10 @@ namespace CDR.DataRecipient.Repository.SQL
         /// </remarks>
         /// <returns>[true|false]</returns>
         /// This needs to be string?
-        public async Task<Guid> GetRegByDHBrandId(string dhBrandId)
+        public async Task<string> GetRegByDHBrandId(string dhBrandId)
         {
-            Guid clientId = Guid.Empty;
+            var clientId = string.Empty;
+
             using (SqlConnection db = new(_dbConn))
             {
                 db.Open();
@@ -364,7 +364,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 {
                     while (reader.Read())
                     {
-                        clientId = reader.GetGuid(0);
+                        clientId = reader.GetString(0);
                     }
                 }
 
@@ -456,7 +456,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 db.Open();
                 var sqlQuery = "SELECT [ClientId],[DataHolderBrandId],[BrandName],[MessageState],[LastUpdated] FROM [dbo].[DcrMessage] WHERE [MessageState] != @msgState";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
-                sqlCommand.Parameters.AddWithValue("@msgState", MessageEnum.Pending.ToString());
+                sqlCommand.Parameters.AddWithValue("@msgState", Message.Pending.ToString());
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {

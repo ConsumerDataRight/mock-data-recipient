@@ -1,7 +1,7 @@
 # Dockerfile for E2E tests
 
-# NB: Ensure playwright version used in CDR.DataRecipient.E2ETests and base image below are same (ie currently 1.24.1)
-FROM mcr.microsoft.com/playwright/dotnet:v1.24.1-focal as build
+# NB: Ensure playwright version used in CDR.DataRecipient.E2ETests and base image below are same (ie currently 1.26.0)
+FROM mcr.microsoft.com/playwright/dotnet:v1.26.0-focal as build
 
 ###############################################################################
 # Build E2E tests

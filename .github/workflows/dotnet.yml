@@ -91,7 +91,7 @@ jobs:
     # Build mock-data-recipient image
     - name: Build the mock-data-recipient image
       run: |
-        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.for-testing --tag mock-data-recipient:latest
+        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile --tag mock-data-recipient:latest
 
     # Build mock-data-recipient-integration-tests image
     - name: Build the mock-data-recipient-integration-tests image

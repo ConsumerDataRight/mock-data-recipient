@@ -1,3 +1,5 @@
+#undef DEPRECATED  // instead see US23863_MDR_E2ETests_v2
+#if DEPRECATED
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Microsoft.Playwright;
@@ -831,7 +833,8 @@ namespace CDR.DataRecipient.E2ETests
                     );
 
                     // Arrange - Click GET​/banking​/accountsGet Accounts
-                    await iFrame.ClickAsync("text=GET​/banking​/accountsGet Accounts");
+                    // await iFrame.ClickAsync("text=GET​/banking​/accountsGet Accounts");
+                    await iFrame.ClickAsync("text=Banking GET/banking/accountsGet AccountsGET/banking/accounts/balancesGet Bulk Ba >> [aria-label=\"get ​\\/banking​\\/accounts\"]");
 
                     // Arrange - Click Try it out
                     await iFrame.ClickAsync("text=Try it out");
@@ -935,7 +938,8 @@ namespace CDR.DataRecipient.E2ETests
                     );
 
                     // Arrange - Click GET​/energy​/accountsGet Energy Accounts
-                    await iFrame.ClickAsync("text=GET​/energy​/accountsGet Energy Accounts");
+                    // await iFrame.ClickAsync("text=GET​/energy​/accountsGet Energy Accounts");
+                    await iFrame.ClickAsync("text=Energy GET/energy/plansGet Generic PlansGET/energy/plans/{planId}Get Generic Pla >> [aria-label=\"get ​\\/energy​\\/accounts\"]");
 
                     // Arrange - Click Try it out
                     await iFrame.ClickAsync("text=Try it out");
@@ -1057,3 +1061,4 @@ namespace CDR.DataRecipient.E2ETests
         }
     }
 }
+#endif

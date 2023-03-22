@@ -118,10 +118,8 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
             // Signing credentials
             tokenDescriptor.SigningCredentials = securityAlgorithm switch
             {
-                // SecurityAlgorithm.HmacSha256 => new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256),
                 SecurityAlgorithm.HmacSha256 => new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature),
 
-                // SecurityAlgorithm.RsaSsaPssSha256 => new SigningCredentials(GetRsaSecurityKey(keyBytes), SecurityAlgorithms.RsaSsaPssSha256),
                 SecurityAlgorithm.RsaSsaPssSha256 => new SigningCredentials(GetRsaSecurityKey(keyBytes), SecurityAlgorithms.RsaSsaPssSha256Signature),
 
                 _ => throw new ArgumentOutOfRangeException(nameof(securityAlgorithm))
@@ -137,10 +135,6 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         {
             var rsa = RSA.Create();
             rsa.ImportPkcs8PrivateKey(keyBytes, out _);
-            //rsa.ImportPkcs8PrivateKey(keyBytes, out _);
-            //var rsaSecurityKey = new RsaSecurityKey(rsa);
-            //var key1 = CngKey.Import(keyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob);
-            //var rsa = new RSACng(key1);
 
             var kid = GetKeyId(rsa);
             var rsaSecurityKey = new RsaSecurityKey(rsa)

@@ -2,19 +2,15 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
     [Route("oidc")]
     public class OidcController : Controller
-    {
-        private readonly IConfiguration _config;
-
-        public OidcController(IConfiguration config)
-        {            
-            _config = config;
+    {        
+        public OidcController()
+        {                 
         }
 
         [Route("remoteerror")]

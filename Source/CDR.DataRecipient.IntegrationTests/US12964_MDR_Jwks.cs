@@ -20,9 +20,10 @@ namespace CDR.DataRecipient.IntegrationTests
 				public string use { get; set; }
 				public string kid { get; set; }
 				public string e { get; set; }
-				public string n { get; set; }
-#pragma warning restore IDE1006                
-			}
+                public string n { get; set; }
+                public string alg { get; set; }
+#pragma warning restore IDE1006
+            }
 
 			public Key[] Keys { get; set; }
 		}
@@ -52,11 +53,13 @@ namespace CDR.DataRecipient.IntegrationTests
                 // Assert - Check JWKS
                 var actualJson = await response.Content.ReadAsStringAsync();
                 var actual = JsonConvert.DeserializeObject<Jwks_Expected>(actualJson);
-                actual.Keys.Length.Should().Be(2);
+                actual.Keys.Length.Should().Be(3);
                 var sigKey = actual.Keys.FirstOrDefault(k => k.use == "sig");
                 sigKey.Should().NotBeNull();
-                var encKey = actual.Keys.FirstOrDefault(k => k.use == "enc");
-                encKey.Should().NotBeNull();
+                var encKeyOaep = actual.Keys.FirstOrDefault(k => k.use == "enc" && k.alg == "RSA-OAEP");
+                encKeyOaep.Should().NotBeNull();
+                var encKeyOaep256 = actual.Keys.FirstOrDefault(k => k.use == "enc" && k.alg == "RSA-OAEP-256");
+                encKeyOaep256.Should().NotBeNull();
             }
         }
 	}

@@ -45,9 +45,154 @@
         </ul>
     }
 </p>
+<p id="parFragment">
+
+</p>
 
 @section Scripts {
     <script type="text/javascript">
         setSidebarMenuItem('consent');
+        
+        jQuery(document).ready(function ($) {            
+            var postBody = location.hash.substring(1);
+
+            //code id_token, fragment
+            //PAR fragment JARM validations
+            if (postBody.includes("code") & postBody.includes("id_token")){                
+                let params = new URLSearchParams(postBody);
+                var code = params.get("code");
+                var idtoken = params.get("id_token");
+                var state = params.get("state");
+
+                var parForm = document.getElementById("parFragment");
+                
+                // Create a form dynamically
+                var form = document.createElement("form");
+
+                form.setAttribute("method", "post");
+                form.setAttribute("action", "/consent/callback");
+                form.setAttribute("hidden", "true");
+
+                // Create an input element for code element
+                var codeElement = document.createElement("input");
+                codeElement.setAttribute("type", "text");
+                codeElement.setAttribute("name", "code");
+                codeElement.setAttribute("value", code);
+
+                var idTokenElement = document.createElement("input");
+                idTokenElement.setAttribute("type", "text");
+                idTokenElement.setAttribute("name", "id_token");
+                idTokenElement.setAttribute("value", idtoken);
+
+                var stateElement = document.createElement("input");
+                stateElement.setAttribute("type", "text");
+                stateElement.setAttribute("name", "state");
+                stateElement.setAttribute("value", state);
+                
+                // create a submit button
+                var s = document.createElement("input");
+                s.setAttribute("type", "submit");
+                s.setAttribute("value", "Submit");
+                
+                form.appendChild(codeElement);
+                form.appendChild(idTokenElement);
+                form.appendChild(stateElement);
+                    
+                // Append the submit button to the form
+                form.appendChild(s);
+                
+                document.getElementsByTagName("body")[0]
+                    .appendChild(form);
+
+                form.submit();                
+            }
+            //PAR fragment.jwt JARM validations
+            else if  (postBody.includes("response")){                
+                let params = new URLSearchParams(postBody);
+                var response = params.get("response");
+                
+                var parForm = document.getElementById("parFragment");
+
+                // Create a form dynamically
+                var form = document.createElement("form");
+
+                form.setAttribute("method", "post");
+                form.setAttribute("action", "/consent/callback");
+                form.setAttribute("hidden", "true");
+
+                // Create an input element for code element
+                var responseElement = document.createElement("input");
+                responseElement.setAttribute("type", "text");
+                responseElement.setAttribute("name", "response");
+                responseElement.setAttribute("value", response);
+                
+                // create a submit button
+                var s = document.createElement("input");
+                s.setAttribute("type", "submit");
+                s.setAttribute("value", "Submit");
+
+                form.appendChild(responseElement);
+                
+                // Append the submit button to the form
+                form.appendChild(s);
+
+                document.getElementsByTagName("body")[0]
+                    .appendChild(form);
+
+                form.submit();
+            }
+            else if (postBody.includes("error"))
+            {
+                let params = new URLSearchParams(postBody);
+                var error = params.get("error");
+                var error_description = params.get("error_description");
+
+                // Create a form dynamically
+                var form = document.createElement("form");
+
+                form.setAttribute("method", "post");
+                form.setAttribute("action", "/consent/callback");
+                form.setAttribute("hidden", "true");
+
+                // Create an input element for error element
+                var errorElement = document.createElement("input");
+                errorElement.setAttribute("type", "text");
+                errorElement.setAttribute("name", "error");
+                errorElement.setAttribute("value", error);
+
+                //create an input element for error_code
+                const errorCode = error_description.split(':')[0];
+                var errorCodeElement = document.createElement("input");
+                errorCodeElement.setAttribute("type", "text");
+                errorCodeElement.setAttribute("name", "error_code");
+                errorCodeElement.setAttribute("value", errorCode);
+               
+
+                // Create an input element for error_description element
+                const errorDescription = error_description.split(':')[1];
+                var errorDescriptionElement = document.createElement("input");
+                errorDescriptionElement.setAttribute("type", "text");
+                errorDescriptionElement.setAttribute("name", "error_description");
+                errorDescriptionElement.setAttribute("value", errorDescription);
+
+                // create a submit button
+                var s = document.createElement("input");
+                s.setAttribute("type", "submit");
+                s.setAttribute("value", "Submit");
+
+                form.appendChild(errorElement);
+                form.appendChild(errorDescriptionElement);
+                form.appendChild(errorCodeElement);
+
+                // Append the submit button to the form
+                form.appendChild(s);
+
+                document.getElementsByTagName("body")[0]
+                    .appendChild(form);
+
+                form.submit();
+            }
+        });
+
     </script>
 }

@@ -17,9 +17,11 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
@@ -152,6 +154,16 @@ namespace CDR.DataRecipient.Web.Controllers
                 Method = this.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) ? HttpMethod.Get : HttpMethod.Post,
                 RequestUri = new Uri(requestUri)
             };
+
+            // Add the body to the request for POST requests.
+            if (request.Method.Equals(HttpMethod.Post))
+            {
+                using var reader = new StreamReader(this.Request.Body);
+
+                // You now have the body string raw
+                var requestBody = await reader.ReadToEndAsync();
+                request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+            }
 
             // Don't add the host header or there will be CORS errors. This has to be added to the where.
             foreach (var header in this.Request.Headers.Keys.Where(h => _allowedHeaders.Contains(h, StringComparer.OrdinalIgnoreCase)))

@@ -1,12 +1,16 @@
 ﻿using CDR.DataRecipient.SDK.Extensions;
+using CDR.DataRecipient.Web.Common;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
+using IdentityModel;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
@@ -69,15 +73,17 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             var cert = GetCertificate(id.Value);
-
             // Get credentials from certificate
             var securityKey = new X509SecurityKey(cert);
             var signingCredentials = new X509SigningCredentials(cert, SecurityAlgorithms.RsaSsaPssSha256);
-            var encryptingCredentials = new X509EncryptingCredentials(cert, SecurityAlgorithms.RsaOaepKeyWrap, SecurityAlgorithms.RsaOAEP);
+            var encryptionCredentials = cert.GetEncryptionCredentials();
 
             var rsaParams = signingCredentials.Certificate.GetRSAPublicKey().ExportParameters(false);
             var e = Base64UrlEncoder.Encode(rsaParams.Exponent);
             var n = Base64UrlEncoder.Encode(rsaParams.Modulus);
+
+            // Create JWKs for sig and enc purposes.
+            // Make sure the kid is different for each key. FAPI 1.0 - kid needs to be unique id within the keyset.
 
             var jwkSign = new SDK.Models.JsonWebKey()
             {
@@ -88,16 +94,19 @@ namespace CDR.DataRecipient.Web.Controllers
                 e = e,
                 use = "sig"
             };
-
-            var jwkEnc = new SDK.Models.JsonWebKey()
+            var jwkEncList = encryptionCredentials.Keys.Select(key =>
             {
-                alg = encryptingCredentials.Enc,
-                kid = encryptingCredentials.Key.KeyId.Sha256(), // FAPI 1.0 - kid needs to be unique id within the keyset.
-                kty = securityKey.PublicKey.KeyExchangeAlgorithm,
-                n = n,
-                e = e,
-                use = "enc"
-            };
+                var credential = encryptionCredentials[key];
+                return new SDK.Models.JsonWebKey()
+                {
+                    alg = credential.Enc,
+                    kid = key,
+                    kty = securityKey.PublicKey.KeyExchangeAlgorithm,
+                    n = n,
+                    e = e,
+                    use = "enc"
+                };
+            });
 
             if (includePrivateKeyDetails)
             {
@@ -105,19 +114,22 @@ namespace CDR.DataRecipient.Web.Controllers
                 var jwkPrivate = JsonWebKeyConverter.ConvertFromRSASecurityKey(privateKey);
 
                 jwkSign.d = jwkPrivate.D;
-                jwkEnc.d = jwkPrivate.D;
+                foreach (var jwk in jwkEncList)
+                {
+                    jwk.d = jwkPrivate.D;
+                }
             }
 
-            var jwks = new SDK.Models.JsonWebKeySet()
-            {
-                keys = new SDK.Models.JsonWebKey[] { jwkSign, jwkEnc }
-            };
+            var jwks = new List<SDK.Models.JsonWebKey>();
+            jwks.Add(jwkSign);
+            jwks.AddRange(jwkEncList);
+            var keySet = new SDK.Models.JsonWebKeySet() { keys = jwks.ToArray() };
 
-            // Add the jwks to the cache.
-            _cache.Set<SDK.Models.JsonWebKeySet>(cacheKey, jwks);
+            // Add the key Set to the cache.
+            _cache.Set<SDK.Models.JsonWebKeySet>(cacheKey, keySet);
             _logger.LogInformation("JWKS added to cache");
 
-            return jwks;
+            return keySet;
         }
 
         /// <summary>

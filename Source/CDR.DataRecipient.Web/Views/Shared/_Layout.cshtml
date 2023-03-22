@@ -1,7 +1,7 @@
 ﻿@{
-	var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDynamicClientRegistration));
-	var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.AllowDataHolderRefresh));
-	var showSettings = await _featureManager.IsEnabledAsync(nameof(FeatureFlags.ShowSettings));
+	var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDynamicClientRegistration));
+	var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDataHolderRefresh));
+	var showSettings = await _featureManager.IsEnabledAsync(nameof(Feature.ShowSettings));
 	var appName = _config.GetValue<string>(Constants.Content.ApplicationName);
 }
 @using CDR.DataRecipient.Web.Common
@@ -71,12 +71,7 @@
 							<a href="/par" class="nav-link text-white par">
 								PAR
 							</a>
-						</li>
-						<li>
-							<a href="/consent" class="nav-link text-white consent">
-								Consent and Authorisation
-							</a>
-						</li>
+						</li>						
 						<li>
 							<a href="/consent/consents" class="nav-link text-white consents">
 								Consents
