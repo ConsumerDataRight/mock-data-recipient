@@ -5,9 +5,9 @@
 		<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
 		<UserSecretsId>e18cd40c-c7d1-4df4-8448-82de536a628c</UserSecretsId>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-		<AssemblyVersion>1.2.0</AssemblyVersion>
-		<FileVersion>1.2.0</FileVersion>
-		<Version>1.2.0</Version>
+		<Version>1.2.1</Version>
+		<FileVersion>1.2.1</FileVersion>
+		<AssemblyVersion>1.2.1</AssemblyVersion>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -120,7 +120,7 @@ namespace CDR.DataRecipient.E2ETests
         {
             await TestAsync($"{nameof(US23863_MDR_E2ETests_v4)} - {nameof(AC02_01_DiscoverDataHolders_Banking)}", async (page) =>
             {
-                await DataHolders_Discover(page, "BANKING", "1", 30);
+                await DataHolders_Discover(page, "BANKING", "2", 30);
             });
         }
 
@@ -169,8 +169,8 @@ namespace CDR.DataRecipient.E2ETests
         }
 
         [Theory]        
-        [InlineData("BANKING", "1", DR_BRANDID, DR_SOFTWAREPRODUCTID, "OK - SSA Generated")]
-        [InlineData("BANKING", "2", DR_BRANDID, DR_SOFTWAREPRODUCTID, "OK - SSA Generated")]
+        [InlineData("BANKING", "1", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
+        [InlineData("BANKING", "2", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
         [InlineData("BANKING", "3", DR_BRANDID, DR_SOFTWAREPRODUCTID, "OK - SSA Generated")]
         [InlineData("BANKING", "4", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
         public async Task AC03_GetSSA(string industry, string version, string drBrandId, string drSoftwareProductId, string expectedMessage)

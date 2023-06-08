@@ -4,10 +4,10 @@ namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
 {
     public class AuthorisationRequestClaims
     {
-        public AuthorisationRequestClaims()
+        public AuthorisationRequestClaims(int supportedAcr)
         {
             this.userinfo = new UserInfo();
-            this.id_token = new IdToken();
+            this.id_token = new IdToken(supportedAcr);
         }
 
         [JsonProperty("sharing_duration")]
@@ -33,10 +33,10 @@ namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
     }
 
     public class IdToken
-    {
-        public IdToken()
-        {
-            this.acr = new Acr() { essential = true, values = new string[] { "urn:cds.au:cdr:3" } };
+    {        
+        public IdToken(int supportedAcr)
+        {            
+            this.acr = new Acr() { essential = true, values = new string[] { $"urn:cds.au:cdr:{supportedAcr}" } };
         }
 
         [JsonProperty("acr")]

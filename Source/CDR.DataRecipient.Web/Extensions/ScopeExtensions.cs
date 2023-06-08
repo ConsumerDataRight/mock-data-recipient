@@ -11,12 +11,9 @@ namespace CDR.DataRecipient.Web.Extensions
                 return Constants.Scopes.CDR_REGISTER_BANKING;
             }
 
-            if (int.TryParse(version, out int xv))
-            {
-                if (xv < versionThreshold)
-                {
-                    return Constants.Scopes.CDR_REGISTER_BANKING;
-                }
+            if (int.TryParse(version, out int xv) && (xv < versionThreshold))
+            {                
+                return Constants.Scopes.CDR_REGISTER_BANKING;                
             }
 
             return Constants.Scopes.CDR_REGISTER;

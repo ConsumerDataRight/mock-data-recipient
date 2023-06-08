@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -323,24 +324,9 @@ namespace CDR.DataRecipient.Web.Controllers
 
             if (!string.IsNullOrEmpty(model.RedirectUris))
             {
-                if (model.RedirectUris.Contains(','))
-                {
-                    foreach (var redirectUri in model.RedirectUris.Split(','))
-                    {
-                        claims.Add(new Claim("redirect_uris", redirectUri));
-                    }
-                }
-                else if (model.RedirectUris.Contains(' '))
-                {
-                    foreach (var redirectUri in model.RedirectUris.Split(' '))
-                    {
-                        claims.Add(new Claim("redirect_uris", redirectUri));
-                    }
-                }
-                else
-                {
-                    claims.Add(new Claim("redirect_uris", model.RedirectUris));
-                }
+                char[] delimiters = { ',', ' '};
+                var redirectUrisList = model.RedirectUris.Split(delimiters).ToList();
+                claims.Add(new Claim("redirect_uris", JsonConvert.SerializeObject(redirectUrisList), JsonClaimValueTypes.JsonArray));
             }
 
             foreach (var grantType in model.GrantTypes.Split(','))
@@ -350,10 +336,8 @@ namespace CDR.DataRecipient.Web.Controllers
 
             if (!string.IsNullOrEmpty(model.ResponseTypes))
             {
-                foreach (var responseType in model.ResponseTypes.Split(','))
-                {
-                    claims.Add(new Claim("response_types", responseType));
-                }
+                var responseTypeList = model.ResponseTypes.Split(',');
+                claims.Add(new Claim("response_types", JsonConvert.SerializeObject(responseTypeList), JsonClaimValueTypes.JsonArray));
             }
                 
 
