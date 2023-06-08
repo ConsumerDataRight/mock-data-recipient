@@ -9,6 +9,7 @@ using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Razor.Language.Extensions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -66,8 +67,9 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Index(ParModel model)
         {
             if (!string.IsNullOrEmpty(model.ClientId))
-            {
-                try {
+            {                
+                try
+                {                   
                     var reg = await _registrationsRepository.GetRegistration(model.ClientId, model.DataHolderBrandId);
                     var dhConfig = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(reg.DataHolderBrandId);
                     var sp = _config.GetSoftwareProductConfig();
@@ -79,6 +81,9 @@ namespace CDR.DataRecipient.Web.Controllers
                     var stateKey = Guid.NewGuid().ToString();
                     var nonce = Guid.NewGuid().ToString();
                     var redirectUri = reg.RedirectUris.FirstOrDefault();
+
+                    var acrValuesSupported = dhConfig.AcrValuesSupported;
+                    int acrValueSupported = ValidateAcrValuesSpported(acrValuesSupported);
 
                     var authState = new AuthorisationState()
                     {
@@ -95,7 +100,7 @@ namespace CDR.DataRecipient.Web.Controllers
                     if (model.UsePkce)
                         authState.Pkce = _dhInfoSecService.CreatePkceData();
 
-                    _logger.LogDebug("saving AuthorisationState of {@authState} to cache",authState);
+                    _logger.LogDebug("saving AuthorisationState of {@authState} to cache", authState);
 
                     await _cache.SetAsync(stateKey, authState, DateTimeOffset.UtcNow.AddMinutes(60));
 
@@ -109,9 +114,10 @@ namespace CDR.DataRecipient.Web.Controllers
                         nonce,
                         sp.SigningCertificate.X509Certificate,
                         model.SharingDuration,
-                        model.CdrArrangementId,                        
+                        model.CdrArrangementId,
                         model.ResponseMode,
-                        authState.Pkce, 
+                        authState.Pkce,
+                        acrValueSupported,
                         model.ResponseType);
 
                     var parResponse = await _dhInfoSecService.PushedAuthorisationRequest(
@@ -134,7 +140,7 @@ namespace CDR.DataRecipient.Web.Controllers
                             model.ClientId,
                             sp.SigningCertificate.X509Certificate,
                             model.PushedAuthorisation.RequestUri,
-                            model.Scope, 
+                            model.Scope,
                             model.ResponseType);
                     }
                     else
@@ -156,6 +162,30 @@ namespace CDR.DataRecipient.Web.Controllers
 
             await PopulatePickers(model);
             return View(model);
+        }
+
+        /// <summary>
+        /// With multiple supported acr values
+        /// Should use the the max. available Acr value spported only
+        /// </summary>
+        /// <param name="acrValuesSupported"></param>
+        /// <returns>max available ACR value supported</returns>
+        private static int ValidateAcrValuesSpported(string[] acrValuesSupported)
+        {
+            var maxAcrSupported = 0;
+            foreach (var acrValueSupported in acrValuesSupported)
+            {
+                // Should use the max. available supported acr
+                // "urn:cds.au:cdr:3"
+                var acrSupported = acrValueSupported.Split(':')[3];
+                int acrValue;
+                if (int.TryParse(acrSupported, out acrValue) && acrValue > maxAcrSupported)
+                {
+                    maxAcrSupported = acrValue;
+                }
+            }
+
+            return maxAcrSupported;
         }
 
         [HttpPost]

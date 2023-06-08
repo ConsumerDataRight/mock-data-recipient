@@ -442,15 +442,9 @@ namespace CDR.DCR
                 return (errorMessage, "");
             }
 
-            foreach (var responseType in responseTypesSupported)
-            {
-                // Only these are allowed. 
-                if (string.Equals(responseType, "code", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(responseType, "code id_token", StringComparison.OrdinalIgnoreCase))
-                {
-                    claims.Add(new Claim("response_types", responseType));
-                }                
-            }
+            var responseTypesList = responseTypesSupported.Where(x => x.ToLower().Equals("code") || x.ToLower().Equals("code id_token")).ToList();
+            claims.Add(new Claim("response_types", JsonConvert.SerializeObject(responseTypesList), JsonClaimValueTypes.JsonArray));
+
 
             var isCodeFlow = responseTypesSupported.Contains("code");
             if (isCodeFlow && !authorizationSigningResponseAlgValuesSupported.Any())
@@ -512,28 +506,10 @@ namespace CDR.DCR
                 }
             }
 
-            if (!string.IsNullOrEmpty(redirectUris))
-            {
-                if (redirectUris.Contains(','))
-                {
-                    foreach (var redirectUri in redirectUris.Split(','))
-                    {
-                        claims.Add(new Claim("redirect_uris", redirectUri));
-                    }                    
-                }
-                else if (redirectUris.Contains(' '))
-                {
-                    foreach (var redirectUri in redirectUris.Split(' '))
-                    {
-                        claims.Add(new Claim("redirect_uris", redirectUri));
-                    }
-                }
-                else
-                {
-                    claims.Add(new Claim("redirect_uris", redirectUris));
-                }
-            }
-
+            char[] delimiters = { ',', ' '};
+            var redirectUrisList = redirectUris?.Split(delimiters).ToList();
+            claims.Add(new Claim("redirect_uris", JsonConvert.SerializeObject(redirectUrisList), JsonClaimValueTypes.JsonArray));
+            
             var jwt = new JwtSecurityToken(
                 issuer: softwareProductId,
                 audience: audience,

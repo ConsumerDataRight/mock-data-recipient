@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -101,6 +100,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string cdrArrangementId = null,
             string responseMode = "form_post",
             Pkce pkce = null,
+            int acrValueSupported=0,
             string responseType = "code id_token")
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestJwt)}.");
@@ -115,7 +115,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 { "scope", scope },
                 { "state", state },
                 { "nonce", nonce },
-                { "claims", new AuthorisationRequestClaims() { sharing_duration = sharingDuration, cdr_arrangement_id = cdrArrangementId } }
+                { "claims", new AuthorisationRequestClaims(acrValueSupported) { sharing_duration = sharingDuration, cdr_arrangement_id = cdrArrangementId } }
             };
 
             if (pkce != null)

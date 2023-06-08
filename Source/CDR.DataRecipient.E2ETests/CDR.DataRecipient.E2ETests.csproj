@@ -3,21 +3,17 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <IsPackable>false</IsPackable>
-    <Version>1.2.0</Version>
-    <FileVersion>1.2.0</FileVersion>
-    <AssemblyVersion>1.2.0</AssemblyVersion>
+	<Version>1.2.1</Version>
+	<FileVersion>1.2.1</FileVersion>
+	<AssemblyVersion>1.2.1</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="appsettings.Container.json" />
     <None Remove="appsettings.Development.json" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.Development.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="appsettings.Container.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="appsettings.json">

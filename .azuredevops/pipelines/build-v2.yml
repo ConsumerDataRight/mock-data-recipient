@@ -1,23 +1,13 @@
 # Build pipeline v2 (Containerised)
 
-resources:
-  repositories:
-  - repository: MockRegister
-    type: git
-    name: sb-mock-register
-    ref: develop    
-  - repository: MockDataHolder
-    type: git
-    name: sb-mock-data-holder
-    ref: develop    
-  - repository: MockDataHolder-Energy
-    type: git
-    name: sb-mock-data-holder-energy
-    ref: develop    
-  - repository: CDRAuthServer
-    type: git
-    name: cdr-auth-server
-    ref: develop
+variables:  
+
+  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: 
+    containerTag: main
+  ${{ else }}:
+    containerTag: develop
+    
+  baseSourceDirectory: $(Build.SourcesDirectory)/Source
 
 trigger:
   - develop
@@ -32,109 +22,36 @@ jobs:
   timeoutInMinutes: 120
 
   steps:
-
-    # Checkout repositories
-    - checkout: MockRegister
-    - checkout: MockDataHolder
-    - checkout: MockDataHolder-Energy
-    - checkout: self
-    - checkout: CDRAuthServer
-
-    # Copy cdr-auth-server into sb-mock-data-holder/source/cdr-auth-server
-    - task: CopyFiles@2
-      displayName: Copy cdr-auth-server folder into sb-mock-data-holder
-      inputs:
-        sourceFolder: $(Build.SourcesDirectory)/cdr-auth-server
-        contents: '**' 
-        targetFolder: $(Build.SourcesDirectory)/sb-mock-data-holder/Source/cdr-auth-server   
-        
-    # Copy cdr-auth-server into sb-mock-data-holder-energy/source/cdr-auth-server
-    - task: CopyFiles@2
-      displayName: Copy cdr-auth-server folder into sb-mock-data-holder-energy
-      inputs:
-        sourceFolder: $(Build.SourcesDirectory)/cdr-auth-server
-        contents: '**' 
-        targetFolder: $(Build.SourcesDirectory)/sb-mock-data-holder-energy/Source/cdr-auth-server   
-
-    # Build mock-register
-    - task: Docker@2
-      displayName: Build mock-register image
-      inputs:
-        command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-register/Source/Dockerfile
-        buildContext: $(Build.SourcesDirectory)/sb-mock-register/Source
-        repository: mock-register
-        tags: latest
-
-    # Build mock-data-holder
-    - task: Docker@2
-      displayName: Build mock-data-holder image
-      inputs:
-        command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-holder/Source/Dockerfile
-        buildContext: $(Build.SourcesDirectory)/sb-mock-data-holder/Source
-        repository: mock-data-holder
-        tags: latest
-
-    # Build mock-data-holder-energy
-    - task: Docker@2
-      displayName: Build mock-data-holder-energy image
-      inputs:
-        command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-holder-energy/Source/Dockerfile
-        buildContext: $(Build.SourcesDirectory)/sb-mock-data-holder-energy/Source
-        repository: mock-data-holder-energy
-        tags: latest
-        
     # Build mock-data-recipient
     - task: Docker@2
       displayName: Build mock-data-recipient image
       inputs:
         command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/Dockerfile
-        buildContext: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source
+        Dockerfile: $(baseSourceDirectory)/Dockerfile
+        buildContext: $(baseSourceDirectory)
         repository: mock-data-recipient
         tags: latest
 
-    # Build mock-data-recipient-unit-tests
+    # Login to ACR
     - task: Docker@2
-      displayName: Build mock-data-recipient-unit-tests image
+      displayName: Login to ACR
+      condition: always()
       inputs:
-        command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/Dockerfile.unit-tests
-        buildContext: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source
-        repository: mock-data-recipient-unit-tests
-        tags: latest
+        command: login
+        containerRegistry: $(AcrBaseUrl)
 
-    # Build mock-data-recipient-integration-tests
-    - task: Docker@2
-      displayName: Build mock-data-recipient-integration-tests image
+    # Pull and re-tag images from Azure ACR
+    - task: Bash@3
+      displayName: Pull docker images from ACR
       inputs:
-        command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/Dockerfile.integration-tests
-        buildContext: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source
-        repository: mock-data-recipient-integration-tests
-        tags: latest    
-
-    # Build mock-data-recipient-e2e-tests
-    - task: Docker@2
-      displayName: Build mock-data-recipient-e2e-tests image
-      inputs:
-        command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/Dockerfile.e2e-tests
-        buildContext: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source
-        repository: mock-data-recipient-e2e-tests
-        tags: latest    
-
-    # Build mock-data-recipient
-    - task: Docker@2
-      displayName: Build mock-data-recipient image
-      inputs:
-        command: build 
-        Dockerfile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/Dockerfile
-        buildContext: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source
-        repository: mock-data-recipient
-        tags: latest
+        targetType: inline
+        script: |
+          docker pull $(AcrBaseUrl).azurecr.io/mock-register:$(containerTag)
+          docker pull $(AcrBaseUrl).azurecr.io/mock-data-holder:$(containerTag)
+          docker pull $(AcrBaseUrl).azurecr.io/mock-data-holder-energy:$(containerTag)
+          docker tag $(AcrBaseUrl).azurecr.io/mock-register:$(containerTag) mock-register:latest
+          docker tag $(AcrBaseUrl).azurecr.io/mock-data-holder:$(containerTag) mock-data-holder:latest
+          docker tag $(AcrBaseUrl).azurecr.io/mock-data-holder-energy:$(containerTag) mock-data-holder-energy:latest 
 
     # List docker images
     - task: Docker@2
@@ -148,7 +65,7 @@ jobs:
       displayName: Unit tests - Up
       inputs:
         action: Run a Docker Compose command
-        dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.UnitTests.yml     
+        dockerComposeFile: $(baseSourceDirectory)/docker-compose.UnitTests.yml     
         dockerComposeCommand: up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
 
     # Remove unit tests
@@ -157,7 +74,7 @@ jobs:
       condition: always() 
       inputs:
         action: Run a Docker Compose command
-        dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.UnitTests.yml     
+        dockerComposeFile: $(baseSourceDirectory)/docker-compose.UnitTests.yml     
         dockerComposeCommand: down
 
     # Run integration tests
@@ -166,8 +83,17 @@ jobs:
       condition: always()
       inputs:
         action: Run a Docker Compose command
-        dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.IntegrationTests.yml     
+        dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.yml     
         dockerComposeCommand: up --abort-on-container-exit --exit-code-from mock-data-recipient-integration-tests
+
+     # Output Docker Logs
+    - script: |
+       docker logs mock-register
+       docker logs mock-data-holder
+       docker logs mock-data-holder-energy
+       docker logs mock-data-recipient
+      displayName: 'Output Docker Logs'  
+      condition: always()   
 
     # Remove integration tests
     - task: DockerCompose@0
@@ -175,7 +101,7 @@ jobs:
       condition: always()
       inputs:
         action: Run a Docker Compose command
-        dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.IntegrationTests.yml     
+        dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.yml     
         dockerComposeCommand: down
 
     # Surface Integration tests TRX results to Devops
@@ -185,7 +111,7 @@ jobs:
       inputs:
         testResultsFormat: 'VSTest'
         testResultsFiles: '**/results.trx' 
-        searchFolder: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults
+        searchFolder: $(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults
         mergeTestResults: true
         testRunTitle: 'mock-data-recipient-Integration-tests'
         publishRunAttachments: true
@@ -196,8 +122,17 @@ jobs:
       condition: always()
       inputs:
         action: Run a Docker Compose command
-        dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.E2ETests.yml     
+        dockerComposeFile: $(baseSourceDirectory)/docker-compose.E2ETests.yml     
         dockerComposeCommand: up --abort-on-container-exit --exit-code-from mock-data-recipient-e2e-tests
+
+    # Output Docker Logs
+    - script: |
+       docker logs mock-register
+       docker logs mock-data-holder
+       docker logs mock-data-holder-energy
+       docker logs mock-data-recipient
+      displayName: 'Output Docker Logs'  
+      condition: always()   
 
     # Remove e2e tests
     - task: DockerCompose@0
@@ -205,7 +140,7 @@ jobs:
       condition: always()
       inputs:
         action: Run a Docker Compose command
-        dockerComposeFile: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/docker-compose.E2ETests.yml     
+        dockerComposeFile: $(baseSourceDirectory)/docker-compose.E2ETests.yml     
         dockerComposeCommand: down
 
     # Surface E2E tests TRX results to Devops
@@ -215,7 +150,7 @@ jobs:
       inputs:
         testResultsFormat: 'VSTest'
         testResultsFiles: '**/results.trx' 
-        searchFolder: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults
+        searchFolder: $(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults
         mergeTestResults: true
         testRunTitle: 'mock-data-recipient-E2E-tests'
         publishRunAttachments: true
@@ -240,57 +175,49 @@ jobs:
 
     # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
     # # Publish mock-register logs
-    # - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-register/tmp
+    # - publish: $(baseSourceDirectory)/_temp/mock-register/tmp
     #   displayName: Publish MockRegister logs
     #   condition: always()
     #   artifact: Mock-Register - Logs
 
     # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
     # # Publish mock-data-holder logs
-    # - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-holder/tmp
+    # - publish: $(baseSourceDirectory)/_temp/mock-data-holder/tmp
     #   displayName: Publish MockDataHolder logs
     #   condition: always()
     #   artifact: Mock-Data-Holder - Logs
 
     # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
     # # Publish mock-data-holder-energy logs
-    # - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-holder-energy/tmp
+    # - publish: $(baseSourceDirectory)/_temp/mock-data-holder-energy/tmp
     #   displayName: Publish MockDataHolder-Energy logs
     #   condition: always()
     #   artifact: Mock-Data-Holder-Energy - Logs
 
     # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
     # # Publish mock-data-recipient logs
-    # - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient/tmp
+    # - publish: $(baseSourceDirectory)/_temp/mock-data-recipient/tmp
     #   displayName: Publish MockDataRecipient logs
     #   condition: always()
     #   artifact: Mock-Data-Recipient - Logs
 
     # Publish mock-data-recipient unit tests results
-    - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-unit-tests/testresults
+    - publish: $(baseSourceDirectory)/_temp/mock-data-recipient-unit-tests/testresults
       displayName: Publish unit tests
       condition: always()
       artifact: Mock-Data-Recipient - Unit tests
 
-    # Login to ACR
-    - task: Docker@2
-      displayName: Login to ACR
-      condition: always()
-      inputs:
-        command: login
-        containerRegistry: <<yourContainerRegistryName>>
-
-    # Run trx formatter to output .MD and .CSV
+     # Run trx formatter to output .MD and .CSV
     - script: |
         docker run \
-          -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults/results.trx:/app/results.trx:ro \
-          -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults/formatted/:/app/out/:rw \
-          <<yourContainerRegistryName>>.azurecr.io/trx-formatter -i results.trx -t "MDR" --outputprefix "MDR" -o out/
-      displayName: 'Run trx-formatter'  
+          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults/results.trx:/app/results.trx:ro \
+          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults/formatted/:/app/out/:rw \
+          $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR" --outputprefix "MDR" -o out/
+      displayName: 'Run trx-formatter for integration tests'  
       condition: always()   
 
     # Publish mock-data-recipient integration tests results
-    - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults
+    - publish: $(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults
       displayName: Publish integration tests
       condition: always()
       artifact: Mock-Data-Recipient - Integration tests
@@ -298,14 +225,14 @@ jobs:
     # Run trx formatter to output .MD and .CSV
     - script: |
         docker run \
-          -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults/results.trx:/app/results.trx:ro \
-          -v=$(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults/formatted/:/app/out/:rw \
-          <<yourContainerRegistryName>>.azurecr.io/trx-formatter -i results.trx -t "MDR-E2E" --outputprefix "MDR-E2E" -o out/
-      displayName: 'Run trx-formatter'  
+          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/results.trx:/app/results.trx:ro \
+          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/formatted/:/app/out/:rw \
+          $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR-E2E" --outputprefix "MDR-E2E" -o out/
+      displayName: 'Run trx-formatter for E2E tests'  
       condition: always()   
 
     # Publish mock-data-recipient e2e tests results
-    - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults
+    - publish: $(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults
       displayName: Publish e2e tests
       condition: always()
       artifact: Mock-Data-Recipient - E2E tests
@@ -331,13 +258,13 @@ jobs:
         script: 'dotnet-ef'
 
     - script: |
-        cd $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/CDR.DataRecipient.Repository.SQL 
+        cd $(baseSourceDirectory)/CDR.DataRecipient.Repository.SQL 
         dotnet ef migrations bundle --context RecipientDatabaseContext --verbose --self-contained
         ls
       displayName: 'Run EF Migrations bundle'
       condition: always()
 
-    - publish: $(Build.SourcesDirectory)/sb-mock-data-recipient/Source/CDR.DataRecipient.Repository.SQL/efbundle
+    - publish: $(baseSourceDirectory)/CDR.DataRecipient.Repository.SQL/efbundle
       displayName: Publish EF Migration bundle
       condition: always()
       artifact: Database Migration Scripts
@@ -345,27 +272,27 @@ jobs:
     - task: Docker@2
       displayName: 'Re-Tag Mock Data Recipient image with :branch-name'
       inputs:
-        containerRegistry: <<yourContainerRegistryName>>
+        containerRegistry: $(AcrBaseUrl)
         repository: 'mock-data-recipient'
         command: tag
-        arguments: 'mock-data-recipient <<yourContainerRegistryName>>.azurecr.io/mock-data-recipient:$(Build.SourceBranchName)'
+        arguments: 'mock-data-recipient $(AcrBaseUrl).azurecr.io/mock-data-recipient:$(Build.SourceBranchName)'
 
     - task: Docker@2
       displayName: 'Re-Tag Mock Data Recipient image with :latest (for develop branch only)'
       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
       inputs:
-        containerRegistry: <<yourContainerRegistryName>>
+        containerRegistry: $(AcrBaseUrl)
         repository: 'mock-data-recipient'
         command: tag
-        arguments: 'mock-data-recipient <<yourContainerRegistryName>>.azurecr.io/mock-data-recipient:latest'
+        arguments: 'mock-data-recipient $(AcrBaseUrl).azurecr.io/mock-data-recipient:latest'
 
     - task: CmdLine@2
       displayName: 'Push Mock Data Recipient image with :branch-name tag to ACR'
       inputs:
-        script: 'docker push <<yourContainerRegistryName>>.azurecr.io/mock-data-recipient:$(Build.SourceBranchName)' 
+        script: 'docker push $(AcrBaseUrl).azurecr.io/mock-data-recipient:$(Build.SourceBranchName)' 
 
     - task: CmdLine@2
       displayName: 'Push Mock Data Recipient image with :latest tag to ACR (develop branch only)'
       condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
       inputs:
-        script: 'docker push <<yourContainerRegistryName>>.azurecr.io/mock-data-recipient:latest'   
+        script: 'docker push $(AcrBaseUrl).azurecr.io/mock-data-recipient:latest'   

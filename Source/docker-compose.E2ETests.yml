@@ -18,9 +18,9 @@ services:
     #   - "./_temp/mock-register/tmp:/tmp"      
     healthcheck:
       test: wget --no-check-certificate --no-verbose --spider https://localhost:7006/health || exit 1
-      timeout: 5s
-      interval: 5s
-      retries: 50
+      timeout: 15s
+      interval: 15s
+      retries: 20
     depends_on:
       mssql:
         condition: service_healthy
@@ -46,9 +46,9 @@ services:
     #   - "./_temp/mock-data-holder/tmp:/tmp"      
     healthcheck:
       test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8005/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:8001/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:3000)) || exit 1      
-      timeout: 5s
-      interval: 5s
-      retries: 50    
+      timeout: 15s
+      interval: 15s
+      retries: 20 
     depends_on:
       mock-register:
         condition: service_healthy        
@@ -74,9 +74,9 @@ services:
     #   - "./_temp/mock-data-holder-energy/tmp:/tmp"      
     healthcheck:
       test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8105/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:8101/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:3100)) || exit 1      
-      timeout: 5s
-      interval: 5s
-      retries: 50    
+      timeout: 15s
+      interval: 15s
+      retries: 20
     depends_on:
       mock-data-holder:
         condition: service_healthy       
@@ -97,9 +97,9 @@ services:
     #   - "./_temp/mock-data-recipient/tmp:/tmp"      
     healthcheck:
       test: wget --no-check-certificate --no-verbose --spider https://localhost:9001/health || exit 1
-      timeout: 5s
-      interval: 5s
-      retries: 50
+      timeout: 15s
+      interval: 15s
+      retries: 20
     depends_on:
       mock-data-holder-energy:
         condition: service_healthy
@@ -130,5 +130,5 @@ services:
     healthcheck:
       test: /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "Pa{}w0rd2019" -Q "SELECT 1" || exit 1 
       timeout: 5s
-      interval: 5s
+      interval: 15s
       retries: 20    

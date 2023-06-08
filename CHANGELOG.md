@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2023-06-07
+### Changed 
+- redirect_uris and response_types in DCR request are now array of string.
+- support for acr values
+
 ## [1.2.0] - 2023-03-21
 ### Changed 
 - Updated to be compliant with FAPI 1.0 phase 3.
