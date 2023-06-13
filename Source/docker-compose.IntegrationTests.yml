@@ -10,6 +10,7 @@ services:
     ports: 
       - "7000:7000"
       - "7001:7001"
+      - "7002:7002"
       - "7006:7006"
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
@@ -17,10 +18,11 @@ services:
     # volumes:
     #   - "./_temp/mock-register/tmp:/tmp"      
     healthcheck:
-      test: wget --no-check-certificate --no-verbose --spider https://localhost:7006/health || exit 1
-      timeout: 5s
-      interval: 5s
-      retries: 50
+      test: ((wget --no-check-certificate --no-verbose --spider https://localhost:7006/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:7002/idp/.well-known/openid-configuration)) || exit 1
+      timeout: 15s
+      interval: 15s      
+      retries: 20
+      start_period: 5s
     depends_on:
       mssql:
         condition: service_healthy
@@ -41,9 +43,10 @@ services:
     #   - "./_temp/mock-data-holder/tmp:/tmp"      
     healthcheck:
       test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8005/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:8001/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:3000)) || exit 1      
-      timeout: 5s
-      interval: 5s
-      retries: 50    
+      timeout: 15s
+      interval: 15s
+      retries: 20    
+      start_period: 5s
     depends_on:
       mssql:
         condition: service_healthy
@@ -66,9 +69,10 @@ services:
     #   - "./_temp/mock-data-holder-energy/tmp:/tmp"      
     healthcheck:
       test: ((wget --no-check-certificate --no-verbose --spider https://localhost:8105/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:8101/health) && (wget --no-check-certificate --no-verbose --spider https://localhost:3100)) || exit 1      
-      timeout: 5s
-      interval: 5s
-      retries: 50
+      timeout: 15s
+      interval: 15s
+      retries: 20
+      start_period: 5s
     depends_on:
       mssql:
         condition: service_healthy
@@ -93,9 +97,10 @@ services:
     #   - "./_temp/mock-data-recipient/tmp:/tmp"      
     healthcheck:
       test: wget --no-check-certificate --no-verbose --spider https://localhost:9001/health || exit 1
-      timeout: 5s
-      interval: 5s
-      retries: 50
+      timeout: 15s
+      interval: 15s
+      retries: 20
+      start_period: 10s
     depends_on:
       mssql:
         condition: service_healthy
@@ -131,6 +136,7 @@ services:
       - SA_PASSWORD=Pa{}w0rd2019
     healthcheck:
       test: /opt/mssql-tools/bin/sqlcmd -S . -U sa -P "Pa{}w0rd2019" -Q "SELECT 1" || exit 1 
-      timeout: 5s
-      interval: 5s
+      timeout: 15s
+      interval: 15s
       retries: 20
+      start_period: 5s

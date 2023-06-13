@@ -76,10 +76,7 @@ namespace CDR.DiscoverDataHolders
                 int inserted = 0;
                 int updated = 0;
                 int pendingReg = 0;
-
-                // TESTING USE ONLY
-                //await DeleteAllMessagesAsync(log, qConnString, qName);
-
+                
                 Response<Token> tokenRes = await GetAccessToken(tokenEndpoint, softwareProductId, clientCertificate, signCertificate, log, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
                 if (tokenRes.IsSuccessful)
                 {
@@ -471,21 +468,7 @@ namespace CDR.DiscoverDataHolders
             }
             return false;
         }
-
-        /// <summary>
-        /// TESTING USE ONLY - DELETE all queue items
-        /// </summary>
-        private static async Task DeleteAllMessagesAsync(ILogger log, string qConnString, string qName)
-        {
-            QueueClient qClient = new(qConnString, qName);
-            if (qClient.Exists())
-            {
-                await qClient.DeleteAsync();
-                int qCount = await GetQueueCountAsync(qConnString, qName);
-                log.LogInformation($"{qCount} items deleted in {qName} queue");
-            }
-        }
-
+        
         /// <summary>
         /// Queue Item Count
         /// </summary>
