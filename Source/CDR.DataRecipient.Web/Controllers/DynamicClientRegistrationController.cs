@@ -459,7 +459,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 // Set Selected item in picker
                 if (model.DataHolderBrands.Count > 0 && !string.IsNullOrEmpty(model.DataHolderBrandId))
                 {
-                    var selected = model.DataHolderBrands.FirstOrDefault(d => d.Value.Equals(model.DataHolderBrandId, StringComparison.OrdinalIgnoreCase));
+                    var selected = model.DataHolderBrands.Find(d => d.Value.Equals(model.DataHolderBrandId, StringComparison.OrdinalIgnoreCase));
                     if (selected != null)
                     {
                         selected.Selected = true;
