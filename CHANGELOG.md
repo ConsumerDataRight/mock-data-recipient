@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2023-06-20
+### Changed
+- Regenerated all mTLS, SSA and TLS certificates to allow for another five years before they expire.
+
 ## [1.2.1] - 2023-06-07
 ### Changed 
 - redirect_uris and response_types in DCR request are now array of string.
