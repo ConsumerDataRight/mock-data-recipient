@@ -17,29 +17,25 @@ namespace CDR.DataRecipient.E2ETests
         private const string SWAGGER_COMMON_IFRAME = "cds-common/index.html";
 
         // Pre-generated ID Token used in IDTokenhelper test
-        const string IDTOKEN = @"eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00iLCJraWQiOiJlMmM2ZWFmZjdmYWQwODFjNzhiMjJkNjNiYmI1N" +
-            "jdlODYwNzBlNTFlYjE0NzZhYmNhNmEyMzNiY2U4Y2ExNGJhIn0.fp9-2--a7mM70FsVL1c5MacViVkPcI-CZCGXyjV4F1T-RZuUsMaw9sCkjNrnE3" +
-            "LR9nnBOYploFXljRo6_ZkH5PJHtSfnoF8GRnJJHJ74dvJC3MqRsvGUl8uS5P2sEW2TexXQlhdKwFA3REM1khpVNAA1FZyFK3iv7IucipnL0UcO1H-" +
-            "23iBb7puOdEm6_3Sndu2ycACt5in-gO2UIWHFeaUDwLdr7iCBH4fzn5jupSJdyZ-9iU2ahOhf6iJFAwYM4R7CEPRTr8h8JqXBW3cqOcAktK0jScmv" +
-            "U3k2zOqtiwTxZ3yTwNEinSSvDxyxofKmiXsQDkgOzbJt6YPAq2c9gw.o-hgXFF8FzFUd1gY.NX-J0RWfE53KksdvhNK9pcXjXvLicaFO3N1N-ivAV" +
-            "G3HL_7k7f4L2d7B3Elh4UXiiV84xuS2wBltNT2XcOAEMZuJd6-e1Octuhzzc9o8pFQEtP-72vzpo6K6wbdSgFwqPNQ4xGJTArS2BCG1v_rfiUNqM7" +
-            "Y-igdsGImk3DoCBtsq-PWaWZgwj0d4ci5De4EkMpb3UZrk9UlZGGpgOH0rqGEPQEhO41M-7XeBw-cVqyGwaS6c3iwSUZHHCLgluZ-AfJ3ebfq9ya3" +
-            "u02de95C1YMhN04BA9Oj_tkTUA4XvyfXnxd_cXtjPUUjAo2Tvmc1YxU-tfNgwLgW3s2jFdkeJnHj7vwXzAbiAthIleD9D2LrYUN_vNWI0Lc570R1g" +
-            "GVXVFl_IfUMhZBSRYTl4z15NGdTwTopusNDVnOKQrKu5FsRWa0g1h80Fnmiw4sNRByFzxY_qziz67aUbJK1qz57FdBhHy85GkdK90Zd7kTuITYkPc" +
-            "c7_Srtu6ZHMWNRbUxvEHF_YHnTVWiH3DCiGYwrPCYEcXLutoY2A0nJGBAPsgCYnZ8_FvsQCsUno-PJyyWhjZ98mXcmtNIBOw5qArH7E520p586FtO" +
-            "JjS0zbRL7UjNxK2IcSB01-9WkWVxTxYrQnD8fzobnNPCf6esGGyPjU-PD-bstCQ1PUhA5OSg7MmBiTyRZYfvj59_rkhqdLovYCqyZLu9NbySLoFiq" +
-            "hnCXmmCROv6U_-KDW0-y30Uf9s_ke00l5kBSs9F4h8shDF5rXySL8HeAwNt_0JY4Q1pg6zu2PISuXVmcnizCZoCFaDTQ1ReQKHBfsDss7g680F6OY" +
-            "_UFxzYwxowIctfZzKQtT0q0J2xghgjPP-U47ng8VTQX2b_8TmMMWXiEvumxEb9gHp_i6246uHOeuiBu2LVGniAJkbTB2DHgICXgRYSd_pQTi7GBsu" +
-            "m4ZzQeVIVC7UKxc1OOHkLLypzPRK2bwOIg0SMZjnugCLbmQUyJxyB7ht5iA2psX-EavKeR-KjTqOWFSr5byOIbMUSLY44K0Al503u7NTvH5JVUH4y" +
-            "y6zI8sgiaQTcfAXo1YKhmHqJPf4VbQZRMTs3_2tdu5rNl-BSytbLnKrmFvL85RoKAq6wqE3Clk4BLJQ0CNoBvm-nObhzhQ_mhbXyRXn7A1vKEkf_p" +
-            "KHv3-dKBlX4-jdyFJAwd_HPqb6gtBFsKROlpQwlCxGbEV5GF2iN0az03r6RPveqxvkP4RpgfG8VaXvKyW9xi4lENVelt_Ep11BXHsrJGKupIaIdW" +
-            "IhUZu90VJYIezKKztLycPlxs7oOkEDTIfVrO1HeuEOHk1CCgxBiWtqZiKO2ELtE5mj2fee35fWFQ31muNiXBVD2DgHabnb_S0ZXHzY6MR368Rj0h" +
-            "xqxiDVc6ppQcVt02XYL4HLz4mBExyvy0F13OfuEkP5tWlaHkK8k90eISkn7aKcoMVV5JSFjqPasA_dY91Gbpq0itHDtaEIzgcOYWP-u8LUGJGLF4N" +
-            "qWkBfZUEGxgPIQ1ynRGwwUwnrh8xQSuvG_Phid0DGHm0Kxz_j0Vyvr60TpFoYNwGPH6vQ3bsiSs2JlxLuOdC-Kw6YVahxsGkE6b9ZKn9HiW6tmxj-" +
-            "CCf1u4tYiYxW48ceOcivydgT-mIKAdQeClTIbAJdJq4wY_936f5GWIJxM-wJ78qwFTN4R7zG4vINi2gd5000h4JjCaYTyX9v989Fzuq5SIkNHRb8E" +
-            "hSLcMA_3De7epFZCnImEhkKUQPHxwaW9kDBExy-sVJ2ku9EN6k4AZAM60lCMAdOGWwvOFN-pW9k9DBDmZTfg1kjfnbn4guIfw7lJKp2iy-0TGVhDD" +
-            "3MN3BTrucmURy6_kpXWRLGuLd3fEj-bQAwD4sMgLVe_GWh6f1TFo7hUfrNmwuXLjqtFMjMgWXbo8zM4VJDL6fCO_U0HZzXx3CGzxuSETWQxF9EeDG" +
-            "kSpwIdweEmFl1finL1g.gTClNE4BztTzJIpe8BcNRw";
+        const string IDTOKEN = @"eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00iLCJraWQiOiJkYTNiYzA3OTlhMjlkODM2NWU2OWVkZjJiZmQxMzVh" +
+            "MDhjNGRkYmE3ZWM3ZTFiNmVhYjkzNWY5NjcyNWExZTNhIn0.afEh0qVHeHSYqu-Q-leao8EQe-cGR8m2-fszGZQOq0dBBQNGRaFwSTKn3u4KqGTXXI-w" +
+            "1p20YHe_JMH4k1B7_NG93YXpYsx1pfEc_qa5x7_9gYvN_X6NLESuxVQW3TJBgsmE-LMu6TjSZzXtt_HkKk0V-q5epsrWgYX-WWR4Jk-yAUEYxrqA-bGm" +
+            "EKLbY9rLbZaituis0E4fYP4SF9keL2H6iJ4h99F4MrEKz8K7HgsQ1SkrlFw9ApR3Wnl3NaLXsEcJJZqZcpXkHUaIA76UChG5tvZTV436Jyz_ehxbcQeK" +
+            "9Yx5ZhXWY2Ud9K0LZ3hQ3A0SdEGkhExGbUpiNecAGA.YtIsaDgqhifPIsRj.MHSYKFpgyc0opB0LqAQWxMaikTTc7dviOd4tSLInpQ8KwnrCHnVKJFJq" +
+            "2P6rFz26xorAFHtZZeeqG2RmAehMFWBxbWuSTLgmXqF1SmhVgAT6XHgPNBZE_KM4OE4FrYd2eMxbLSYVbGs1zcu8rxV_Fal74w_2qgVqiuR-8DgKLqkb" +
+            "dLrW0F7XXl_PtIZj4vWdwbon7SQldvk0usg5ZxqC5PeyrV2AYhu_0_VNRnwAxcbzvYdh9HxckrdYACUtcjcKi_VSPd9gw4urq58NnCSKghBD6rJvHqW1" +
+            "qdL32UTf-V58Ma9bRaItlUr_DOCFRp-vT7nBJwn3EDJWL_GE2QjOu6Zy-GNwv4p220Ct5GmqRVfgMXjZYOzZieBBHIU0AyXIohlF2PPC4NAXlgpFacna" +
+            "RKNZb3et6B9WsqEMlDhMajMeY1DWgQb0eSXrAtX4QidFucEirIhV2XwMFi60uoycuPbk2ziKCRQCdS-TiTCkrKH72GoR_8v27ddkPKF8cspqPNTmJdJi" +
+            "d84jyoWTgo7fMa3xf-Sa7OO9jNPuAChtpX3t9amyq-NQfoAlSRu5fUZcWgzxKcJbnHlWG71QH6ALF-4HyMML3brHlV1HoIybMyUKpCkz_qJ6uK0JQC90" +
+            "PMJ4f7hkFc5wZ_V4E6BOrX635SPVxk0ts4G2AVpi1nDfjajd_Ljg8ni1mE9PDuWdYap2hxRDJnmJ5XssR0FlMcWRPO3IJCjrdSmtMKxdePq3T_UEXK8C" +
+            "3sWs17k0URmlxnkjp6Qe6YSzAkALwgHyPCD9IqqnpFAXG88669fFWgCH7uMu9dyJI-Agwc3ufU1NAQRnknowj3DKp5DuhYL1AL-P4c8d7mlI5bpwee2c" +
+            "WxLQMDog4hp-FQMuir7IacY2lJ9Ocvoirf6yM-R5-lQka74poe2PGOu2QlrywvdHvJ-ExSNkT5mNAZPCPYT-eHVqdeV_aQCBu8bRD8nUeq5o6ZJMzOlr" +
+            "V3LDS9jyGKRVvQf7YyXHODPnTMeL78mgD_V4WSdme54-J_tnOQh-j9a58CH_7E6AlD6ahc27K1sA8hG-vZ_jRUG1QXhJfER5pQjCoPfEtWzGbJF58LYC" +
+            "piwR0KE15LtpJgKPBwbBFQwpBRcZDEtouBZLFyMjfNGg1cnTfdlblEtnZcE50_ZVjTfk3n1nNjRlYHceaGnd7GYINBNl87JZCd2Dn_-JmRJfKK2vnF17" +
+            "HA3dUOHz_rUJa6hQd77WwWDxwU7oG1bpmoRDjgjl1AxXmJVSuhkgyK6JEDgeF6SDPDsU1yym_9ACitE1FjS8VAqU3e8cgoaDD5BzASt9OmApsHQHRQur" +
+            "HOh05w_b63JHd3Cg_-ASojF78GjKQ2TWV-jZn65nacY5NSIU3Qxt87UbR7Cr64UZMJAhRQ0VoXmdHpG6dSjtYEP20HTgvTI7uQD8Ibw9C7jILUi76HO_" +
+            "-n3R2errngQrYNunYmW9q45eDdngOiA_N5HB3rS3y3-V3kYnkW8Wio-gSzuGYBoAM4OT5QFGbs7QYw0PR4wYDk7iVIkfCf5vDlVb2ehcfNQx2m5gYYuW" +
+            "ppVENCqtjrsUmAxmyPZ5v_Fvh8N36J-4IaKNcv9J3ic4mm0yUdCLVCRxBjpsfw.xPc7ZQDVN11iHX41af-wvg";
 
         static string GetClientId()
         {
@@ -657,24 +653,22 @@ namespace CDR.DataRecipient.E2ETests
                 await page.Locator("text=Decrypt ID Token").ClickAsync();
 
                 // Assert - Check results
-                await TestResults(page, "nbf", "1653444726");
-                await TestResults(page, "exp", "1653445026");
-                await TestResults(page, "iss", $"https://localhost:8001"); // token is const, it was created on localhost, we are just checking the decryption of token works and not where it was issued
-                await TestResults(page, "aud", "17d9e269-96d7-4b2a-bd0d-6767ecff965a");
-                await TestResults(page, "nonce", "78b2faa4-954c-45de-af0e-33d1424732c7");
-                await TestResults(page, "iat", "1653444725");
-                await TestResults(page, "at_hash", "jybXQh-TiklHgnSjITgtoA");
-                await TestResults(page, "s_hash", "DlHToSN2VJtaskuOQYV2sw");
-                await TestResults(page, "auth_time", "1653444711");
-                await TestResults(page, "idp", "local");
-                await TestResults(page, "cdr_arrangement_id", "d6505b4b-001c-4b98-ae36-1b4d29ea0ef4");
-                await TestResults(page, "sub", "mYnxnN7keNe/eiR2j9OZ+axM5WUUa5IdTUEBxyqQWUToZbS9MlaxYYPEhWOhJUQl");
-                await TestResults(page, "name", "Kamilla Smith");
-                await TestResults(page, "family_name", "Smith");
-                await TestResults(page, "given_name", "Kamilla");
-                await TestResults(page, "updated_at", "1614623400");
+                await TestResults(page, "nbf", "1687210290");
+                await TestResults(page, "exp", "1687210590");
+                await TestResults(page, "iss", $"https://mock-data-holder:8001"); 
+                await TestResults(page, "aud", "549076d1-785e-46c8-b1f4-8074e859c004");
+                await TestResults(page, "nonce", "998c7257-8e42-4ef9-81cc-09d08eff413f");
+                await TestResults(page, "iat", "1687210290");
+                await TestResults(page, "at_hash", "wvmLTnV0mNAEeqVrmgvnuw");
+                await TestResults(page, "c_hash", "fRr6y32yxRN257qQ9Rzlvw");
+                await TestResults(page, "auth_time", "1687210289");
+                await TestResults(page, "sub", "GYFWjFhkegCHsQe0KVvFhg==");
+                await TestResults(page, "name", "jwilson");
+                await TestResults(page, "family_name", "Wilson");
+                await TestResults(page, "given_name", "Jane");
+                await TestResults(page, "updated_at", "1687210290");
                 await TestResults(page, "acr", "urn:cds.au:cdr:2");
-                await TestResults(page, "amr", "pwd");
+
             });
         }
 
