@@ -88,43 +88,31 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             return parResponse;
         }
 
-        public string BuildAuthorisationRequestJwt(
-            string infosecBaseUri,
-            string clientId,
-            string redirectUri,
-            string scope,
-            string state,
-            string nonce,
-            X509Certificate2 signingCertificate,
-            int? sharingDuration = 0,
-            string cdrArrangementId = null,
-            string responseMode = "form_post",
-            Pkce pkce = null,
-            int acrValueSupported=0,
-            string responseType = "code id_token")
+        public string BuildAuthorisationRequestJwt(AuthorisationRequestJwt authorisationRequestJwt)
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestJwt)}.");
 
             // Build the list of claims to include in the authorisation request jwt.
             var authorisationRequestClaims = new Dictionary<string, object>
             {                
-                { "response_type", responseType },
-                { "client_id", clientId },
-                { "redirect_uri", redirectUri },
-                { "response_mode", responseMode},
-                { "scope", scope },
-                { "state", state },
-                { "nonce", nonce },
-                { "claims", new AuthorisationRequestClaims(acrValueSupported) { sharing_duration = sharingDuration, cdr_arrangement_id = cdrArrangementId } }
+                { "response_type", authorisationRequestJwt.ResponseType },
+                { "client_id", authorisationRequestJwt.ClientId },
+                { "redirect_uri", authorisationRequestJwt.RedirectUri },
+                { "response_mode", authorisationRequestJwt.ResponseMode},
+                { "scope", authorisationRequestJwt.Scope },
+                { "state", authorisationRequestJwt.State },
+                { "nonce", authorisationRequestJwt.Nonce },
+                { "claims", new AuthorisationRequestClaims(authorisationRequestJwt.AcrValueSupported) 
+                                { sharing_duration = authorisationRequestJwt.SharingDuration, cdr_arrangement_id = authorisationRequestJwt.CdrArrangementId } }
             };
 
-            if (pkce != null)
+            if (authorisationRequestJwt.Pkce != null)
             {
-                authorisationRequestClaims.Add("code_challenge", pkce.CodeChallenge);
-                authorisationRequestClaims.Add("code_challenge_method", pkce.CodeChallengeMethod);
+                authorisationRequestClaims.Add("code_challenge", authorisationRequestJwt.Pkce.CodeChallenge);
+                authorisationRequestClaims.Add("code_challenge_method", authorisationRequestJwt.Pkce.CodeChallengeMethod);
             }
 
-            return authorisationRequestClaims.GenerateJwt(clientId, infosecBaseUri, signingCertificate);
+            return authorisationRequestClaims.GenerateJwt(authorisationRequestJwt.ClientId, authorisationRequestJwt.InfosecBaseUri, authorisationRequestJwt.SigningCertificate);
         }
         
 
@@ -149,29 +137,11 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             return authRequestUri;
         }
 
-        public async Task<Response<Token>> GetAccessToken(
-            string tokenEndpoint,
-            string clientId,
-            X509Certificate2 clientCertificate,
-            X509Certificate2 signingCertificate,
-            string scope = Constants.Scopes.CDR_DYNAMIC_CLIENT_REGISTRATION,
-            string redirectUri = null,
-            string code = null,
-            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS,
-            Pkce pkce = null)
+        public async Task<Response<Token>> GetAccessToken(AccessToken accessToken)
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetAccessToken)}.");
 
-            return await _accessTokenService.GetAccessToken(
-                tokenEndpoint, 
-                clientId, 
-                clientCertificate, 
-                signingCertificate, 
-                scope, 
-                redirectUri, 
-                code, 
-                grantType,
-                pkce);
+            return await _accessTokenService.GetAccessToken(accessToken);
         }
 
         public async Task<Response<Token>> RefreshAccessToken(

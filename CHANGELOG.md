@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2023-08-16
+### Fixed
+- Refactored code and fixed code smells
+
+## [1.2.3] - 2023-07-27
+### Fixed
+- Bug limiting the amount of DCR messages that can be queued. [Sandbox Issue 31](https://github.com/ConsumerDataRight/sandbox/issues/31)  
+
 ## [1.2.2] - 2023-06-20
 ### Changed
 - Regenerated all mTLS, SSA and TLS certificates to allow for another five years before they expire.

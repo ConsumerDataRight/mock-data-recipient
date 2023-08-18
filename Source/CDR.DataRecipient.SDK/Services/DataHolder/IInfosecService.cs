@@ -8,16 +8,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
     {
         Task<Response<OidcDiscovery>> GetOidcDiscovery(string infosecBaseUri);
 
-        Task<Response<Token>> GetAccessToken(
-            string tokenEndpoint,
-            string clientId,
-            X509Certificate2 clientCertificate,
-            X509Certificate2 signingCertificate,
-            string scope = "cdr:registration",
-            string redirectUri = null,
-            string code = null,
-            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS,
-            Pkce pkce = null);
+        Task<Response<Token>> GetAccessToken(AccessToken accessToken);
 
         Task<Response<Token>> RefreshAccessToken(
             string tokenEndpoint,
@@ -71,20 +62,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string scope,
             string responseType = "code id_token");
 
-        string BuildAuthorisationRequestJwt(
-            string infosecBaseUri,
-            string clientId,
-            string redirectUri,
-            string scope,
-            string state,
-            string nonce,
-            X509Certificate2 signingCertificate,
-            int? sharingDuration = 0,
-            string cdrArrangementId = null,
-            string responseMode = "form_post",
-            Pkce pkce = null,
-            int acrValueSupported = 0,
-            string responseType = "code id_token");
+        string BuildAuthorisationRequestJwt(AuthorisationRequestJwt authorisationRequestJwt);
 
         Pkce CreatePkceData();
 

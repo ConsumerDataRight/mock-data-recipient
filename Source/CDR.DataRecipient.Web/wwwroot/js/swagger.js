@@ -1,7 +1,7 @@
 ﻿function AppendCdrArrangementIdToRequest(req) {
     if (req.loadSpec) return req;
 
-    var select = document.getElementById("select-cdr-arrangement-id");
+    let select = document.getElementById("select-cdr-arrangement-id");
     req.headers["x-inject-cdr-arrangement-id"] = select.value;
 
     if (req.headers["x-fapi-auth-date"] == null) {
@@ -12,39 +12,39 @@
 }
 
 async function AddCdrArrangementSelector() {
-    var div = document.createElement("div");
+    let div = document.createElement("div");
     div.className = "form";
 
-    var select = document.createElement("select");
+    let select = document.createElement("select");
     select.id = "select-cdr-arrangement-id";
     select.className = "form-control";
     select.placeholder = "Select CDR Arrangement...";
 
-    var emptyOption = document.createElement("option");
+    let emptyOption = document.createElement("option");
     emptyOption.value = "";
     emptyOption.text = "Select CDR Arrangement...";
     select.appendChild(emptyOption);
 
-    var arrangements = await GetArrangements();
+    let arrangements = await GetArrangements();
 
     //Create and append the options
     if (arrangements !== null && typeof arrangements !== 'undefined') {
-        for (var item of arrangements) {
-            var option = document.createElement("option");
+        for (let item of arrangements) {
+            let option = document.createElement("option");
             option.value = item["key"];
             option.text = item["value"];
             select.appendChild(option);
         }
     }
 
-    var parent = document.getElementById("swagger-ui");
+    let parent = document.getElementById("swagger-ui");
     parent.before(div);
     div.appendChild(select);
 }
 
 async function GetArrangements() {
     let url = GetPath() + '/cdr-arrangements';
-    var data;
+    let data;
 
     await fetch(url)
         .then(res => res.json())

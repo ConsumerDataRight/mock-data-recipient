@@ -10,44 +10,41 @@ namespace CDR.DataRecipient.SDK.Services.Tokens
 {
     public class AccessTokenService : BaseService, IAccessTokenService
     {
+        private AccessToken AccessToken { get; set; }
         public AccessTokenService(
             IConfiguration config,
             ILogger<AccessTokenService> logger,
             IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
         {
+            // LEGACY CODE
+            AccessToken = new AccessToken() { Scope = string.Empty };
         }
-
-        public async Task<Response<Token>> GetAccessToken(
-            string tokenEndpoint,
-            string clientId,
-            X509Certificate2 clientCertificate,
-            X509Certificate2 signingCertificate,
-            string scope,
-            string redirectUri = null,
-            string code = null,
-            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS,
-            Pkce pkce = null)
+        
+        public async Task<Response<Token>> GetAccessToken(AccessToken accessToken)
         {
             var tokenResponse = new Response<Token>();
 
             _logger.LogDebug($"Request received to {nameof(AccessTokenService)}.{nameof(GetAccessToken)}.");
 
-            // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            AccessToken = accessToken;
 
-            _logger.LogDebug("Requesting access token from: {tokenEndpoint}.  Software Product ID: {clientId}.  Client Certificate: {thumbprint}", tokenEndpoint, clientId, clientCertificate.Thumbprint);
+            // Setup the http client.
+            var client = GetHttpClient(AccessToken.ClientCertificate);
+
+            _logger.LogDebug("Requesting access token from: {tokenEndpoint}.  Software Product ID: {clientId}.  Client Certificate: {thumbprint}", 
+                                    AccessToken.TokenEndpoint, AccessToken.ClientId, AccessToken.ClientCertificate.Thumbprint);
 
             // Make the request to the token endpoint.
             var response = await client.SendPrivateKeyJwtRequest(
-                tokenEndpoint, 
-                signingCertificate,
-                clientId,
-                clientId,
-                scope, 
-                redirectUri, 
-                code, 
-                grantType,
-                pkce: pkce,
+                AccessToken.TokenEndpoint,
+                AccessToken.SigningCertificate,
+                AccessToken.ClientId,
+                AccessToken.ClientId,
+                AccessToken.Scope,
+                AccessToken.RedirectUri,
+                AccessToken.Code,
+                AccessToken.GrantType,
+                pkce: AccessToken.Pkce,                
                 enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();

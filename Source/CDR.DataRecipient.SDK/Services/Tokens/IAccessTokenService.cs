@@ -6,15 +6,6 @@ namespace CDR.DataRecipient.SDK.Services.Tokens
 {
     public interface IAccessTokenService
     {
-        Task<Response<Token>> GetAccessToken(
-            string tokenEndpoint,
-            string clientId,
-            X509Certificate2 clientCertificate,
-            X509Certificate2 signingCertificate,
-            string scope,
-            string redirectUri = null,
-            string code = null,
-            string grantType = Constants.GrantTypes.CLIENT_CREDENTIALS,
-            Pkce pkce = null);
+        Task<Response<Token>> GetAccessToken(AccessToken accessToken);
     }
 }
