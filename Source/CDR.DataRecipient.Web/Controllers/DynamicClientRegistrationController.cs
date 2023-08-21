@@ -1,9 +1,7 @@
 ﻿using CDR.DataRecipient.Repository;
-using CDR.DataRecipient.Repository.SQL;
 using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
-using CDR.DataRecipient.SDK.Models.AuthorisationRequest;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.SDK.Services.Register;
 using CDR.DataRecipient.Web.Caching;
@@ -162,11 +160,7 @@ namespace CDR.DataRecipient.Web.Controllers
                     regResp.StatusCode = reg.StatusCode;
                     regResp.Messages = reg.Messages;
                     regResp.Payload = reg.ResponsePayload;
-                }
-                else
-                {
-                    throw new Exception();
-                }
+                }                
             }
             catch (Exception ex)
             {
@@ -229,14 +223,18 @@ namespace CDR.DataRecipient.Web.Controllers
                 return model;
             }
 
-            var tokenResponse = await _dhInfosecService.GetAccessToken(
-                dataHolderDiscovery.TokenEndpoint,
-                clientId,
-                sp.ClientCertificate.X509Certificate,
-                sp.SigningCertificate.X509Certificate,
-                scope: Constants.Scopes.CDR_DYNAMIC_CLIENT_REGISTRATION,
-                redirectUri: sp.RedirectUri,
-                grantType: Constants.GrantTypes.CLIENT_CREDENTIALS);
+            var accessToken = new AccessToken() 
+            {
+                TokenEndpoint = dataHolderDiscovery.TokenEndpoint,
+                ClientId = clientId,
+                ClientCertificate = sp.ClientCertificate.X509Certificate,
+                SigningCertificate = sp.SigningCertificate.X509Certificate,
+                Scope = Constants.Scopes.CDR_DYNAMIC_CLIENT_REGISTRATION,
+                RedirectUri = sp.RedirectUri,
+                GrantType = Constants.GrantTypes.CLIENT_CREDENTIALS
+            };
+
+            var tokenResponse = await _dhInfosecService.GetAccessToken(accessToken);
 
             if (!tokenResponse.IsSuccessful)
             {
@@ -265,14 +263,18 @@ namespace CDR.DataRecipient.Web.Controllers
             var ssa = await GetSSA(sp, model);
             var dataHolderDiscovery = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(model.DataHolderBrandId);
 
-            var tokenResponse = await _dhInfosecService.GetAccessToken(
-                dataHolderDiscovery.TokenEndpoint,
-                model.ClientId,
-                sp.ClientCertificate.X509Certificate,
-                sp.SigningCertificate.X509Certificate,
-                scope: Constants.Scopes.CDR_DYNAMIC_CLIENT_REGISTRATION,
-                redirectUri: sp.RedirectUri,
-                grantType: Constants.GrantTypes.CLIENT_CREDENTIALS);
+            var accessToken = new AccessToken() 
+            {
+                TokenEndpoint = dataHolderDiscovery.TokenEndpoint,
+                ClientId = model.ClientId,
+                ClientCertificate = sp.ClientCertificate.X509Certificate,
+                SigningCertificate = sp.SigningCertificate.X509Certificate,
+                Scope = Constants.Scopes.CDR_DYNAMIC_CLIENT_REGISTRATION,
+                RedirectUri = sp.RedirectUri,
+                GrantType = Constants.GrantTypes.CLIENT_CREDENTIALS
+            };
+
+            var tokenResponse = await _dhInfosecService.GetAccessToken(accessToken);
 
             if (!tokenResponse.IsSuccessful)
             {
@@ -360,14 +362,19 @@ namespace CDR.DataRecipient.Web.Controllers
 
             var sp = _config.GetSoftwareProductConfig();
             var dataHolderDiscovery = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(client.DataHolderBrandId);
-            var tokenResponse = await _dhInfosecService.GetAccessToken(
-                dataHolderDiscovery.TokenEndpoint,
-                clientId,
-                sp.ClientCertificate.X509Certificate,
-                sp.SigningCertificate.X509Certificate,
-                scope: Constants.Scopes.CDR_DYNAMIC_CLIENT_REGISTRATION,
-                redirectUri: sp.RedirectUri,
-                grantType: Constants.GrantTypes.CLIENT_CREDENTIALS);
+
+            var accessToken = new AccessToken() 
+            {
+                TokenEndpoint = dataHolderDiscovery.TokenEndpoint,
+                ClientId = clientId,
+                ClientCertificate = sp.ClientCertificate.X509Certificate,
+                SigningCertificate = sp.SigningCertificate.X509Certificate,
+                Scope = Constants.Scopes.CDR_DYNAMIC_CLIENT_REGISTRATION,
+                RedirectUri = sp.RedirectUri,
+                GrantType = Constants.GrantTypes.CLIENT_CREDENTIALS
+            };
+
+            var tokenResponse = await _dhInfosecService.GetAccessToken(accessToken);
 
             if (!tokenResponse.IsSuccessful)
             {

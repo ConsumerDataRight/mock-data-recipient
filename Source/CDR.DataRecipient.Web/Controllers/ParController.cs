@@ -105,20 +105,24 @@ namespace CDR.DataRecipient.Web.Controllers
                     await _cache.SetAsync(stateKey, authState, DateTimeOffset.UtcNow.AddMinutes(60));
 
                     // Build the authentication request JWT.
-                    var authRequest = _dhInfoSecService.BuildAuthorisationRequestJwt(
-                        dhConfig.Issuer,
-                        model.ClientId,
-                        redirectUri,
-                        model.Scope,
-                        stateKey,
-                        nonce,
-                        sp.SigningCertificate.X509Certificate,
-                        model.SharingDuration,
-                        model.CdrArrangementId,
-                        model.ResponseMode,
-                        authState.Pkce,
-                        acrValueSupported,
-                        model.ResponseType);
+                    var authorisationRequestJwt = new AuthorisationRequestJwt()
+                    {
+                        InfosecBaseUri = dhConfig.Issuer,
+                        ClientId = model.ClientId,
+                        RedirectUri = redirectUri,
+                        Scope = model.Scope,
+                        State = stateKey,
+                        Nonce = nonce,
+                        SigningCertificate = sp.SigningCertificate.X509Certificate,
+                        SharingDuration = model.SharingDuration,
+                        CdrArrangementId = model.CdrArrangementId,
+                        ResponseMode = model.ResponseMode,
+                        Pkce = authState.Pkce,
+                        AcrValueSupported = acrValueSupported,
+                        ResponseType = model.ResponseType
+                    };
+
+                    var authRequest = _dhInfoSecService.BuildAuthorisationRequestJwt(authorisationRequestJwt);
 
                     var parResponse = await _dhInfoSecService.PushedAuthorisationRequest(
                         dhConfig.PushedAuthorizationRequestEndpoint,

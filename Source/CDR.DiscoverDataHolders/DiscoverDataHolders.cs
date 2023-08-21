@@ -39,7 +39,7 @@ namespace CDR.DiscoverDataHolders
                 {
                     configBuilder = configBuilder.AddJsonFile("local.settings.json", optional: false, reloadOnChange: true);
                 }
-                
+
                 // Get environment variables.
                 string qConnString = Environment.GetEnvironmentVariable("StorageConnectionString");
                 string dbConnString = Environment.GetEnvironmentVariable("DataRecipient_DB_ConnectionString");
@@ -76,7 +76,7 @@ namespace CDR.DiscoverDataHolders
                 int inserted = 0;
                 int updated = 0;
                 int pendingReg = 0;
-                
+
                 Response<Token> tokenRes = await GetAccessToken(tokenEndpoint, softwareProductId, clientCertificate, signCertificate, log, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
                 if (tokenRes.IsSuccessful)
                 {
@@ -123,59 +123,34 @@ namespace CDR.DiscoverDataHolders
                                 // DOES the DcrMessage exist?
                                 (string dcrMsgId, string dcrMsgState) = await new SqlDataAccess(dbConnString).CheckDcrMessageExistByDHBrandId(dh.DataHolderBrandId);
 
-                                // NO - DcrMessage DOES NOT EXIST in local repo
+                                // NO - DcrMessage DOES NOT EXIST in DcrMessage table
                                 if (string.IsNullOrEmpty(dcrMsgId))
                                 {
                                     qCount = await GetQueueCountAsync(qConnString, qName);
-                                    if (qCount == 0)
-                                    {
-                                        // ADD to EMPTY QUEUE
-                                        var qMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to EMPTY QUEUE)");
-                                        await AddDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "ADD to DcrMessage table");
-                                        pendingReg++;
-                                    }
+                                    var proc = (qCount == 0) ? "NO REG (ADD to EMPTY QUEUE)" : "NO REG (ADD to QUEUE)";
 
-                                    // CAN ONLY PEEK AT LAST 32 MESSAGES
-                                    else if (qCount < 33)
-                                    {
-                                        var ifExist = await IsMessageInQueue(dcrMsgId, qConnString, qName);
-                                        if (!ifExist)
-                                        {
-                                            // ADD to QUEUE and DcrMessage table
-                                            var qMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to QUEUE)");
-                                            await AddDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "ADD to DcrMessage table");
-                                            pendingReg++;
-                                        }
-                                    }
+                                    // ADD to QUEUE and DcrMessage table
+                                    var qMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, proc);
+                                    await AddDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "ADD to DcrMessage table");
+                                    pendingReg++;
                                 }
 
-                                // YES - DcrMessage EXISTS in the local repo
+                                // YES - DcrMessage EXISTS in DcrMessage table
                                 else
                                 {
                                     qCount = await GetQueueCountAsync(qConnString, qName);
-                                    if (qCount == 0)
+                                    var proc = (qCount == 0) ? "NO REG (ADD to EMPTY QUEUE)" : "NO REG (ADD to QUEUE)";
+
+                                    if ((dcrMsgState.Equals(Message.Pending.ToString()) || dcrMsgState.Equals(Message.DCRFailed.ToString())))
                                     {
-                                        // ADD to EMPTY QUEUE
-                                        var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to EMPTY QUEUE)");
-                                        await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, Message.Pending, newMsgId, "UPDATE DcrMessage table");
+                                        Enum.TryParse(dcrMsgState, out Message dcrMsgStatus);
+
+                                        // DcrMessage STATE = Pending -> ADD MESSAGE to the QUEUE
+                                        var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, proc);
+
+                                        // UPDATE EXISTING DcrMessage (with ADDED Queue MessageId)
+                                        await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, dcrMsgStatus, newMsgId, "Update DcrMessage table");
                                         pendingReg++;
-                                    }
-
-                                    // CAN ONLY PEEK AT LAST 32 MESSAGES
-                                    else if (qCount < 33)
-                                    {
-                                        var ifExist = await IsMessageInQueue(dcrMsgId, qConnString, qName);
-                                        if (!ifExist && (dcrMsgState.Equals(Message.Pending.ToString()) || dcrMsgState.Equals(Message.DCRFailed.ToString())) )
-                                        {
-                                            Enum.TryParse(dcrMsgState, out Message dcrMsgStatus);
-
-                                            // DcrMessage STATE = Pending -> ADD MESSAGE to the QUEUE
-                                            var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "NO REG (ADD to QUEUE)");
-
-                                            // UPDATE EXISTING DcrMessage (with ADDED Queue MessageId)
-                                            await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, dcrMsgStatus, newMsgId, "Update DcrMessage table");
-                                            pendingReg++;
-                                        }
                                     }
                                 }
                             }
@@ -256,15 +231,15 @@ namespace CDR.DiscoverDataHolders
 
             log.LogInformation("Synchronising existing {count} data holder brands", existingBrands?.Count());
             foreach (var existingDataHolderBrand in existingBrands)
-            {                
+            {
                 //existing data holders that don't exist in mdh should be removed from the mdr
                 var exists = data.Any(x => x.DataHolderBrandId.Equals(existingDataHolderBrand.DataHolderBrandId, StringComparison.OrdinalIgnoreCase));
-                
+
                 //Remove additional or extra brands to reflect correct brand data
                 if (!exists)
                 {
                     log.LogInformation("Deleting existing data holder brand: {brandId}", existingDataHolderBrand.DataHolderBrandId);
-                    await sql.DeleteDataHolder(existingDataHolderBrand.DataHolderBrandId);                    
+                    await sql.DeleteDataHolder(existingDataHolderBrand.DataHolderBrandId);
                 }
             }
         }
@@ -440,7 +415,7 @@ namespace CDR.DiscoverDataHolders
                 DataHolderBrandId = new Guid(dhBrandId),
                 BrandName = brandName,
                 InfosecBaseUri = infosecBaseUri,
-                MessageId = msgId,                
+                MessageId = msgId,
                 MessageState = messageState.ToString()
             };
             await new SqlDataAccess(dbConnString).UpdateDcrMsgReplaceMessageId(dcrMsg, newMsgId);
@@ -468,7 +443,7 @@ namespace CDR.DiscoverDataHolders
             }
             return false;
         }
-        
+
         /// <summary>
         /// Queue Item Count
         /// </summary>

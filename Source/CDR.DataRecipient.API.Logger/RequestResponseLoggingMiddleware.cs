@@ -1,5 +1,4 @@
-﻿using System.Configuration;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -246,7 +245,7 @@ namespace CDR.DataRecipient.API.Logger
                 return request.Host.ToString();
             }
 
-            return keys.First();
+            return keys[0];
         }
 
         private string? GetIpAddress(HttpContext context)
@@ -261,7 +260,7 @@ namespace CDR.DataRecipient.API.Logger
             // The Client IP address may contain a comma separated list of ip addresses based on the network devices
             // the traffic traverses through.  We get the first (and potentially only) ip address from the list as the client IP.
             // We also remove any port numbers that may be included on the client IP.
-            return keys.First()
+            return keys[0]
                 .Split(',')[0]  // Get the first IP address in the list, in case there are multiple.
                 .Split(':')[0]; // Strip off the port number, in case it is attached to the IP address.
         }

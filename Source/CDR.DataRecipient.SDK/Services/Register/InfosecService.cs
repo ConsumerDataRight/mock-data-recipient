@@ -29,12 +29,16 @@ namespace CDR.DataRecipient.SDK.Services.Register
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetAccessToken)}.");
 
-            return await _accessTokenService.GetAccessToken(
-                tokenEndpoint, 
-                clientId, 
-                clientCertificate, 
-                signingCertificate, 
-                scope);
+            var accessToken = new AccessToken() 
+            {
+                TokenEndpoint =  tokenEndpoint,
+                ClientId = clientId,
+                ClientCertificate = clientCertificate,
+                SigningCertificate = signingCertificate,
+                Scope = scope
+            };
+
+            return await _accessTokenService.GetAccessToken(accessToken);
         }
 
         public async Task<Response<OidcDiscovery>> GetOidcDiscovery(string registerOidcConfigEndpoint)
