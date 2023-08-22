@@ -116,16 +116,21 @@ namespace CDR.DataRecipient.Web.Controllers
             {                                
                 // Request a token from the data holder.
                 var tokenEndpoint = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri)).TokenEndpoint;
-                model.TokenResponse = await _dhInfosecService.GetAccessToken(
-                    tokenEndpoint,
-                    authState.ClientId,
-                    sp.ClientCertificate.X509Certificate,
-                    sp.SigningCertificate.X509Certificate,
-                    "",
-                    authState.RedirectUri,
-                    authCode,
-                    "authorization_code",
-                    authState.Pkce);
+
+                var accessToken = new AccessToken()
+                {
+                    TokenEndpoint = tokenEndpoint,
+                    ClientId = authState.ClientId,
+                    ClientCertificate = sp.ClientCertificate.X509Certificate,
+                    SigningCertificate = sp.SigningCertificate.X509Certificate,
+                    Scope = "",
+                    RedirectUri = authState.RedirectUri,
+                    Code = authCode,
+                    GrantType = "authorization_code",
+                    Pkce = authState.Pkce
+                };
+
+                model.TokenResponse = await _dhInfosecService.GetAccessToken(accessToken);
 
                 if (model.TokenResponse.IsSuccessful)
                 {

@@ -22,6 +22,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
+using CDR.DCR.Models;
 
 namespace CDR.DCR
 {
@@ -99,7 +100,18 @@ namespace CDR.DCR
                     Response<Token> tokenResponse = await GetAccessToken(tokenEndpoint, softwareProductId, clientCertificate, signCertificate, log, ignoreServerCertificateErrors);
                     if (tokenResponse.IsSuccessful)
                     {
-                        var ssa = await GetSoftwareStatementAssertion(ssaEndpoint, xv, tokenResponse.Data.AccessToken, clientCertificate, brandId, softwareProductId, log, ignoreServerCertificateErrors);
+                        var softwareStatementAssertion = new SoftwareStatementAssertion() 
+                        {
+                          SsaEndpoint = ssaEndpoint, 
+                          Version = xv, 
+                          AccessToken = tokenResponse.Data.AccessToken, 
+                          ClientCertificate = clientCertificate, 
+                          BrandId = brandId, 
+                          SoftwareProductId = softwareProductId, 
+                          Log = log, 
+                          IgnoreServerCertificateErrors =  ignoreServerCertificateErrors
+                        };                        
+                        var ssa = await GetSoftwareStatementAssertion(softwareStatementAssertion);
                         if (ssa.IsSuccessful)
                         {                            
                             //DOES the Data Holder Brand EXIST in the REPO?
@@ -135,13 +147,21 @@ namespace CDR.DCR
                                     if (oidcDiscovery != null)
                                     {
                                         regEndpoint = oidcDiscovery.RegistrationEndpoint;
-                                        
-                                        (string errorMessage, string dcrRequestJwt) = PopulateDCRRequestJwt(softwareProductId, redirectUris, ssa.Data, oidcDiscovery.Issuer,
-                                            oidcDiscovery.ResponseTypesSupported,
-                                            oidcDiscovery.AuthorizationSigningResponseAlgValuesSupported,
-                                            oidcDiscovery.AuthorizationEncryptionResponseEncValuesSupported,
-                                            oidcDiscovery.AuthorizationEncryptionResponseAlgValuesSupported,
-                                            signCertificate);
+
+                                        var dcrRequest = new DcrRequest() 
+                                        {
+                                            SoftwareProductId = softwareProductId, 
+                                            RedirectUris = redirectUris, 
+                                            Ssa = ssa.Data, 
+                                            Audience = oidcDiscovery.Issuer,
+                                            ResponseTypesSupported = oidcDiscovery.ResponseTypesSupported,
+                                            AuthorizationSigningResponseAlgValuesSupported = oidcDiscovery.AuthorizationSigningResponseAlgValuesSupported,
+                                            AuthorizationEncryptionResponseEncValuesSupported = oidcDiscovery.AuthorizationEncryptionResponseEncValuesSupported,
+                                            AuthorizationEncryptionResponseAlgValuesSupported = oidcDiscovery.AuthorizationEncryptionResponseAlgValuesSupported,
+                                            SignCertificate = signCertificate
+                                        };
+
+                                        (string errorMessage, string dcrRequestJwt) = PopulateDCRRequestJwt(dcrRequest);
 
                                         // Process Registration - retry 3 times
                                         bool regSuccess = false;
@@ -335,23 +355,15 @@ namespace CDR.DCR
         /// <summary>
         /// Generate the SSA
         /// </summary>
-        private static async Task<Response<string>> GetSoftwareStatementAssertion(
-            string ssaEndpoint,
-            string version,
-            string accessToken,
-            X509Certificate2 clientCertificate,
-            string brandId,
-            string softwareProductId,
-            ILogger log,
-            bool ignoreServerCertificateErrors = false)
+        private static async Task<Response<string>> GetSoftwareStatementAssertion(SoftwareStatementAssertion softwareStatementAssertion)
         {
             // Setup the request to the get ssa endpoint.
-            var endpoint = $"{ssaEndpoint}{brandId}/software-products/{softwareProductId}/ssa";
+            var endpoint = $"{softwareStatementAssertion.SsaEndpoint}{softwareStatementAssertion.BrandId}/software-products/{softwareStatementAssertion.SoftwareProductId}/ssa";
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken, version, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
+            var client = GetHttpClient(softwareStatementAssertion.ClientCertificate, softwareStatementAssertion.AccessToken, softwareStatementAssertion.Version, ignoreServerCertificateErrors: softwareStatementAssertion.IgnoreServerCertificateErrors);
 
-            log.LogInformation("Retrieving SSA from the Register: {ssaEndpoint}", endpoint);
+            softwareStatementAssertion.Log.LogInformation("Retrieving SSA from the Register: {ssaEndpoint}", endpoint);
 
             // Make the request to the get data holder brands endpoint.
             var response = await client.GetAsync(endpoint);
@@ -361,7 +373,7 @@ namespace CDR.DCR
                 StatusCode = response.StatusCode
             };
 
-            log.LogInformation("SSA response: {statusCode} - {body}", ssaResponse.StatusCode, body);
+            softwareStatementAssertion.Log.LogInformation("SSA response: {statusCode} - {body}", ssaResponse.StatusCode, body);
 
             if (response.IsSuccessStatusCode)
             {
@@ -408,12 +420,7 @@ namespace CDR.DCR
         /// <summary>
         /// Generate the DCR Request JWT
         /// </summary>
-        private static (string, string) PopulateDCRRequestJwt(string softwareProductId, string redirectUris, string ssa, string audience,
-            string[]  responseTypesSupported,
-            string[] authorizationSigningResponseAlgValuesSupported, 
-            string[] authorizationEncryptionResponseEncValuesSupported,
-            string[] authorizationEncryptionResponseAlgValuesSupported,
-            X509Certificate2 signCertificate)
+        private static (string, string) PopulateDCRRequestJwt(DcrRequest dcrRequest)
         {
             string errorMessage = string.Empty;
             var claims = new List<Claim>
@@ -427,7 +434,7 @@ namespace CDR.DCR
                 new Claim("id_token_encrypted_response_alg", "RSA-OAEP"),
                 new Claim("id_token_encrypted_response_enc", "A256GCM"),
                 new Claim("request_object_signing_alg", "PS256"),
-                new Claim("software_statement", ssa ?? ""),                
+                new Claim("software_statement", dcrRequest.Ssa ?? ""),                
                 new Claim("grant_types", "client_credentials"),
                 new Claim("grant_types", "authorization_code"),
                 new Claim("grant_types", "refresh_token")                
@@ -435,19 +442,19 @@ namespace CDR.DCR
 
             // response_types updated below "code, code id_token" both types are returned and added below
             // A response type is mandatory
-            if (!responseTypesSupported.Contains("code") && !responseTypesSupported.Contains("code id_token"))
+            if (!dcrRequest.ResponseTypesSupported.Contains("code") && !dcrRequest.ResponseTypesSupported.Contains("code id_token"))
             {
                 // Return the error                 
                 errorMessage = ErrorMessage + " response_types";
                 return (errorMessage, "");
             }
 
-            var responseTypesList = responseTypesSupported.Where(x => x.ToLower().Equals("code") || x.ToLower().Equals("code id_token")).ToList();
+            var responseTypesList = dcrRequest.ResponseTypesSupported.Where(x => x.ToLower().Equals("code") || x.ToLower().Equals("code id_token")).ToList();
             claims.Add(new Claim("response_types", JsonConvert.SerializeObject(responseTypesList), JsonClaimValueTypes.JsonArray));
 
 
-            var isCodeFlow = responseTypesSupported.Contains("code");
-            if (isCodeFlow && !authorizationSigningResponseAlgValuesSupported.Any())
+            var isCodeFlow = dcrRequest.ResponseTypesSupported.Contains("code");
+            if (isCodeFlow && !dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Any())
             {
                 // Log error message to the mandatory claim missing
                 errorMessage = ErrorMessage + " authorization_signed_response_alg";
@@ -457,65 +464,65 @@ namespace CDR.DCR
             // Mandatory for code flow
             if (isCodeFlow)
             {
-                if (!authorizationSigningResponseAlgValuesSupported.Contains("PS256") && !authorizationSigningResponseAlgValuesSupported.Contains("ES256"))
+                if (!dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("PS256") && !dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("ES256"))
                 {
                     // Return the error
                     errorMessage = ErrorMessage + " authorization_signed_response_alg";
                     return (errorMessage, "");
                 }
                 
-                if (authorizationSigningResponseAlgValuesSupported.Contains("PS256"))
+                if (dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("PS256"))
                 {                    
                     claims.Add(new Claim("authorization_signed_response_alg", "PS256"));
                 }
-                else if (authorizationSigningResponseAlgValuesSupported.Contains("ES256"))
+                else if (dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("ES256"))
                 {                    
                     claims.Add(new Claim("authorization_signed_response_alg", "ES256"));
                 }
             }
 
             // Check if the enc is empty but a alg is specified.
-            if ((authorizationEncryptionResponseEncValuesSupported == null || !authorizationEncryptionResponseEncValuesSupported.Any()) // No enc specified
-                && authorizationEncryptionResponseAlgValuesSupported != null && authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256") 
-                && authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP")) // but alg specified.
+            if ((dcrRequest.AuthorizationEncryptionResponseEncValuesSupported == null || !dcrRequest.AuthorizationEncryptionResponseEncValuesSupported.Any()) // No enc specified
+                && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256") 
+                && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP")) // but alg specified.
             {                
                 errorMessage = ErrorMessage + " authorization_encrypted_response_enc";
                 return (errorMessage, "");
             }
 
 
-            if (authorizationEncryptionResponseEncValuesSupported != null && authorizationEncryptionResponseEncValuesSupported.Contains("A128CBC-HS256"))
+            if (dcrRequest.AuthorizationEncryptionResponseEncValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseEncValuesSupported.Contains("A128CBC-HS256"))
             {
                 claims.Add(new Claim("authorization_encrypted_response_enc", "A128CBC-HS256"));
             }
-            else if (authorizationEncryptionResponseEncValuesSupported != null && authorizationEncryptionResponseEncValuesSupported.Contains("A256GCM"))
+            else if (dcrRequest.AuthorizationEncryptionResponseEncValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseEncValuesSupported.Contains("A256GCM"))
             {
                 claims.Add(new Claim("authorization_encrypted_response_enc", "A256GCM"));
             }
 
             // Conditional: Optional for response_type "code" if authorization_encryption_enc_values_supported is present            
-            if (isCodeFlow && authorizationEncryptionResponseAlgValuesSupported != null && authorizationEncryptionResponseAlgValuesSupported.Any())
+            if (isCodeFlow && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Any())
             {                
-                if (authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256"))
+                if (dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256"))
                 {                    
                     claims.Add(new Claim("authorization_encrypted_response_alg", "RSA-OAEP-256"));
                 }
-                else if (authorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP"))
+                else if (dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP"))
                 {                    
                     claims.Add(new Claim("authorization_encrypted_response_alg", "RSA-OAEP"));
                 }
             }
 
             char[] delimiters = { ',', ' '};
-            var redirectUrisList = redirectUris?.Split(delimiters).ToList();
+            var redirectUrisList = dcrRequest.RedirectUris?.Split(delimiters).ToList();
             claims.Add(new Claim("redirect_uris", JsonConvert.SerializeObject(redirectUrisList), JsonClaimValueTypes.JsonArray));
             
             var jwt = new JwtSecurityToken(
-                issuer: softwareProductId,
-                audience: audience,
+                issuer: dcrRequest.SoftwareProductId,
+                audience: dcrRequest.Audience,
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(5),
-                signingCredentials: new X509SigningCredentials(signCertificate, SecurityAlgorithms.RsaSsaPssSha256));
+                signingCredentials: new X509SigningCredentials(dcrRequest.SignCertificate, SecurityAlgorithms.RsaSsaPssSha256));
 
             var tokenHandler = new JwtSecurityTokenHandler();
             return (errorMessage, tokenHandler.WriteToken(jwt));            

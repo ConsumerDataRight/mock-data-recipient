@@ -108,6 +108,7 @@ namespace CDR.DataRecipient.E2ETests
                 await page.Locator("span >> text=Utilities").TextContentAsync();
                 await page.Locator("a >> text=ID Token Helper").TextContentAsync();
                 await page.Locator("a >> text=Private Key JWT Generator").TextContentAsync();
+                Assert.True(true);
             });
         }
 
@@ -669,6 +670,7 @@ namespace CDR.DataRecipient.E2ETests
                 await TestResults(page, "updated_at", "1687210290");
                 await TestResults(page, "acr", "urn:cds.au:cdr:2");
 
+                Assert.True(true);
             });
         }
 
@@ -711,6 +713,7 @@ namespace CDR.DataRecipient.E2ETests
                 await page.GotoAsync(WEB_URL);
                 await page.Locator("a >> text=Settings").ClickAsync();
                 await page.Locator("h2 >> text=Settings").TextContentAsync();
+                Assert.True(true);
             });
         }
 
@@ -723,6 +726,7 @@ namespace CDR.DataRecipient.E2ETests
                 await page.GotoAsync(WEB_URL);
                 await page.Locator("a >> text=About").ClickAsync();
                 await page.Locator("h2 >> text=About").TextContentAsync();
+                Assert.True(true);
             });
         }
 

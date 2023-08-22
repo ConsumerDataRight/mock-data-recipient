@@ -3,9 +3,9 @@
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
-	<Version>1.2.2</Version>
-	<FileVersion>1.2.2</FileVersion>
-	<AssemblyVersion>1.2.2</AssemblyVersion>
+	<Version>1.2.4</Version>
+	<FileVersion>1.2.4</FileVersion>
+	<AssemblyVersion>1.2.4</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Storage.Queues" Version="12.12.0" />
