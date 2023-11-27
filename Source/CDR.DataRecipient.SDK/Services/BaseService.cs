@@ -30,7 +30,7 @@ namespace CDR.DataRecipient.SDK.Services
             _serviceConfiguration = serviceConfiguration;
         }
 
-        protected HttpClient GetHttpClient(
+        protected virtual HttpClient GetHttpClient(
             X509Certificate2 clientCertificate = null,
             string accessToken = null,
             string version = null)

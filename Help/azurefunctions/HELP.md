@@ -44,8 +44,8 @@ azurite --silent --location c:\azurite --debug c:\azurite\debug.log
 </div>
 
 ```
-navigate to .\mock-data-holder-energy\Source\CDR.GetDataRecipients<br />
-func start --verbose<br />
+navigate to .\mock-data-holder\Source\CDR.GetDataRecipients
+func start --verbose
 ```
 
 <div style="margin-left:18px;">

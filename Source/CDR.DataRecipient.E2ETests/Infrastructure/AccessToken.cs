@@ -14,7 +14,7 @@ namespace CDR.DataRecipient.E2ETests.Infrastructure
 {
     public class AccessToken
     {
-        private static readonly string IDENTITYSERVER_URL = BaseTest_v3.REGISTER_IDENTITYSERVER_URL;
+        private static readonly string IDENTITYSERVER_URL = BaseTest.REGISTER_IDENTITYSERVER_URL;
         private static readonly string AUDIENCE = IDENTITYSERVER_URL;
         private const string SCOPE = "cdr-register:bank:read";
         private const string GRANT_TYPE = "client_credentials";

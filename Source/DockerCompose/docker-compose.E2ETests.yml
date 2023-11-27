@@ -1,0 +1,55 @@
+# Docker compose file used to execute E2E tests for the Mock Data Recipient.
+# It extends docker-compose.TestsBase.yml.
+
+
+version: '3.8'
+
+name: mock-data-recipient-e2e-tests
+
+services:
+  mock-register:
+    container_name: mock-register-mdr-e2e
+    extends:
+      file: docker-compose.TestsBase.yml
+      service: mock-register
+
+  mock-data-holder:
+    container_name: mock-data-holder-mdr-e2e
+    extends:
+      file: docker-compose.TestsBase.yml
+      service: mock-data-holder   
+
+  mock-data-holder-energy:
+    container_name: mock-data-holder-energy-mdr-e2e
+    environment:
+      - CdrAuthServer__SupportJarmEncryption=true
+    extends:
+      file: docker-compose.TestsBase.yml
+      service: mock-data-holder-energy    
+
+  mock-data-recipient:
+    container_name: mock-data-recipient-mdr-e2e
+    extends:
+      file: docker-compose.TestsBase.yml
+      service: mock-data-recipient
+     
+  mssql:
+    container_name: sql-mdr-e2e
+    extends:
+      file: docker-compose.TestsBase.yml
+      service:  mssql
+
+  mock-data-recipient-e2e-tests:
+    container_name: mock-data-recipient-e2e-tests
+    image: mock-data-recipient-e2e-tests
+    hostname: mock-data-recipient-e2e-tests
+    build:
+      context: ..
+      dockerfile: Dockerfile.e2e-tests
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Release
+    volumes:
+      - "./_temp/mock-data-recipient-e2e-tests/testresults:/testresults"
+    depends_on:
+      mock-data-recipient:
+        condition: service_healthy
