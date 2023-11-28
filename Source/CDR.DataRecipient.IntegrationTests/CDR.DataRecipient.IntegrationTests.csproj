@@ -3,9 +3,9 @@
 	<PropertyGroup>
 		<TargetFramework>net6.0</TargetFramework>
 		<IsPackable>false</IsPackable>
-		<Version>1.2.4</Version>
-		<FileVersion>1.2.4</FileVersion>
-		<AssemblyVersion>1.2.4</AssemblyVersion>
+		<Version>1.2.5</Version>
+		<FileVersion>1.2.5</FileVersion>
+		<AssemblyVersion>1.2.5</AssemblyVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -19,6 +19,7 @@
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="6.0.9" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.0.0" />
 		<PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="6.23.1" />
+		<PackageReference Include="Moq" Version="4.20.69" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.23.1" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.1" />
 		<PackageReference Include="xunit" Version="2.4.2" />

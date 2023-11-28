@@ -12,7 +12,7 @@ using Xunit;
 
 namespace CDR.DataRecipient.E2ETests
 {
-    public class US46352_MDR_E2ETests_AuthCodeFlowJarm : BaseTest_v3, IClassFixture<TestFixture>
+    public class US46352_MDR_E2ETests_AuthCodeFlowJarm : BaseTest, IClassFixture<TestFixture>
     {
 
         private const string WRONG_CERTIFICATE_FILENAME = "Certificates/client.pfx";

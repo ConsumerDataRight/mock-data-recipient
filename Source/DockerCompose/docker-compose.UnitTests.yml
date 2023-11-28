@@ -10,7 +10,7 @@ services:
     ports: 
       - "9001:9001"
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Release
@@ -30,7 +30,7 @@ services:
     container_name: mock-data-recipient-unit-tests
     image: mock-data-recipient-unit-tests
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile.unit-tests
     environment:
       - ASPNETCORE_ENVIRONMENT=Release

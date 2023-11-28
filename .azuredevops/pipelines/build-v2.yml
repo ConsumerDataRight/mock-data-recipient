@@ -8,6 +8,7 @@ variables:
     containerTag: develop
     
   baseSourceDirectory: $(Build.SourcesDirectory)/Source
+  dockerComposeDirectory: $(baseSourceDirectory)/DockerCompose
 
 trigger:
   - develop
@@ -51,7 +52,7 @@ jobs:
           docker pull $(AcrBaseUrl).azurecr.io/mock-data-holder-energy:$(containerTag)
           docker tag $(AcrBaseUrl).azurecr.io/mock-register:$(containerTag) mock-register:latest
           docker tag $(AcrBaseUrl).azurecr.io/mock-data-holder:$(containerTag) mock-data-holder:latest
-          docker tag $(AcrBaseUrl).azurecr.io/mock-data-holder-energy:$(containerTag) mock-data-holder-energy:latest 
+          docker tag $(AcrBaseUrl).azurecr.io/mock-data-holder-energy:$(containerTag) mock-data-holder-energy:latest
 
     # List docker images
     - task: Docker@2
@@ -61,48 +62,37 @@ jobs:
         command: images
 
     # Run unit tests
-    - task: DockerCompose@0
-      displayName: Unit tests - Up
-      inputs:
-        action: Run a Docker Compose command
-        dockerComposeFile: $(baseSourceDirectory)/docker-compose.UnitTests.yml     
-        dockerComposeCommand: up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
+    - script: |
+          docker compose --file $(dockerComposeDirectory)/docker-compose.UnitTests.yml up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
+      displayName: Unit Tests - Up
+      condition: always()
 
     # Remove unit tests
-    - task: DockerCompose@0
-      displayName: Unit tests - Down
-      condition: always() 
-      inputs:
-        action: Run a Docker Compose command
-        dockerComposeFile: $(baseSourceDirectory)/docker-compose.UnitTests.yml     
-        dockerComposeCommand: down
+    - script: |
+          docker compose --file $(dockerComposeDirectory)/docker-compose.UnitTests.yml down 
+      displayName: 'Unit Tests - Down' 
+      condition: always()        
 
     # Run integration tests
-    - task: DockerCompose@0
+    - script: |
+          docker compose --file $(dockerComposeDirectory)/docker-compose.IntegrationTests.yml up --abort-on-container-exit --exit-code-from mock-data-recipient-integration-tests
       displayName: Integration tests - Up
       condition: always()
-      inputs:
-        action: Run a Docker Compose command
-        dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.yml     
-        dockerComposeCommand: up --abort-on-container-exit --exit-code-from mock-data-recipient-integration-tests
 
      # Output Docker Logs
     - script: |
-       docker logs mock-register
-       docker logs mock-data-holder
-       docker logs mock-data-holder-energy
-       docker logs mock-data-recipient
+       docker logs mock-register-mdr-int
+       docker logs mock-data-holder-mdr-int
+       docker logs mock-data-holder-energy-mdr-int
+       docker logs mock-data-recipient-mdr-int
       displayName: 'Output Docker Logs'  
       condition: always()   
 
     # Remove integration tests
-    - task: DockerCompose@0
-      displayName: Integration tests - Down
-      condition: always()
-      inputs:
-        action: Run a Docker Compose command
-        dockerComposeFile: $(baseSourceDirectory)/docker-compose.IntegrationTests.yml     
-        dockerComposeCommand: down
+    - script: |
+          docker compose --file $(dockerComposeDirectory)/docker-compose.IntegrationTests.yml down 
+      displayName: 'Integration tests - Down' 
+      condition: always()     
 
     # Surface Integration tests TRX results to Devops
     - task: PublishTestResults@2
@@ -111,37 +101,31 @@ jobs:
       inputs:
         testResultsFormat: 'VSTest'
         testResultsFiles: '**/results.trx' 
-        searchFolder: $(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults
+        searchFolder: $(dockerComposeDirectory)/_temp/mock-data-recipient-integration-tests/testresults
         mergeTestResults: true
         testRunTitle: 'mock-data-recipient-Integration-tests'
         publishRunAttachments: true
 
     # Run e2e tests
-    - task: DockerCompose@0
+    - script: |
+          docker compose --file $(dockerComposeDirectory)/docker-compose.E2ETests.yml up --abort-on-container-exit --exit-code-from mock-data-recipient-e2e-tests
       displayName: E2E tests - Up
       condition: always()
-      inputs:
-        action: Run a Docker Compose command
-        dockerComposeFile: $(baseSourceDirectory)/docker-compose.E2ETests.yml     
-        dockerComposeCommand: up --abort-on-container-exit --exit-code-from mock-data-recipient-e2e-tests
 
     # Output Docker Logs
     - script: |
-       docker logs mock-register
-       docker logs mock-data-holder
-       docker logs mock-data-holder-energy
-       docker logs mock-data-recipient
+       docker logs mock-register-mdr-e2e
+       docker logs mock-data-holder-mdr-e2e
+       docker logs mock-data-holder-energy-mdr-e2e
+       docker logs mock-data-recipient-mdr-e2e
       displayName: 'Output Docker Logs'  
       condition: always()   
 
     # Remove e2e tests
-    - task: DockerCompose@0
-      displayName: E2E tests - Down
-      condition: always()
-      inputs:
-        action: Run a Docker Compose command
-        dockerComposeFile: $(baseSourceDirectory)/docker-compose.E2ETests.yml     
-        dockerComposeCommand: down
+    - script: |
+          docker compose --file $(dockerComposeDirectory)/docker-compose.E2ETests.yml down 
+      displayName: 'E2E tests - Down' 
+      condition: always()     
 
     # Surface E2E tests TRX results to Devops
     - task: PublishTestResults@2
@@ -150,7 +134,7 @@ jobs:
       inputs:
         testResultsFormat: 'VSTest'
         testResultsFiles: '**/results.trx' 
-        searchFolder: $(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults
+        searchFolder: $(dockerComposeDirectory)/_temp/mock-data-recipient-e2e-tests/testresults
         mergeTestResults: true
         testRunTitle: 'mock-data-recipient-E2E-tests'
         publishRunAttachments: true
@@ -173,36 +157,8 @@ jobs:
         path: $(build.artifactstagingdirectory)
         artifact: Container Images
 
-    # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
-    # # Publish mock-register logs
-    # - publish: $(baseSourceDirectory)/_temp/mock-register/tmp
-    #   displayName: Publish MockRegister logs
-    #   condition: always()
-    #   artifact: Mock-Register - Logs
-
-    # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
-    # # Publish mock-data-holder logs
-    # - publish: $(baseSourceDirectory)/_temp/mock-data-holder/tmp
-    #   displayName: Publish MockDataHolder logs
-    #   condition: always()
-    #   artifact: Mock-Data-Holder - Logs
-
-    # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
-    # # Publish mock-data-holder-energy logs
-    # - publish: $(baseSourceDirectory)/_temp/mock-data-holder-energy/tmp
-    #   displayName: Publish MockDataHolder-Energy logs
-    #   condition: always()
-    #   artifact: Mock-Data-Holder-Energy - Logs
-
-    # FIXME - MJS - See dockercompose, volume no longer mapped as 1001:121 (vsts:docker) in build pipeline and causes issue with chown in dockerfile (appuser:appgroup), ie stops register from starting because of different user
-    # # Publish mock-data-recipient logs
-    # - publish: $(baseSourceDirectory)/_temp/mock-data-recipient/tmp
-    #   displayName: Publish MockDataRecipient logs
-    #   condition: always()
-    #   artifact: Mock-Data-Recipient - Logs
-
     # Publish mock-data-recipient unit tests results
-    - publish: $(baseSourceDirectory)/_temp/mock-data-recipient-unit-tests/testresults
+    - publish: $(dockerComposeDirectory)/_temp/mock-data-recipient-unit-tests/testresults
       displayName: Publish unit tests
       condition: always()
       artifact: Mock-Data-Recipient - Unit tests
@@ -210,14 +166,14 @@ jobs:
      # Run trx formatter to output .MD and .CSV
     - script: |
         docker run \
-          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults/results.trx:/app/results.trx:ro \
-          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults/formatted/:/app/out/:rw \
+          -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-integration-tests/testresults/results.trx:/app/results.trx:ro \
+          -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-integration-tests/testresults/formatted/:/app/out/:rw \
           $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR" --outputprefix "MDR" -o out/
       displayName: 'Run trx-formatter for integration tests'  
       condition: always()   
 
     # Publish mock-data-recipient integration tests results
-    - publish: $(baseSourceDirectory)/_temp/mock-data-recipient-integration-tests/testresults
+    - publish: $(dockerComposeDirectory)/_temp/mock-data-recipient-integration-tests/testresults
       displayName: Publish integration tests
       condition: always()
       artifact: Mock-Data-Recipient - Integration tests
@@ -225,14 +181,14 @@ jobs:
     # Run trx formatter to output .MD and .CSV
     - script: |
         docker run \
-          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/results.trx:/app/results.trx:ro \
-          -v=$(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/formatted/:/app/out/:rw \
+          -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/results.trx:/app/results.trx:ro \
+          -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/formatted/:/app/out/:rw \
           $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR-E2E" --outputprefix "MDR-E2E" -o out/
       displayName: 'Run trx-formatter for E2E tests'  
       condition: always()   
 
     # Publish mock-data-recipient e2e tests results
-    - publish: $(baseSourceDirectory)/_temp/mock-data-recipient-e2e-tests/testresults
+    - publish: $(dockerComposeDirectory)/_temp/mock-data-recipient-e2e-tests/testresults
       displayName: Publish e2e tests
       condition: always()
       artifact: Mock-Data-Recipient - E2E tests
@@ -249,7 +205,7 @@ jobs:
       displayName: 'Install dotnet-ef'
       condition: always()
       inputs:
-        script: 'dotnet tool install --global dotnet-ef'
+        script: 'dotnet tool install --version 7.0.13 --global dotnet-ef'
 
     - task: CmdLine@2
       displayName: 'Check dotnet-ef version'

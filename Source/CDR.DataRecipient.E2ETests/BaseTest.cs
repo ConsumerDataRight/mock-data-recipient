@@ -1,7 +1,4 @@
-#undef DEPRECATED  // instead see BaseTest_v2
-#if DEPRECATED
-
-// #define TEST_DEBUG_MODE // Run Playwright in non-headless mode for debugging purposes (ie show a browser)
+#define TEST_DEBUG_MODE // Run Playwright in non-headless mode for debugging purposes (ie show a browser)
 
 // In docker (Ubuntu container) Playwright will fail if running in non-headless mode, so we ensure TEST_DEBUG_MODE is undef'ed
 #if !DEBUG
@@ -12,11 +9,13 @@ using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CDR.DataRecipient.E2ETests.Pages;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -31,11 +30,15 @@ namespace CDR.DataRecipient.E2ETests
     [DisplayTestMethodName]
     public class BaseTest
     {
+        static public bool RUNNING_IN_CONTAINER => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")?.ToUpper() == "TRUE";
+                
         // Customers
         public const string CUSTOMERID_BANKING = "jwilson";
-        public const string CUSTOMERACCOUNTS_BANKING = "Personal Loan xxx-xxx xxxxx987,Transactions and Savings Account xxx-xxx xxxxx988";
+        //public const string CUSTOMERACCOUNTS_BANKING = "Personal Loan xxx-xxx xxxxx987,Transactions and Savings Account xxx-xxx xxxxx988";
+        public const string CUSTOMERACCOUNTS_BANKING = "Personal Loan,Transactions and Savings Account";
+
         public const string CUSTOMERID_ENERGY = "mmoss";
-        public const string CUSTOMERACCOUNTS_ENERGY = "'ELECTRICITY ACCOUNT','ELECTRICITY ACCOUNT 2',ELECTRICITY ACCOUNT 3,ELECTRICITY ACCOUNT 4,ELECTRICITY ACCOUNT 5,ELECTRICITY ACCOUNT 6,ELECTRICITY ACCOUNT 7,ELECTRICITY ACCOUNT 8,ELECTRICITY ACCOUNT 9,ELECTRICITY ACCOUNT 10,ELECTRICITY ACCOUNT 11,ELECTRICITY ACCOUNT 12,ELECTRICITY ACCOUNT 13,ELECTRICITY ACCOUNT 14,ELECTRICITY ACCOUNT 15,ELECTRICITY ACCOUNT 16,ELECTRICITY ACCOUNT 17,ELECTRICITY ACCOUNT 18,ELECTRICITY ACCOUNT 19,ELECTRICITY ACCOUNT 20,ELECTRICITY ACCOUNT 21";
+        public const string CUSTOMERACCOUNTS_ENERGY = "ELECTRICITY ACCOUNT,ELECTRICITY ACCOUNT 2,ELECTRICITY ACCOUNT 3,ELECTRICITY ACCOUNT 4,ELECTRICITY ACCOUNT 5,ELECTRICITY ACCOUNT 6,ELECTRICITY ACCOUNT 7,ELECTRICITY ACCOUNT 8,ELECTRICITY ACCOUNT 9,ELECTRICITY ACCOUNT 10,ELECTRICITY ACCOUNT 11,ELECTRICITY ACCOUNT 12,ELECTRICITY ACCOUNT 13,ELECTRICITY ACCOUNT 14,ELECTRICITY ACCOUNT 15,ELECTRICITY ACCOUNT 16,ELECTRICITY ACCOUNT 17,ELECTRICITY ACCOUNT 18,ELECTRICITY ACCOUNT 19,ELECTRICITY ACCOUNT 20,ELECTRICITY ACCOUNT 21";
 
         // Data Holder
         public const string DH_BRANDID = "804fc2fb-18a7-4235-9a49-2af393d18bc7";
@@ -49,7 +52,7 @@ namespace CDR.DataRecipient.E2ETests
         static public string REGISTER_MTLS_BaseURL => Configuration["MTLS_BaseURL"]
             ?? throw new Exception($"{nameof(REGISTER_MTLS_BaseURL)} - configuration setting not found");
 
-        static public string REGISTER_IDENTITYSERVER_URL = REGISTER_MTLS_BaseURL + "/idp/connect/token";
+        public static readonly string REGISTER_IDENTITYSERVER_URL = REGISTER_MTLS_BaseURL + "/idp/connect/token";
 
         // Client certificates
         protected const string CERTIFICATE_FILENAME = "Certificates/client.pfx";
@@ -58,6 +61,7 @@ namespace CDR.DataRecipient.E2ETests
         public const string JWT_CERTIFICATE_FILENAME = "Certificates/jwks.pfx";
         public const string JWT_CERTIFICATE_PASSWORD = "#M0ckDataRecipient#";
 
+        public const string SHARING_DURATION = "100000";
 
         public bool CreateMedia { get; set; } = true;
 
@@ -126,29 +130,91 @@ namespace CDR.DataRecipient.E2ETests
         }
 
         private bool inArrange = false;
-        protected delegate Task ArrangeDelegate();
-        protected async Task Arrange(ArrangeDelegate arrange)
+        protected delegate Task ArrangeDelegate(IPage page);
+        protected async Task ArrangeAsync(string testName, ArrangeDelegate arrange)
         {
             if (inArrange)
                 return;
 
             inArrange = true;
+
+            static void DeleteFile(string filename)
+            {
+                if (File.Exists(filename))
+                {
+                    File.Delete(filename);
+                }
+            }
+
+            if (CreateMedia == true)
+            {
+                // Remove video/screens if they exist
+                DeleteFile($"{MEDIAFOLDER}/{testName}-arrange.webm");
+            }
+
             try
             {
-                CreateMedia = false;
+                // Setup Playwright
+                using var playwright = await Playwright.CreateAsync();
+
+                // Setup browser
+                await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+                {
+                    SlowMo = 250,
+#if TEST_DEBUG_MODE
+                    Headless = false,
+                    Timeout = 5000 // DEBUG - 5 seconds
+#endif
+                });
+
+                // Setup browser context
+                var context = await browser.NewContextAsync(new BrowserNewContextOptions
+                {
+                    IgnoreHTTPSErrors = true,                    
+                    RecordVideoDir = CreateMedia == true ? $"{MEDIAFOLDER}" : null,
+                    ViewportSize = new ViewportSize
+                    {
+                        Width = 1200,
+                        Height = 1600
+                    }
+                });
+
+                string? videoPath = null;
+                var page = await context.NewPageAsync();
                 try
                 {
-                    // PatchRegister(); // No longer needed - seed data is correct
-                    PurgeMDR();
-                    PurgeMDHIdentityServer();
-                    PurgeMDHEnergyIdentityServer();
-                    PurgeMDH();
-                    PurgeMDHE();
-                    await arrange();
+                    
+                    page.Close += async (_, page) =>
+                    {
+                        // Page is closed, so save videoPath
+                        if (CreateMedia == true)
+                        {
+                            if (page.Video != null)
+                            {
+                                videoPath = await page.Video.PathAsync();
+                            }
+                        }
+                    };
+
+                    using (new AssertionScope())
+                    {
+                        page.SetDefaultTimeout(TEST_TIMEOUT);
+                        await arrange(page);
+                    }
                 }
                 finally
                 {
-                    CreateMedia = CREATE_MEDIA;
+
+                    await context.CloseAsync();
+                    await browser.CloseAsync();
+                    // Rename video file
+                    if (CreateMedia == true)
+                    {
+                        if (videoPath != null)
+                        {
+                            File.Move(videoPath, $"{MEDIAFOLDER}/{testName}-arrange.webm");
+                        }
+                    }
                 }
             }
             finally
@@ -161,10 +227,7 @@ namespace CDR.DataRecipient.E2ETests
         protected delegate Task CleanupDelegate(IPage page);
         protected async Task CleanupAsync(CleanupDelegate cleanup)
         {
-            if (inArrange) // shouldn't cleanup if arranging
-                return;
-
-            if (inCleanup)
+            if (inArrange || inCleanup)
                 return;
 
             inCleanup = true;
@@ -464,42 +527,10 @@ namespace CDR.DataRecipient.E2ETests
             Purge(mdrConnection, "Registration");
         }
 
-        public static void PurgeMDH()
-        {
-            // using var mdhConnection = new SqlConnection(BaseTest.DATAHOLDER_CONNECTIONSTRING);
-            // mdhConnection.Open();
-            // Purge(mdhConnection, "Brand");
-            // Purge(mdhConnection, "SoftwareProduct");
-        }
-
-        public static void PurgeMDHE()
-        {
-            // using var mdheConnection = new SqlConnection(BaseTest.DATAHOLDER_ENERGY_CONNECTIONSTRING);
-            // mdheConnection.Open();
-            // Purge(mdheConnection, "Brand");
-            // Purge(mdheConnection, "SoftwareProduct");
-        }
-
-        // public static void PurgeMDR_CDRArrangements()
-        // {
-        //     using var mdrConnection = new SqlConnection(BaseTest.DATARECIPIENT_CONNECTIONSTRING);
-        //     mdrConnection.Open();
-        //     Purge(mdrConnection, "CdrArrangement");
-        // }
-
         private static void PurgeIdentityServer(string connectionString)
         {
             using var identityServerConnection = new SqlConnection(connectionString);
             identityServerConnection.Open();
-
-            // Purge(identityServerConnection, "ApiResourceClaims");
-            // Purge(identityServerConnection, "ApiResourceProperties");
-            // Purge(identityServerConnection, "ApiResources");
-            // Purge(identityServerConnection, "ApiResourceScopes");
-            // Purge(identityServerConnection, "ApiResourceSecrets");
-            // Purge(identityServerConnection, "ApiScopeClaims");
-            // Purge(identityServerConnection, "ApiScopeProperties");
-            // Purge(identityServerConnection, "ApiScopes");
             Purge(identityServerConnection, "ClientClaims");
             Purge(identityServerConnection, "ClientCorsOrigins");
             Purge(identityServerConnection, "ClientGrantTypes");
@@ -510,10 +541,6 @@ namespace CDR.DataRecipient.E2ETests
             Purge(identityServerConnection, "Clients");
             Purge(identityServerConnection, "ClientScopes");
             Purge(identityServerConnection, "ClientSecrets");
-            // Purge(identityServerConnection, "DeviceCodes");
-            // Purge(identityServerConnection, "IdentityResourceClaims");
-            // Purge(identityServerConnection, "IdentityResourceProperties");
-            // Purge(identityServerConnection, "IdentityResources");
             Purge(identityServerConnection, "PersistedGrants");
         }
 
@@ -526,7 +553,237 @@ namespace CDR.DataRecipient.E2ETests
         {
             PurgeIdentityServer(BaseTest.DATAHOLDER_ENERGY_IDENTITYSERVER_CONNECTIONSTRING);
         }
+
+        static protected async Task DataHolders_Discover(IPage page, string industry = "ALL", string version = "2", int? expectedRecords = 32, string? expectedError = null)
+        {
+            // Arrange - Goto home page, click menu button, check page loaded
+            await page.GotoAsync(WEB_URL);
+            await page.Locator("a >> text=Discover Data Holders").ClickAsync();
+            await page.Locator("h2 >> text=Discover Data Holders").TextContentAsync();
+
+            // Arrange - Set industry
+            if (String.IsNullOrEmpty(industry)) // Clear industry
+            {
+                await page.Locator("select[name=\"Industry\"]").SelectOptionAsync(new SelectOptionValue[] { });
+            }
+            else
+            {
+                await page.Locator("select[name=\"Industry\"]").SelectOptionAsync(new[] { industry switch
+                    {
+                        // "" => "", // Doesn't work for clearing, use SelectOptionAsync(new SelectOptionValue[] { }) instead (see above)
+                        "ALL" => "0",
+                        "BANKING" => "1",
+                        "ENERGY" => "2",
+                        "TELCO" => "3",
+                        _ => throw new ArgumentOutOfRangeException($"{nameof(industry)}")
+                    }});
+            }
+
+            // Arrange - Set version
+            await page.Locator("input[name=\"Version\"]").FillAsync(version);
+
+            // Act - Click Refresh button
+            await page.Locator(@"h5:has-text(""Refresh Data Holders"") ~ div.card-body >> input:has-text(""Refresh"")").ClickAsync();
+
+            // Assert - Check refresh was successful
+            var footer = page.Locator(@"h5:has-text(""Refresh Data Holders"") ~ div.card-footer");
+            var text = await footer.InnerTextAsync();
+            if (expectedError != null)
+            {
+                text.Should().Be(expectedError);
+            }
+            else
+            {
+                if (expectedRecords != -1) // -1 = don't bother checking
+                {
+                    text.Should().Be($"OK: {expectedRecords} data holder brands added. 0 data holder brands updated.");
+                }
+            }
+        }
+
+        static protected async Task SSA_Get(IPage page, string industry, string version, string drBrandId, string drSoftwareProductId, string expectedMessage)
+        {
+            // Arrange - Goto home page, click menu button, check page loaded
+            await page.GotoAsync(WEB_URL);
+            await page.Locator("a >> text=Get SSA").ClickAsync();
+            await page.Locator("h2 >> text=Get Software Statement Assertion").TextContentAsync();
+
+            // Set version
+            await page.Locator("input[name=\"Version\"]").FillAsync(version);
+            // Set brandId
+            await page.Locator("input[name=\"BrandId\"]").FillAsync(drBrandId);
+            // Set softwareProductId
+            await page.Locator("input[name=\"SoftwareProductId\"]").FillAsync(drSoftwareProductId);
+            // Set industry
+            await page.Locator("select[name=\"Industry\"]").SelectOptionAsync(new[] { industry switch
+                    {
+                        // "" => "", // Doesn't work for clearing, use SelectOptionAsync(new SelectOptionValue[] { }) instead (see above)
+                        "ALL" => "0",
+                        "BANKING" => "1",
+                        "ENERGY" => "2",
+                        "TELCO" => "3",
+                        _ => throw new ArgumentOutOfRangeException($"{nameof(industry)}")
+                    }});
+
+            // Act - Click Refresh button
+            await page.Locator(@"h5:has-text(""Get SSA"") ~ div.card-body >> input:has-text(""Get SSA"")").ClickAsync();
+
+            // Assert - Check refresh was successful, card-footer should be showing OK - SSA Generated
+            var footer = page.Locator(@"h5:has-text(""Get SSA"") ~ div.card-footer");
+            var text = await footer.InnerTextAsync();
+            text.Should().StartWith(expectedMessage);
+        }
+
+        // Create Client Registration returning DH client ID of client that was registered
+        static protected async Task<string> ClientRegistration_Create(IPage page,
+            string dhBrandId,
+            string drBrandId, 
+            string drSoftwareProductId, 
+            string? jarmSigningAlgo = null,
+            string responseTypes = "code id_token", 
+            string? jarmEncrypAlg = null, 
+            string? jarmEncryptEnc = null)
+        {
+            // Arrange - Goto home page, click menu button, check page loaded
+            await page.GotoAsync(WEB_URL);
+            await page.Locator("a >> text=Dynamic Client Registration").ClickAsync();
+            await page.Locator("h2 >> text=Dynamic Client Registration").TextContentAsync();
+
+            // Set data holder brand id
+            await page.Locator("select[name=\"DataHolderBrandId\"]").SelectOptionAsync(new[] { dhBrandId });
+
+            // Assert - Check software product id
+            (await page.Locator("input[name=\"SoftwareProductId\"]").InputValueAsync()).Should().Be(drSoftwareProductId);
+
+            await page.Locator("input[name=\"ResponseTypes\"]").FillAsync(responseTypes);
+
+            if (jarmSigningAlgo != null)
+            {
+                await page.Locator("input[name=\"AuthorizationSignedResponseAlg\"]").FillAsync(jarmSigningAlgo);
+            }
+            if (jarmEncrypAlg != null)
+            {
+                await page.Locator("input[name=\"AuthorizationEncryptedResponseAlg\"]").FillAsync(jarmEncrypAlg);
+            }
+            if (jarmEncryptEnc != null)
+            {
+                await page.Locator("input[name=\"AuthorizationEncryptedResponseEnc\"]").FillAsync(jarmEncryptEnc);
+            }
+
+            // Act - Click create button
+            await page.Locator(@"h5:has-text(""Create Client Registration"") ~ div.card-body >> input:has-text(""Register"")").ClickAsync();
+
+            // Assert - Check client was registered
+            await page.Locator(@"h5:has-text(""Create Client Registration"") ~ div.card-footer:has-text(""Created - Registered"")").TextContentAsync();
+
+            // Assert - Get json result
+            var json = await page.Locator(@"h5:has-text(""Create Client Registration"") ~ div.card-footer >> pre").InnerTextAsync();
+
+            // Deserialise response and return DH client id
+            DCRResponse dcrResponse = JsonConvert.DeserializeObject<DCRResponse>(json) ?? throw new NullReferenceException(nameof(json));
+            return dcrResponse.ClientId ?? throw new NullReferenceException(nameof(dcrResponse.ClientId));
+        }
+
+        static protected async Task<ConsentAndAuthorisationResponse> ConsentAndAuthorisation2(IPage page, string customerId = CUSTOMERID_BANKING, string customerAccounts = CUSTOMERACCOUNTS_BANKING)
+        {
+
+            ConsentAndAuthorisationPages consentAndAuthorisationPages = new ConsentAndAuthorisationPages(page);
+            
+            await consentAndAuthorisationPages.EnterCustomerId(customerId);
+            await consentAndAuthorisationPages.ClickContinue();
+
+            await consentAndAuthorisationPages.EnterOtp("000789");
+            await consentAndAuthorisationPages.ClickContinue();
+
+            await consentAndAuthorisationPages.SelectAccounts(customerAccounts);
+            await consentAndAuthorisationPages.ClickContinue();
+
+            await consentAndAuthorisationPages.ClickAuthorise();
+
+            // Assert - Check callback is shown and get arrangement ID
+            await page.Locator("text=Consent and Authorisation - Callback").TextContentAsync();
+
+            return new ConsentAndAuthorisationResponse
+            {
+                IDToken = await page.Locator(@"dt:has-text(""Id Token"") + dd ").TextContentAsync(),
+                AccessToken = await page.Locator(@"dt:has-text(""Access Token"") + dd ").TextContentAsync(),
+                RefreshToken = await page.Locator(@"dt:has-text(""Refresh Token"") + dd ").TextContentAsync(),
+                ExpiresIn = await page.Locator(@"dt:has-text(""Expires In"") + dd ").TextContentAsync(),
+                Scope = await page.Locator(@"dt:has-text(""Scope"") + dd ").TextContentAsync(),
+                TokenType = await page.Locator(@"dt:has-text("" Token Type"") + dd ").TextContentAsync(),
+                CDRArrangementID = await page.Locator(@"dt:has-text(""CDR Arrangement Id"") + dd ").TextContentAsync()
+            };
+        }
+
+        static protected async Task<ConsentAndAuthorisationResponse> NewConsentAndAuthorisationWithPAR(
+            IPage page,
+            string dhClientId,
+            string customerId = CUSTOMERID_BANKING,
+            string customerAccounts = CUSTOMERACCOUNTS_BANKING,
+            string dhBrandId = DH_BRANDID)
+        {
+            // Arrange - Goto home page, click menu button, check page loaded
+            await page.GotoAsync(WEB_URL);
+            ParPage parPage = new ParPage(page);
+            await parPage.GotoPar();
+            await parPage.CompleteParForm(dhClientId, dhBrandId, sharingDuration: SHARING_DURATION);
+            await parPage.ClickInitiatePar();
+            await parPage.ClickAuthorizeUrl();
+
+            return await ConsentAndAuthorisation2(page, customerId, customerAccounts);
+        }
+
+        private class DCRResponse
+        {
+            [JsonProperty("client_id")]
+            public string? ClientId { get; set; }
+        }
+        static protected async Task ClientRegistration_Delete(IPage page)
+        {
+            await page.GotoAsync(WEB_URL);
+            await page.Locator("a >> text=Dynamic Client Registration").ClickAsync();
+            await page.Locator("h2 >> text=Dynamic Client Registration").TextContentAsync();
+            await page.Locator("text=Delete").ClickAsync();
+            await page.Locator("text=No existing registrations found.").TextContentAsync();
+        }
+        static protected async Task Consents_DeleteLocal(IPage page)
+        {
+            await TestInfo(page, "Delete (local)", "Delete Arrangement", "204");
+        }
+        public static async Task TestInfo(IPage page, string menuText, string modalTitle, string expectedStatusCode, (string name, string? value)[]? expectedPayload = null)
+        {
+            // Arrange - Goto home page, click menu button, check page loaded
+            await page.GotoAsync(WEB_URL);
+            await page.Locator("a >> text=Consents").ClickAsync();
+            await page.Locator("h2 >> text=Consents").TextContentAsync();
+
+            // Act - Click actions button and submenu item
+            await page.Locator("button:has-text(\"Actions\")").ClickAsync();
+            await page.Locator($"a >> text={menuText}").ClickAsync();
+
+            // Act - Check modal opens
+            await page.Locator($"div#modal-info >> h5.modal-title >> text={modalTitle}").TextContentAsync();
+
+            // Assert - Check statuscode
+            var statusCode = await page.Locator(@$"div#modal-info >> div.modal-statusCode >> text={expectedStatusCode}").TextContentAsync();
+            statusCode.Should().Be(expectedStatusCode);
+
+            // Assert - Check payload is what's expected
+            if (expectedPayload != null)
+            {
+                var payload = await page.Locator(@"div#modal-info >> pre.modal-payload").TextContentAsync();
+                Assert_Json2(payload, expectedPayload);
+            }
+        }
+        public class ConsentAndAuthorisationResponse
+        {
+            public string? IDToken { get; init; }
+            public string? AccessToken { get; init; }
+            public string? RefreshToken { get; init; }
+            public string? ExpiresIn { get; init; }
+            public string? Scope { get; init; }
+            public string? TokenType { get; init; }
+            public string? CDRArrangementID { get; init; }
+        }
     }
 }
-
-#endif
