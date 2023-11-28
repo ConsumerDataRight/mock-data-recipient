@@ -101,12 +101,12 @@ jobs:
     # Run integration tests
     - name: Run integration tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.IntegrationTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-integration-tests
+        docker compose -f './mock-data-recipient/Source/docker-compose.IntegrationTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-integration-tests
 
     # Remove integration tests
     - name: Remove integration tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.IntegrationTests.yml' down
+        docker compose -f './mock-data-recipient/Source/docker-compose.IntegrationTests.yml' down
 
     # List docker images
     - name: List Docker images
@@ -121,12 +121,12 @@ jobs:
     # Run e2e tests
     - name: Run e2e tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.E2ETests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-e2e-tests
+        docker compose -f './mock-data-recipient/Source/docker-compose.E2ETests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-e2e-tests
 
     # Remove e2e tests
     - name: Remove e2e tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.E2ETests.yml' down
+        docker compose -f './mock-data-recipient/Source/docker-compose.E2ETests.yml' down
         
     # Build mock-data-recipient-unit-tests image
     - name: Build the mock-data-recipient-unit-tests image
@@ -136,12 +136,12 @@ jobs:
     # Run unit tests
     - name: Run unit tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
+        docker compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
 
     # Remove unit tests
     - name: Remove unit tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' down
+        docker compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' down
 
     # Archive unit test results
     - name: Archive unit test results
