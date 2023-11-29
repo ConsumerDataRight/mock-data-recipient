@@ -66,11 +66,11 @@ To get help on launching and debugging the solutions as containers and switching
 ## Mock Data Recipient - Architecture
 The following diagram outlines the high level architecture of the Mock Data Recipient:
 
-[<img src="./mock-data-recipient-architecture.png?raw=true" height='600' width='600' alt="Mock Data Recipient - Architecture"/>](./mock-data-recipient-architecture.png?raw=true)
+![Mock Data Recipient - Architecture](./mock-data-recipient-architecture.png?raw=true)
 
 Dynamic Client Registration Interface:
 
-[<img src="./mock-data-recipient-dcr-architecture.png?raw=true"  height='240' width='600' alt="Dynamic Client Registration Interface"/>](./mock-data-recipient-dcr-architecture.png?raw=true)
+![Dynamic Client Registration Interface](./mock-data-recipient-dcr-architecture.png?raw=true)
 
 ## Mock Data Recipient - Components
 The Mock Data Recipient contains the following components:
