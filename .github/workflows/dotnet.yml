@@ -101,12 +101,12 @@ jobs:
     # Run integration tests
     - name: Run integration tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.IntegrationTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-integration-tests
+        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.IntegrationTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-integration-tests
 
     # Remove integration tests
     - name: Remove integration tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.IntegrationTests.yml' down
+        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.IntegrationTests.yml' down
 
     # List docker images
     - name: List Docker images
@@ -121,12 +121,12 @@ jobs:
     # Run e2e tests
     - name: Run e2e tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.E2ETests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-e2e-tests
+        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.E2ETests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-e2e-tests
 
     # Remove e2e tests
     - name: Remove e2e tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.E2ETests.yml' down
+        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.E2ETests.yml' down
         
     # Build mock-data-recipient-unit-tests image
     - name: Build the mock-data-recipient-unit-tests image
@@ -136,12 +136,12 @@ jobs:
     # Run unit tests
     - name: Run unit tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
+        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
 
     # Remove unit tests
     - name: Remove unit tests
       run: |
-        docker-compose -f './mock-data-recipient/Source/docker-compose.UnitTests.yml' down
+        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' down
 
     # Archive unit test results
     - name: Archive unit test results
@@ -149,7 +149,7 @@ jobs:
       if: always()
       with:
         name: unit-test-results
-        path: ${{ github.workspace }}/mock-data-recipient/Source/_temp/mock-data-recipient-unit-tests/testresults
+        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient-unit-tests/testresults
 
     # Archive integration test results
     - name: Archive integration test results
@@ -157,7 +157,7 @@ jobs:
       if: always()
       with:
         name: integration-test-results
-        path: ${{ github.workspace }}/mock-data-recipient/Source/_temp/mock-data-recipient-integration-tests/testresults
+        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient-integration-tests/testresults
 
     # Archive e2e test results
     - name: Archive e2e test results
@@ -165,7 +165,7 @@ jobs:
       if: always()
       with:
         name: e2e-test-results
-        path: ${{ github.workspace }}/mock-data-recipient/Source/_temp/mock-data-recipient-e2e-tests/testresults
+        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient-e2e-tests/testresults
 
     # Archive mock data recipient logs
     - name: Archive mock data recipient logs
@@ -173,7 +173,7 @@ jobs:
       if: always()
       with:
         name: integration-test-artifacts
-        path: ${{ github.workspace }}/mock-data-recipient/Source/_temp/mock-data-recipient/tmp
+        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient/tmp
 
     # Archive mock data holder logs
     - name: Archive mock data holder logs
@@ -181,7 +181,7 @@ jobs:
       if: always()
       with:
         name: integration-test-artifacts
-        path: ${{ github.workspace }}/mock-data-recipient/Source/_temp/mock-data-holder/tmp
+        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-holder/tmp
 
     # Archive mock data holder energy logs
     - name: Archive mock data holder energy logs
@@ -189,7 +189,7 @@ jobs:
       if: always()
       with:
         name: integration-test-artifacts
-        path: ${{ github.workspace }}/mock-data-recipient/Source/_temp/mock-data-holder-energy/tmp
+        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-holder-energy/tmp
 
     # Archive mock register logs
     - name: Archive mock register logs
@@ -197,4 +197,4 @@ jobs:
       if: always()
       with:
         name: integration-test-artifacts
-        path: ${{ github.workspace }}/mock-data-recipient/Source/_temp/mock-register/tmp
+        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-register/tmp

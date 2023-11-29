@@ -5,7 +5,7 @@ using Xunit;
 
 namespace CDR.DataRecipient.E2ETests
 {
-    public class AATestPlaywrightInstallation : BaseTest_v3, IClassFixture<TestFixture>
+    public class AATestPlaywrightInstallation : BaseTest, IClassFixture<TestFixture>
     {
         [Fact]
         public async Task ShouldDisplayGoogleHomePage()

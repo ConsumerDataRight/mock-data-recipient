@@ -18,7 +18,7 @@ using static System.Formats.Asn1.AsnWriter;
 
 namespace CDR.DataRecipient.E2ETests
 {
-    public class US46331_MDR_E2ETests_ParFapi : BaseTest_v3, IClassFixture<TestFixture>
+    public class US46331_MDR_E2ETests_ParFapi : BaseTest, IClassFixture<TestFixture>
     {
 
         public const string DH_DEFAULT_PAR_SCOPE = "openid profile common:customer.basic:read bank:accounts.basic:read bank:transactions:read cdr:registration";
