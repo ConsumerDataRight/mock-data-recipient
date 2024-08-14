@@ -102,7 +102,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 }
                 db.Close();
 
-                if (cdrArrangements.Any())
+                if (cdrArrangements.Count > 0)
                 {
                     foreach (var arr in cdrArrangements)
                     {
@@ -260,8 +260,8 @@ namespace CDR.DataRecipient.Repository.SQL
         /// <returns>Lists if data holders to be Registered</returns>
         public async Task<(IList<DataHolderBrand>, IList<DataHolderBrand>)> CheckRegistrationsExist(IList<DataHolderBrand> newDhBrands)
         {
-            IList<DataHolderBrand> dhBrandsIns = new List<DataHolderBrand>();
-            IList<DataHolderBrand> dhBrandsUpd = new List<DataHolderBrand>();
+            List<DataHolderBrand> dhBrandsIns = new List<DataHolderBrand>();
+            List<DataHolderBrand> dhBrandsUpd = new List<DataHolderBrand>();
 
             using (SqlConnection db = new(_dbConn))
             {
@@ -389,7 +389,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 }
                 db.Close();
 
-                if (registrations.Any())
+                if (registrations.Count > 0)
                 {
                     foreach (var reg in registrations)
                     {
@@ -629,14 +629,14 @@ namespace CDR.DataRecipient.Repository.SQL
         /// <returns>Count of data holders to be inserted and updated</returns>
         public async Task<(int, int)> AggregateDataHolderBrands(IList<DataHolderBrand> dhBrandsNew)
         {
-            IList<DataHolderBrand> dhBrandsIns = new List<DataHolderBrand>();
-            IList<DataHolderBrand> dhBrandsUpd = new List<DataHolderBrand>();
+            List<DataHolderBrand> dhBrandsIns = new List<DataHolderBrand>();
+            List<DataHolderBrand> dhBrandsUpd = new List<DataHolderBrand>();
 
             using (SqlConnection db = new(_dbConn))
             {
                 db.Open();
 
-                IList<DataHolderBrand> dataHolderBrandsOrig = new List<DataHolderBrand>();
+                List<DataHolderBrand> dataHolderBrandsOrig = new List<DataHolderBrand>();
                 using var sqlCommand = new SqlCommand("SELECT [DataHolderBrandId], [JsonDocument], [LastUpdated] FROM [DataHolderBrand]", db);
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
@@ -652,24 +652,24 @@ namespace CDR.DataRecipient.Repository.SQL
 
                 db.Close();
 
-                if (dataHolderBrandsOrig.Any())
+                if (dataHolderBrandsOrig.Count > 0)
                 {
                     // Insert
-                    dhBrandsIns = dhBrandsNew.Where(n => !dataHolderBrandsOrig.Any(o => o.DataHolderBrandId == n.DataHolderBrandId)).ToList();
+                    dhBrandsIns = dhBrandsNew.Where(n => !dataHolderBrandsOrig.Exists(o => o.DataHolderBrandId == n.DataHolderBrandId)).ToList();
 
                     // Update - when receiving list of new brands update tmp list below will be populated - compares LastUpdated from new list
                     //          with LastUpdated in DataHolderBrand table IF they don't exist then compares below to make updated list
-                    IList<DataHolderBrand> dataHolderBrandsUpdTmp = dhBrandsNew.Where(n => !dataHolderBrandsOrig.Any(o => o.DataHolderBrandId == n.DataHolderBrandId
+                    IList<DataHolderBrand> dataHolderBrandsUpdTmp = dhBrandsNew.Where(n => !dataHolderBrandsOrig.Exists(o => o.DataHolderBrandId == n.DataHolderBrandId
                                                                                                     && o.LastUpdated == n.LastUpdated)).ToList();
 
                     // compare new to update lists above, any not in both lists are to be updated
-                    dhBrandsUpd = dataHolderBrandsUpdTmp.Where(n => !dhBrandsIns.Any(o => o.DataHolderBrandId == n.DataHolderBrandId)).ToList();
+                    dhBrandsUpd = dataHolderBrandsUpdTmp.Where(n => !dhBrandsIns.Exists(o => o.DataHolderBrandId == n.DataHolderBrandId)).ToList();
 
-                    if (dhBrandsIns.Any())
+                    if (dhBrandsIns.Count > 0)
                     {
                         dhBrandsIns.ToList().ForEach(async dataholder => await InsertDataHolder(dataholder));
                     }
-                    if (dhBrandsUpd.Any())
+                    if (dhBrandsUpd.Count > 0)
                     {
                         dhBrandsUpd.ToList().ForEach(async dataholder => await UpdateDataHolder(dataholder));
                     }
@@ -677,7 +677,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 else
                 {
                     // Old data does not exist ADD New data
-                    if (dhBrandsNew.Any())
+                    if (dhBrandsNew.Count > 0)
                     {
                         dhBrandsIns = dhBrandsNew.ToList();
                         dhBrandsNew.ToList().ForEach(async dataholder => await InsertDataHolder(dataholder));
@@ -959,7 +959,7 @@ namespace CDR.DataRecipient.Repository.SQL
         /// This is called from Azure DiscoverDataHolders and DCR Functions, to prevent multiple queue entries for the same DataHolderBrandId
         /// </remarks>
         /// <returns>The MessageId and the MessageState</returns>
-        public async Task<(string, string)> CheckDcrMessageExistByDHBrandId(string dhBrandId)
+        public async Task<(string msgId, string msgState)> CheckDcrMessageExistByDHBrandId(string dhBrandId)
         {
             string msgId = "";
             string msgState = "";

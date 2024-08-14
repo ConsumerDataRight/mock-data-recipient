@@ -28,6 +28,13 @@
                         </div>
                     </div>
 
+                    <div class="row mb-3 buttons">
+                        <div class="col-sm-10 offset-sm-2">
+                            <input id="ViewRegistration" name="view-registration" type="button" value="View Registration" class="btn btn-primary" />
+                            <div id="registration-spinner" class="spinner-border spinner-border-sm text-primary"><span class="visually-hidden">Loading...</span></div>
+                        </div>
+                    </div>
+
                     <div id="arrdetail">
                         <div class="row mb-3">
                             @Html.LabelFor(m => m.CdrArrangementId, new { @class = "col-sm-2 col-form-label" })
@@ -64,6 +71,7 @@
                             @Html.LabelFor(m => m.ResponseType, new { @class = "col-sm-2 col-form-label" })
                             <div class="col-sm-10">
                                 @Html.TextBoxFor(m => m.ResponseType, new { @class = "form-control" })
+                                <small><i>* As per CDS FAPI 1.0 Migration 4, OIDC Hybrid Flow may be retired and is recommended to use Authorisation Code Flow.</i></small>
                             </div>
                         </div>
 
@@ -107,7 +115,7 @@
 </div>
 
 <div id="modal-par" class="modal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Par</h5>
@@ -123,18 +131,84 @@
     </div>
 </div>
 
+<div id="modal-registration" class="modal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-messages-registration"></div>
+                <pre id="modal-payload-registration"></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script type="text/javascript">
         jQuery(document).ready(function($) {
 
             $('#arrdetail').show();
+            $('#registration-spinner').hide();
+                        
+            // handle the view registration click
+            $('#ViewRegistration').click(function () {
 
-            var modal = new bootstrap.Modal(document.getElementById('modal-par'), {
-                keyboard: false
+                var modal = new bootstrap.Modal(document.getElementById('modal-registration'), {
+                    keyboard: false
+                });
+
+                // Get the registration - display in modal view
+                var registrationId = $('#RegistrationId option:selected').val();
+                if (registrationId !== null && registrationId !== '') {
+
+                    $('#registration-spinner').show();
+                    $('#registrationid-validation-message').hide();
+                    var registrationId = $('#RegistrationId option:selected').val();
+                    const [clientid, dataHolderBrandId] = registrationId.split('|||');
+                    var href = `dcr/registrations/${clientid}/${dataHolderBrandId}`;
+
+                    $.ajax({
+                        url: href,
+                        type: 'GET',
+                        success: function (result) {
+                            modal.show();
+                            $('#modal-messages-registration').html(result.messages);
+                            var obj = JSON.parse(result.payload);
+                            $('#modal-payload-registration').html(JSON.stringify(obj, null, 2));
+                            $('#registration-spinner').hide();
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            modal.show();
+                            $('#modal-messages-registration').html(xhr.responseJSON.messages);
+                            $('#registration-spinner').hide();
+                        }
+                    });
+                }
+                else {
+                    $('#registrationid-validation-message').show();
+                    $('[data-valmsg-for="RegistrationId"]').html("Please select a registration");
+                }
+                return false;
             });
+
+            //setting callback function for 'hidden.bs.modal' event
+            $('#modal-registration').on('hidden.bs.modal', function () {
+                //remove the backdrop
+                $('.modal-backdrop').remove();
+            })
 
             // Populate the view with the picked details
 			$('#RegistrationId').click(function () {
+                
+                var modal = new bootstrap.Modal(document.getElementById('modal-par'), {
+                    keyboard: false
+                });
 				var registrationId = $('#RegistrationId option:selected').val();
 				if (registrationId !== null && registrationId !== '') {
                     $('#registrationid-validation-message').hide();

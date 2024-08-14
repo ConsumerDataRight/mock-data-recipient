@@ -26,9 +26,10 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             get
             {
-                return "Common";
+                return string.Empty;
             }
         }
+        protected override string ApiGroupName => "Common";
 
         protected override string CdsSwaggerLocation
         {

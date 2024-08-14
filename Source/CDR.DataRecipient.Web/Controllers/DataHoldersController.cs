@@ -74,8 +74,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 tokenEndpoint, 
                 sp.SoftwareProductId, 
                 sp.ClientCertificate.X509Certificate, 
-                sp.SigningCertificate.X509Certificate,
-                scope: ScopeExtensions.GetRegisterScope(model.Version, 2));
+                sp.SigningCertificate.X509Certificate);
 
             if (!tokenResponse.IsSuccessful)
             {
@@ -154,11 +153,6 @@ namespace CDR.DataRecipient.Web.Controllers
             if (string.IsNullOrEmpty(model.Version))
             {
                 model.Version = "2";
-            }
-
-            if (string.IsNullOrEmpty(model.Messages))
-            {
-                model.Messages = "Waiting...";
             }
         }
     }

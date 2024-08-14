@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CDR.DataRecipient.Repository.SQL.Migrations
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarAnalyzer", "CA1861:Prefer 'static readonly' fields over constant array arguments if the called method is called repeatedly and is not mutating the passed array", Justification = "Auto-generated migration file.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarAnalyzer", "S4581:Use 'Guid.NewGuid()' or 'Guid.Empty' or add arguments to this GUID instantiation.", Justification = "Auto-generated migration file.")]
     public partial class RegistrationKeyUpdate : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

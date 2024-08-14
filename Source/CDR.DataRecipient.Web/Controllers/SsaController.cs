@@ -60,8 +60,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 tokenEndpoint, 
                 model.SoftwareProductId, 
                 sp.ClientCertificate.X509Certificate, 
-                sp.SigningCertificate.X509Certificate,
-                scope: ScopeExtensions.GetRegisterScope(model.Version, 3));
+                sp.SigningCertificate.X509Certificate);
 
             if (!tokenResponse.IsSuccessful)
             {

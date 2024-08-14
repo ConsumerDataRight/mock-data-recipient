@@ -6,6 +6,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2024-08-16
+### Changed
+- Updated nuget package versions  
+
+## [2.0.0] - 2024-06-12
+### Changed
+- Migrated from .NET 6 to .NET 8
+- Migrated docker compose from v1 to v2
+
+## [1.3.0] - 2024-03-13
+### Changed
+- Removed Bank Participant Data scope (i.e. cdr-register:bank:read) references.
+- Updated NuGet packages to avoid vulnerabilities.
+- DCR and PAR screen defaults to Authorisation Code Flow (ACF).
+
+### Fixed
+- Fixed Consumer Data Sharing Common swagger proxy UI failure due to 'IndustryName' validation - [Mock Data Recipient Issue 68](https://github.com/ConsumerDataRight/mock-data-recipient/issues/68)
+
 ## [1.2.5] - 2023-11-29
 ### Fixed
 - Refactored code and minor bug fixes

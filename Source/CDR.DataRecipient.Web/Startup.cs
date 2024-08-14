@@ -160,7 +160,7 @@ namespace CDR.DataRecipient.Web
                     o.ResponseMode = responseMode;
                     o.CallbackPath = callbackPath;
                     o.GetClaimsFromUserInfoEndpoint = false;
-                    o.Events.OnRemoteFailure = async context =>
+                    o.Events.OnRemoteFailure = context =>
                     {
                         string errMessage = context.Failure == null ? "" : context.Failure.Message;
                         string innerErrorMessage = string.Empty;
@@ -176,8 +176,9 @@ namespace CDR.DataRecipient.Web
                         rtnMessage += redirectError;
                         context.Response.Redirect(rtnMessage);
                         context.HandleResponse();
+                        return Task.CompletedTask;
                     };
-                    o.Events.OnAuthenticationFailed = async context =>
+                    o.Events.OnAuthenticationFailed = context =>
                     {
                         string errMessage = context.Exception.Message;
                         string innerErrorMessage = string.Empty;
@@ -193,9 +194,9 @@ namespace CDR.DataRecipient.Web
                         rtnMessage += redirectError;
                         context.Response.Redirect(rtnMessage);
                         context.HandleResponse();
+                        return Task.CompletedTask;
                     };
-                    o.Events.OnAccessDenied = async context =>
-                    {
+                    o.Events.OnAccessDenied = context => {
                         string errMessage = context.Result == null ? "" : context.Result.Failure.Message;
                         string redirectError = string.Format("?error_message={0}", errMessage);
                         redirectError = redirectError.Replace("\r\n", "|");
@@ -204,6 +205,7 @@ namespace CDR.DataRecipient.Web
                         rtnMessage += redirectError;
                         context.Response.Redirect(rtnMessage);
                         context.HandleResponse();
+                        return Task.CompletedTask;
                     };
 
                     foreach (var scope in scopes.Split(' '))
@@ -268,7 +270,9 @@ namespace CDR.DataRecipient.Web
             // Add HTTP response headers.
             app.Use(async (context, next) =>
             {
-                context.Response.Headers.Add("Content-Security-Policy", _configuration.GetValue(Constants.ConfigurationKeys.ContentSecurityPolicy, "default-src 'self', 'https://cdn.jsdelivr.net/';"));
+                context.Response.Headers.Append(
+                    "Content-Security-Policy", 
+                    _configuration.GetValue(Constants.ConfigurationKeys.ContentSecurityPolicy, "default-src 'self', 'https://cdn.jsdelivr.net/';"));
                 await next();
             });
 

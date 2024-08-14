@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using System.Linq;
+using System;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
@@ -34,22 +36,16 @@ namespace CDR.DataRecipient.Web.Controllers
             return View("Error", new ErrorViewModel { ErrorTitle = "Access Error", Message = ProcessMessage(errMsg) });
         }
 
-        private string ProcessMessage(string errMsg)
+        private static string ProcessMessage(string errMsg)
         {
             var msg = "";
             if (!string.IsNullOrEmpty(errMsg))
             {
                 var msgParts = errMsg.Split("|");
-                if (msgParts.Length > 0)
+                var errorMessage = Array.Find(msgParts, item => item.Contains("error"));
+                if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    foreach (var item in msgParts)
-                    {
-                        if (item.Contains("error"))
-                        {
-                            msg = item;
-                            break;
-                        }
-                    }
+                    msg = errorMessage;
                 }
             }
             return msg;

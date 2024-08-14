@@ -9,7 +9,6 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
-using CDR.DataRecipient.SDK;
 
 namespace CDR.DataRecipient.SDK.Extensions
 {
@@ -43,7 +42,7 @@ namespace CDR.DataRecipient.SDK.Extensions
                 ValidIssuer = validIssuer,
                 ValidateIssuer = !string.IsNullOrEmpty(validIssuer),
                 ValidAudiences = validAudiences,
-                ValidateAudience = validAudiences != null && validAudiences.Any(),
+                ValidateAudience = validAudiences != null && validAudiences.Length > 0,
                 RequireSignedTokens = true,
                 ValidateLifetime = validateLifetime,
             };                        
