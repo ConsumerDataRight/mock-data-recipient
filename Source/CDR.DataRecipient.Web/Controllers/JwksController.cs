@@ -1,10 +1,7 @@
-﻿using CDR.DataRecipient.SDK.Extensions;
-using CDR.DataRecipient.Web.Common;
+﻿using CDR.DataRecipient.Web.Common;
 using CDR.DataRecipient.Web.Extensions;
 using CDR.DataRecipient.Web.Filters;
-using IdentityModel;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -35,17 +32,17 @@ namespace CDR.DataRecipient.Web.Controllers
         [HttpGet]
         [Route("jwks/{id:int?}")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> GetJwks(int? id = 1)
+        public IActionResult GetJwks(int? id = 1)
         {
-            return Ok(await GenerateJwks(id, false));
+            return Ok(GenerateJwks(id, false));
         }
 
         [HttpGet]
         [Route("jwks-with-private-keys/{id:int?}")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> GetJwksPrivateKeys(int? id = 1)
+        public IActionResult GetJwksPrivateKeys(int? id = 1)
         {
-            return Ok(await GenerateJwks(id, true));
+            return Ok(GenerateJwks(id, true));
         }
 
         /// <summary>
@@ -59,7 +56,7 @@ namespace CDR.DataRecipient.Web.Controllers
         /// However, for FAPI testing the private key is required to be included in the JWKS when configuring the test plan.
         /// Therefore, set this flag to generate the JWKS with the private key that can then be included in the FAPI configuration.
         /// </remarks>
-        private async Task<SDK.Models.JsonWebKeySet> GenerateJwks(int? id = 1, bool includePrivateKeyDetails = false)
+        private SDK.Models.JsonWebKeySet GenerateJwks(int? id = 1, bool includePrivateKeyDetails = false)
         {
             _logger.LogInformation($"{nameof(JwksController)}.{nameof(GenerateJwks)}");
 

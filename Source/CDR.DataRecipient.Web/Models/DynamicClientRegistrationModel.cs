@@ -70,23 +70,11 @@ namespace CDR.DataRecipient.Web.Models
 
         public List<SelectListItem> DataHolderBrands { get; set; }
         public List<SelectListItem> DataRecipients { get; set; }
-
-        public string TransactionType
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(this.ClientId))
-                {
-                    return "Update";
-                }
-
-                return "Create";
-            }
-        }
-
+        public string TransactionType { get; set; }
         public DynamicClientRegistrationModel()
         {
-            this.Registrations = new List<Registration>();
+            this.Registrations = new List<Registration>();            
+            TransactionType = !string.IsNullOrEmpty(ClientId) ? "Update" : "Create";
         }
     }
 }

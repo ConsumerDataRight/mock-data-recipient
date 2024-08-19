@@ -29,6 +29,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 return "Energy";
             }
         }
+        protected override string ApiGroupName => this.IndustryName;
 
         protected override string CdsSwaggerLocation
         {

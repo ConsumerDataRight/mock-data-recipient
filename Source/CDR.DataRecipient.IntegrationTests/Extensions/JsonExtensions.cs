@@ -7,7 +7,7 @@ namespace CDR.DataRecipient.IntegrationTests.Extensions
     {
         /// <summary>
         /// Strip comments from json string. 
-        /// The json will be reserialized so it's formatting may change (ie whitespace/indentation etc)
+        /// The json will be re-serialized so it's formatting may change (i.e. whitespace/indentation etc)
         /// </summary>
         public static string JsonStripComments(this string json)
         {
@@ -24,7 +24,7 @@ namespace CDR.DataRecipient.IntegrationTests.Extensions
 
         /// <summary>
         /// Compare json. 
-        /// Json is converted to JTokens prior to comparision, thus formatting is ignore.
+        /// Json is converted to JTokens prior to comparison, thus formatting is ignore.
         /// Returns true if json is equivalent, otherwise false.
         /// </summary>
         public static bool JsonCompare(this string json, string jsonToCompare)

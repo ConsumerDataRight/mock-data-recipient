@@ -2,8 +2,6 @@
 # It extends docker-compose.TestsBase.yml.
 
 
-version: '3.8'
-
 name: mock-data-recipient-e2e-tests
 
 services:

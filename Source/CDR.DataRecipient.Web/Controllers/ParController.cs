@@ -57,7 +57,7 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index()
         {
-            var model = new ParModel() { UsePkce = true, ResponseType = "code id_token", ResponseMode = "fragment" };
+            var model = new ParModel() { UsePkce = true, ResponseType = "code", ResponseMode = "jwt" };
             await PopulatePickers(model);
             return View(model);
         }

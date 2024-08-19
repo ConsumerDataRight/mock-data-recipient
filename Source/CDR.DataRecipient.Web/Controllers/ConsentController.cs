@@ -106,7 +106,7 @@ namespace CDR.DataRecipient.Web.Controllers
             
             (bool isvalid, string authCode, AuthorisationState authState, ErrorList errorList) = await ValidateCallback(this.Request);
 
-            if (errorList != null && errorList.Errors.Any())
+            if (errorList != null && errorList.Errors.Count > 0)
             {
                 model.Messages = "An error has occurred.";
                 model.ErrorList.Errors.AddRange(errorList.Errors);

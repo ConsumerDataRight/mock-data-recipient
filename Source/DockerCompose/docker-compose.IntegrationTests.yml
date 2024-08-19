@@ -1,8 +1,6 @@
 # Docker compose file used to execute E2E tests for the Mock Data Recipient.
 # It extends docker-compose.TestsBase.yml.
 
-version: '3.8'
-
 name: mock-data-recipient-integration-tests
 
 services:

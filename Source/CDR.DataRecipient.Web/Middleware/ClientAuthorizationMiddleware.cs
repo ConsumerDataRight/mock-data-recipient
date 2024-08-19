@@ -8,15 +8,13 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Middleware
 {
-	public class ClientAuthorizationMiddleware
+    public class ClientAuthorizationMiddleware
 	{
-		private readonly IConfiguration _config;
 		private readonly RequestDelegate _next;
 		private readonly IDataHolderDiscoveryCache _dataHolderDiscoveryCache;
 		private readonly ILogger<ClientAuthorizationMiddleware> _logger;
@@ -36,8 +34,7 @@ namespace CDR.DataRecipient.Web.Middleware
 			_next = next;
 			_dataHolderDiscoveryCache = dataHolderDiscoveryCache;
 			_logger = logger;
-			_config = config;
-			_softwareProduct = _config.GetSoftwareProductConfig();
+			_softwareProduct = config.GetSoftwareProductConfig();
 		}
 
 		public async Task Invoke(HttpContext context)
@@ -45,8 +42,13 @@ namespace CDR.DataRecipient.Web.Middleware
 			// Check if the path required client authentication.
 			if (_validPaths.Contains(context.Request.Path.Value))
 			{
-				var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
-
+				var authorisationHeader = context.Request.Headers.Authorization.FirstOrDefault();
+				string token = null;
+				if (authorisationHeader != null)
+				{
+					var authorisationData = authorisationHeader.Split(" ");
+					token = authorisationData.Length > 0 ? authorisationData[^1] : null;
+				}
 				_logger.LogDebug("Validating authorization token: {token}", token);
 
 				if (token != null)

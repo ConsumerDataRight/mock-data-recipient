@@ -19,9 +19,9 @@ namespace CDR.DataRecipient.E2ETests.Pages
         public ConsentAndAuthorisationPages(IPage page)
         {
             _page = page;
-            _txtCustomerId = _page.Locator("id=mui-1");            
+            _txtCustomerId = _page.Locator("id=customerId");            
             _btnContinue = _page.Locator("button:has-text(\"Continue\")");
-            _txtOneTimePassword = _page.Locator("id=mui-2");
+            _txtOneTimePassword = _page.Locator("id=otp");
             _btnAuthorise = _page.Locator("text=Authorise");
             _btnCancel = _page.Locator("text=Cancel");
 

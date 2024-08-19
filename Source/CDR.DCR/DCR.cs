@@ -5,160 +5,130 @@ using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.SDK.Enum;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
-using Microsoft.Azure.WebJobs;
+using CDR.DCR.Extensions;
+using CDR.DCR.Models;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Azure.Storage.Queue;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using System.Linq;
-using CDR.DCR.Models;
 
 namespace CDR.DCR
 {
-    public static class DynamicClientRegistrationFunction
+    public class DynamicClientRegistrationFunction
     {
-        // Error - Unable to perform DCR as there are no mutually supported values in the mandatory claim [CLAIM_NAME]
-        private const string ErrorMessage = "Unable to perform DCR as there are no mutually supported values in the mandatory claim";
+        private readonly ILogger _logger;
+        private readonly DcrOptions _options;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly X509Certificate2 _signingCertificate;
+
+        public DynamicClientRegistrationFunction(ILogger<DynamicClientRegistrationFunction> logger, IOptions<DcrOptions> options, IHttpClientFactory httpClientFactory)
+        {
+            _options = options.Value;
+            _logger = logger;
+            _httpClientFactory = httpClientFactory;
+
+            //get the certs
+            _logger.LogInformation("Loading the client certificate...");
+            byte[] clientCertBytes = Convert.FromBase64String(_options.Client_Certificate);
+            X509Certificate2 cclientCertificate = new(clientCertBytes, _options.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            _logger.LogInformation("Client certificate loaded: {thumbprint}", cclientCertificate.Thumbprint);
+
+
+            _logger.LogInformation("Loading the signing certificate...");
+            byte[] signCertBytes = Convert.FromBase64String(_options.Signing_Certificate);
+            _signingCertificate = new(signCertBytes, _options.Signing_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            _logger.LogInformation("Signing certificate loaded: {thumbprint}", _signingCertificate.Thumbprint);
+        }
 
         /// <summary>
         /// Dynamic Client Registration Function
         /// </summary>
         /// <remarks>Registers the Data Holders in the messaging queue and updates the local repository</remarks>
-        [FunctionName("FunctionDCR")]
-        public static async Task DCR([QueueTrigger("dynamicclientregistration", Connection = "StorageConnectionString")] CloudQueueMessage myQueueItem, ILogger log, ExecutionContext context)
+        [Function("FunctionDCR")]
+        public async Task DCR([QueueTrigger("dynamicclientregistration", Connection = "StorageConnectionString")] DcrQueueMessage myQueueItem, FunctionContext context)
         {
             string msg = string.Empty;
             string dataHolderBrandName = string.Empty;
             string infosecBaseUri = string.Empty;
             string regEndpoint = string.Empty;
 
-            DcrQueueMessage myQMsg = JsonConvert.DeserializeObject<DcrQueueMessage>(myQueueItem.AsString);
-                        
             try
             {
-                var isLocalDev = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT").Equals("Development");
-                var configBuilder = new ConfigurationBuilder().SetBasePath(context.FunctionAppDirectory);
-
-                if (isLocalDev)
-                {
-                    configBuilder = configBuilder.AddJsonFile("local.settings.json", optional: false, reloadOnChange: true);
-                }
-
-                // Get environment variables.
-                string qConnString = Environment.GetEnvironmentVariable("StorageConnectionString");
-                string dbConnString = Environment.GetEnvironmentVariable("DataRecipient_DB_ConnectionString");
-                string dbLoggingConnString = Environment.GetEnvironmentVariable("DataRecipient_Logging_DB_ConnectionString");
-                string tokenEndpoint = Environment.GetEnvironmentVariable("Register_Token_Endpoint");
-                string ssaEndpoint = Environment.GetEnvironmentVariable("Register_Get_SSA_Endpoint");
-                string xv = Environment.GetEnvironmentVariable("Register_Get_SSA_XV");
-                string brandId = Environment.GetEnvironmentVariable("Brand_Id");
-                string softwareProductId = Environment.GetEnvironmentVariable("Software_Product_Id");
-                string redirectUris = Environment.GetEnvironmentVariable("Redirect_Uris");
-                string clientCert = Environment.GetEnvironmentVariable("Client_Certificate");
-                string clientCertPwd = Environment.GetEnvironmentVariable("Client_Certificate_Password");
-                string signCert = Environment.GetEnvironmentVariable("Signing_Certificate");
-                string signCertPwd = Environment.GetEnvironmentVariable("Signing_Certificate_Password");
-                var retries = Convert.ToInt16(Environment.GetEnvironmentVariable("Retries"));
-                bool ignoreServerCertificateErrors = Environment.GetEnvironmentVariable("Ignore_Server_Certificate_Errors").Equals("true", StringComparison.OrdinalIgnoreCase);
-
-                // DCR queue.
-                log.LogInformation("Retrieving count for dynamicclientregistration queue...");
+                _logger.LogInformation("Retrieving count for dynamicclientregistration queue...");
                 string qName = "dynamicclientregistration";
-                int qCount = await GetQueueCountAsync(qConnString, qName);
-                log.LogInformation($"qCount = {qCount}");
+                int qCount = await GetQueueCountAsync(_options.StorageConnectionString, qName);
+                _logger.LogInformation("qCount = {count}", qCount);
 
-                if (string.IsNullOrEmpty(myQMsg.DataHolderBrandId))
+                if (string.IsNullOrEmpty(myQueueItem.DataHolderBrandId))
                 {
                     // Add messsage to deadletter queue
-                    await AddDeadLetterQueMsgAsync(log, dbConnString, qConnString, myQMsg.DataHolderBrandId, myQueueItem, "deadletter");
+                    await AddDeadLetterQueMsgAsync(myQueueItem, _options.DeadLetterQueueName, context);
                 }
                 else
                 {
-                    msg = $"DHBrandId - {myQMsg.DataHolderBrandId}";
+                    msg = $"DHBrandId - {myQueueItem.DataHolderBrandId}";
 
-                    log.LogInformation("Loading the client certificate...");
-                    byte[] clientCertBytes = Convert.FromBase64String(clientCert);
-                    X509Certificate2 clientCertificate = new(clientCertBytes, clientCertPwd, X509KeyStorageFlags.MachineKeySet);
-                    log.LogInformation("Client certificate loaded: {thumbprint}", clientCertificate.Thumbprint);
-
-                    log.LogInformation("Loading the signing certificate...");
-                    byte[] signCertBytes = Convert.FromBase64String(signCert);
-                    X509Certificate2 signCertificate = new(signCertBytes, signCertPwd, X509KeyStorageFlags.MachineKeySet);
-                    log.LogInformation("Signing certificate loaded: {thumbprint}", signCertificate.Thumbprint);
-
-                    Response<Token> tokenResponse = await GetAccessToken(tokenEndpoint, softwareProductId, clientCertificate, signCertificate, log, ignoreServerCertificateErrors);
+                    Response<Token> tokenResponse = await GetAccessToken();
                     if (tokenResponse.IsSuccessful)
-                    {
-                        var softwareStatementAssertion = new SoftwareStatementAssertion() 
-                        {
-                          SsaEndpoint = ssaEndpoint, 
-                          Version = xv, 
-                          AccessToken = tokenResponse.Data.AccessToken, 
-                          ClientCertificate = clientCertificate, 
-                          BrandId = brandId, 
-                          SoftwareProductId = softwareProductId, 
-                          Log = log, 
-                          IgnoreServerCertificateErrors =  ignoreServerCertificateErrors
-                        };                        
-                        var ssa = await GetSoftwareStatementAssertion(softwareStatementAssertion);
+                    {                        
+                        var ssa = await GetSoftwareStatementAssertion(tokenResponse.Data.AccessToken);
                         if (ssa.IsSuccessful)
-                        {                            
+                        {
                             //DOES the Data Holder Brand EXIST in the REPO?
-                            DataHolderBrand dh = await new SqlDataAccess(dbConnString).GetDataHolderBrand(myQMsg.DataHolderBrandId);
+                            DataHolderBrand dh = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).GetDataHolderBrand(myQueueItem.DataHolderBrandId);
                             if (dh == null)
                             {
                                 // NO - DOES the DcrMessage exist?
-                                (string dcrMsgId, string dcrMsgState) = await new SqlDataAccess(dbConnString).CheckDcrMessageExistByDHBrandId(myQMsg.DataHolderBrandId);
-                                if (!string.IsNullOrEmpty(dcrMsgId))
+                                var result = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckDcrMessageExistByDHBrandId(myQueueItem.DataHolderBrandId);
+                                if (!string.IsNullOrEmpty(result.msgId))
                                 {
                                     // YES - UPDATE EXISTING DcrMessage (with ADDED Queue MessageId, Failed STATE and ERROR)
                                     DcrMessage dcrMsg = new()
                                     {
                                         DataHolderBrandId = Guid.Empty,
-                                        MessageId = dcrMsgId,
+                                        MessageId = result.msgId,
                                         MessageState = Message.DCRFailed.ToString(),
                                         MessageError = $"{msg} - does not exist in the repo"
                                     };
-                                    await new SqlDataAccess(dbConnString).UpdateDcrMsgReplaceMessageIdWithoutBrand(dcrMsg, myQueueItem.Id);
+
+                                    await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgReplaceMessageIdWithoutBrand(dcrMsg, context.BindingContext.BindingData["Id"].ToString());
                                 }
-                                await InsertLog(log, dbConnString, $"{msg} - does not exist in the repo", "Error", "DCR");
+                                await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg} - does not exist in the repo", "Error", "DCR");
                             }
                             else
                             {
-                                dataHolderBrandName = dh.BrandName;                                
+                                dataHolderBrandName = dh.BrandName;
                                 // YES - DOES a Registration already exist for the DataHolderBrandId in the local repo?
-                                string clientId = await new SqlDataAccess(dbConnString).GetRegByDHBrandId(dh.DataHolderBrandId);
-                                if (clientId == string.Empty)
+                                string clientId = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).GetRegByDHBrandId(dh.DataHolderBrandId);
+                                if (string.IsNullOrEmpty(clientId))
                                 {
                                     // NO - register this Data Holder Brand
                                     infosecBaseUri = dh.EndpointDetail.InfoSecBaseUri;
-                                    var oidcDiscovery = (await GetOidcDiscovery(infosecBaseUri, ignoreServerCertificateErrors: ignoreServerCertificateErrors)).Data;
+                                    var oidcDiscovery = (await GetOidcDiscovery(infosecBaseUri)).Data;
                                     if (oidcDiscovery != null)
                                     {
                                         regEndpoint = oidcDiscovery.RegistrationEndpoint;
 
-                                        var dcrRequest = new DcrRequest() 
+                                        var dcrRequest = new DcrRequest()
                                         {
-                                            SoftwareProductId = softwareProductId, 
-                                            RedirectUris = redirectUris, 
-                                            Ssa = ssa.Data, 
+                                            SoftwareProductId = _options.Software_Product_Id,
+                                            RedirectUris = _options.Redirect_Uris,
+                                            Ssa = ssa.Data,
                                             Audience = oidcDiscovery.Issuer,
                                             ResponseTypesSupported = oidcDiscovery.ResponseTypesSupported,
                                             AuthorizationSigningResponseAlgValuesSupported = oidcDiscovery.AuthorizationSigningResponseAlgValuesSupported,
                                             AuthorizationEncryptionResponseEncValuesSupported = oidcDiscovery.AuthorizationEncryptionResponseEncValuesSupported,
                                             AuthorizationEncryptionResponseAlgValuesSupported = oidcDiscovery.AuthorizationEncryptionResponseAlgValuesSupported,
-                                            SignCertificate = signCertificate
+                                            SignCertificate = _signingCertificate
                                         };
 
                                         (string errorMessage, string dcrRequestJwt) = PopulateDCRRequestJwt(dcrRequest);
@@ -169,13 +139,13 @@ namespace CDR.DCR
                                         string regMessage = "";
                                         string regClientId = "";
                                         string jsonDoc = "";
-                                                                                
+
                                         // DO NOT register if FAPI claims are invalid
                                         if (string.IsNullOrEmpty(errorMessage))
                                         {
                                             do
                                             {
-                                                var dcrResponse = await Register(regEndpoint, clientCertificate, dcrRequestJwt, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
+                                                var dcrResponse = await Register(regEndpoint, dcrRequestJwt);
                                                 if (dcrResponse.IsSuccessful)
                                                 {
                                                     regSuccess = true;
@@ -187,9 +157,15 @@ namespace CDR.DCR
                                                 {
                                                     regStatusCode = dcrResponse.StatusCode.ToString();
                                                     regMessage = dcrResponse.Message;
-                                                    retries--;
+
+                                                    //no need to retry if the error is duplicate registration.
+                                                    if (dcrResponse.Message.Contains("ERR-DCR-001"))
+                                                    {
+                                                        break;
+                                                    }
+                                                    _options.Retries--;
                                                 }
-                                            } while (!regSuccess && retries > 0);
+                                            } while (!regSuccess && _options.Retries > 0);
                                         }
                                         // Successful -> Update DcrMessage and Insert into Data Holder Registration repo
                                         // DO NOT register if FAPI claims are invalid
@@ -203,19 +179,19 @@ namespace CDR.DCR
                                                 InfosecBaseUri = infosecBaseUri,
                                                 MessageState = Message.DCRComplete.ToString()
                                             };
-                                            await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
+                                            await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgByDHBrandId(dcrMsg);
 
-                                            var dcrInserted = await new SqlDataAccess(dbConnString).InsertDcrRegistration(regClientId, dh.DataHolderBrandId, jsonDoc);
+                                            var dcrInserted = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).InsertDcrRegistration(regClientId, dh.DataHolderBrandId, jsonDoc);
                                             if (dcrInserted)
-                                                await InsertLog(log, dbConnString, $"{msg}, REGISTERED as ClientId - {regClientId}, {qCount - 1} items remain in queue, ", "Information", "DCR");
+                                                await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, REGISTERED as ClientId - {regClientId}, {qCount - 1} items remain in queue, ", "Information", "DCR");
                                             else
-                                                await InsertLog(log, dbConnString, $"{msg}, REGISTERED as ClientId - {regClientId}, {qCount - 1} items remain in queue - FAILED to add to MDR REPO", "Error", "DCR");
+                                                await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, REGISTERED as ClientId - {regClientId}, {qCount - 1} items remain in queue - FAILED to add to MDR REPO", "Error", "DCR");
                                         }
 
                                         // FAILED -> Update DcrMessage as DCRFailed
                                         // FAPI 1.0 validation errors should also be logged
                                         else if (!string.IsNullOrEmpty(errorMessage))
-                                        {                                            
+                                        {
                                             DcrMessage dcrMsg = new()
                                             {
                                                 DataHolderBrandId = new Guid(dh.DataHolderBrandId),
@@ -224,8 +200,8 @@ namespace CDR.DCR
                                                 MessageState = Message.DCRFailed.ToString(),
                                                 MessageError = $"{errorMessage}"
                                             };
-                                            await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
-                                            await InsertLog(log, dbConnString, $"{msg}, REGISTRATION CLAIMS VALIDATIONS FAILED, {errorMessage}", "Error", "DCR");
+                                            await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgByDHBrandId(dcrMsg);
+                                            await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, REGISTRATION CLAIMS VALIDATIONS FAILED, {errorMessage}", "Error", "DCR");
                                         }
                                         else if (!regSuccess)
                                         {
@@ -238,8 +214,8 @@ namespace CDR.DCR
                                                 MessageState = Message.DCRFailed.ToString(),
                                                 MessageError = $"StatusCode: {regStatusCode}, {regMessage}"
                                             };
-                                            await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
-                                            await InsertLog(log, dbConnString, $"{msg}, REGISTRATION FAILED, StatusCode: {regStatusCode}, {regMessage}", "Error", "DCR");
+                                            await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgByDHBrandId(dcrMsg);
+                                            await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, REGISTRATION FAILED, StatusCode: {regStatusCode}, {regMessage}", "Error", "DCR");
                                         }
                                     }
                                     else
@@ -247,53 +223,50 @@ namespace CDR.DCR
                                         // Oidc Discovery failed
                                         DcrMessage dcrMsg = new()
                                         {
-                                            DataHolderBrandId = new Guid(myQMsg.DataHolderBrandId),
+                                            DataHolderBrandId = new Guid(myQueueItem.DataHolderBrandId),
                                             BrandName = dh.BrandName,
                                             InfosecBaseUri = infosecBaseUri,
                                             MessageState = Message.DCRFailed.ToString(),
                                             MessageError = "OidcDiscovery failed InfosecBaseUri: " + infosecBaseUri
                                         };
-                                        await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
+                                        await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgByDHBrandId(dcrMsg);
 
                                         string extraMsg = "";
                                         if (!string.IsNullOrEmpty(infosecBaseUri))
                                             extraMsg = " - InfosecBaseUri: " + infosecBaseUri;
 
-                                        await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR");
+                                        await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR");
                                     }
                                 }
                                 else
                                 {
                                     // YES - log this result
-                                    await InsertLog(log, dbConnString, $"{msg} - is trying to be REGISTERED, but is already REGISTERED to ClientId - {clientId}", "Error", "DCR");
+                                    await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg} - is trying to be REGISTERED, but is already REGISTERED to ClientId - {clientId}", "Error", "DCR");
                                 }
                             }
                         }
                         else
                         {
-                            await InsertLog(log, dbConnString, $"{msg}, Unable to get the SSA from: {ssaEndpoint}, Ver: {xv}, BrandId: {brandId}, SoftwareProductId - {softwareProductId}", "Error", "DCR");
+                            await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}, Unable to get the SSA from: {_options.Register_Get_SSA_Endpoint}, Ver: {_options.Register_Get_SSA_XV}, BrandId: {_options.Brand_Id}, SoftwareProductId - {_options.Software_Product_Id}", "Error", "DCR");
                         }
                     }
                     else
                     {
-                        await InsertLog(log, dbConnString, $"{msg}, Unable to get the Access Token for SoftwareProductId - {softwareProductId} - at the endpoint - {tokenEndpoint}", "Error", "DCR");
+                        await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}, Unable to get the Access Token for SoftwareProductId - {_options.Software_Product_Id} - at the endpoint - {_options.Register_Token_Endpoint}", "Error", "DCR");
                     }
                 }
             }
             catch (Exception ex)
             {
-                string dbConnString = Environment.GetEnvironmentVariable("DataRecipient_DB_ConnectionString");
-                string dbLoggingConnString = Environment.GetEnvironmentVariable("DataRecipient_Logging_DB_ConnectionString");
-
                 DcrMessage dcrMsg = new()
                 {
-                    DataHolderBrandId = new Guid(myQMsg.DataHolderBrandId),
+                    DataHolderBrandId = new Guid(myQueueItem.DataHolderBrandId),
                     BrandName = dataHolderBrandName,
                     InfosecBaseUri = infosecBaseUri,
                     MessageState = Message.DCRFailed.ToString(),
                     MessageError = ex.Message
                 };
-                await new SqlDataAccess(dbConnString).UpdateDcrMsgByDHBrandId(dcrMsg);
+                await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgByDHBrandId(dcrMsg);
 
                 string extraMsg = "";
                 if (!string.IsNullOrEmpty(infosecBaseUri))
@@ -304,10 +277,10 @@ namespace CDR.DCR
 
                 if (ex is JsonReaderException)
                 {
-                    await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED: OidcDiscovery can't be deserialized {extraMsg}", "Exception", "DCR", ex);
+                    await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}, REGISTRATION FAILED: OidcDiscovery can't be deserialized {extraMsg}", "Exception", "DCR", ex);
                 }
-                else 
-                    await InsertLog(log, dbLoggingConnString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR", ex);
+                else
+                    await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR", ex);
             }
         }
 
@@ -315,24 +288,18 @@ namespace CDR.DCR
         /// Get Access Token
         /// </summary>
         /// <returns>JWT</returns>
-        private static async Task<Response<Token>> GetAccessToken(
-            string tokenEndpoint,
-            string clientId,
-            X509Certificate2 clientCertificate,
-            X509Certificate2 signingCertificate,
-            ILogger log,
-            bool ignoreServerCertificateErrors = false)
+        private async Task<Response<Token>> GetAccessToken()
         {
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
+            var client = GetHttpClient();
 
             // Make the request to the token endpoint.
-            log.LogInformation("Retrieving access_token from the Register: {tokenEndpoint}", tokenEndpoint);
+            _logger.LogInformation("Retrieving access_token from the Register: {tokenEndpoint}", _options.Register_Token_Endpoint);
             var response = await client.SendPrivateKeyJwtRequest(
-                tokenEndpoint,
-                signingCertificate,
-                clientId,
-                clientId,
+                _options.Register_Token_Endpoint,
+                _signingCertificate,
+                _options.Software_Product_Id,
+                _options.Software_Product_Id,
                 scope: Constants.Scopes.CDR_REGISTER,
                 grantType: Constants.GrantTypes.CLIENT_CREDENTIALS);
 
@@ -342,7 +309,7 @@ namespace CDR.DCR
                 StatusCode = response.StatusCode
             };
 
-            log.LogInformation("Register response: {statusCode} - {body}", tokenResponse.StatusCode, body);
+            _logger.LogInformation("Register response: {statusCode} - {body}", tokenResponse.StatusCode, body);
 
             if (response.IsSuccessStatusCode)
                 tokenResponse.Data = JsonConvert.DeserializeObject<Token>(body);
@@ -355,15 +322,15 @@ namespace CDR.DCR
         /// <summary>
         /// Generate the SSA
         /// </summary>
-        private static async Task<Response<string>> GetSoftwareStatementAssertion(SoftwareStatementAssertion softwareStatementAssertion)
+        private async Task<Response<string>> GetSoftwareStatementAssertion(string accessToken)
         {
             // Setup the request to the get ssa endpoint.
-            var endpoint = $"{softwareStatementAssertion.SsaEndpoint}{softwareStatementAssertion.BrandId}/software-products/{softwareStatementAssertion.SoftwareProductId}/ssa";
+            var endpoint = $"{_options.Register_Get_SSA_Endpoint}{_options.Brand_Id}/software-products/{_options.Software_Product_Id}/ssa";
 
             // Setup the http client.
-            var client = GetHttpClient(softwareStatementAssertion.ClientCertificate, softwareStatementAssertion.AccessToken, softwareStatementAssertion.Version, ignoreServerCertificateErrors: softwareStatementAssertion.IgnoreServerCertificateErrors);
+            var client = GetHttpClient( accessToken, _options.Register_Get_SSA_XV);
 
-            softwareStatementAssertion.Log.LogInformation("Retrieving SSA from the Register: {ssaEndpoint}", endpoint);
+            _logger.LogInformation("Retrieving SSA from the Register: {ssaEndpoint}", endpoint);
 
             // Make the request to the get data holder brands endpoint.
             var response = await client.GetAsync(endpoint);
@@ -373,7 +340,7 @@ namespace CDR.DCR
                 StatusCode = response.StatusCode
             };
 
-            softwareStatementAssertion.Log.LogInformation("SSA response: {statusCode} - {body}", ssaResponse.StatusCode, body);
+            _logger.LogInformation("SSA response: {statusCode} - {body}", ssaResponse.StatusCode, body);
 
             if (response.IsSuccessStatusCode)
             {
@@ -390,18 +357,11 @@ namespace CDR.DCR
         /// <summary>
         /// Get the OpenID Discovery
         /// </summary>
-        private static async Task<Response<OidcDiscovery>> GetOidcDiscovery(string infosecBaseUri, bool ignoreServerCertificateErrors = false)
+        private async Task<Response<OidcDiscovery>> GetOidcDiscovery(string infosecBaseUri)
         {
             var oidcResponse = new Response<OidcDiscovery>();
 
-            var clientHandler = new HttpClientHandler();
-
-            if (ignoreServerCertificateErrors)
-            {
-                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            }
-
-            var client = new HttpClient(clientHandler);
+            var client = GetHttpClient();
 
             var configUrl = string.Concat(infosecBaseUri.TrimEnd('/'), "/.well-known/openid-configuration");
             var configResponse = await client.GetAsync(configUrl);
@@ -422,101 +382,8 @@ namespace CDR.DCR
         /// </summary>
         private static (string, string) PopulateDCRRequestJwt(DcrRequest dcrRequest)
         {
-            string errorMessage = string.Empty;
-            var claims = new List<Claim>
-            {
-                new Claim("jti", Guid.NewGuid().ToString()),
-                new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer),
-                new Claim("token_endpoint_auth_signing_alg", "PS256"),
-                new Claim("token_endpoint_auth_method", "private_key_jwt"),
-                new Claim("application_type", "web"),
-                new Claim("id_token_signed_response_alg", "PS256"),
-                new Claim("id_token_encrypted_response_alg", "RSA-OAEP"),
-                new Claim("id_token_encrypted_response_enc", "A256GCM"),
-                new Claim("request_object_signing_alg", "PS256"),
-                new Claim("software_statement", dcrRequest.Ssa ?? ""),                
-                new Claim("grant_types", "client_credentials"),
-                new Claim("grant_types", "authorization_code"),
-                new Claim("grant_types", "refresh_token")                
-            };
+            var (claims, errorMessage) = dcrRequest.CreateClaimsForDCRRequest();
 
-            // response_types updated below "code, code id_token" both types are returned and added below
-            // A response type is mandatory
-            if (!dcrRequest.ResponseTypesSupported.Contains("code") && !dcrRequest.ResponseTypesSupported.Contains("code id_token"))
-            {
-                // Return the error                 
-                errorMessage = ErrorMessage + " response_types";
-                return (errorMessage, "");
-            }
-
-            var responseTypesList = dcrRequest.ResponseTypesSupported.Where(x => x.ToLower().Equals("code") || x.ToLower().Equals("code id_token")).ToList();
-            claims.Add(new Claim("response_types", JsonConvert.SerializeObject(responseTypesList), JsonClaimValueTypes.JsonArray));
-
-
-            var isCodeFlow = dcrRequest.ResponseTypesSupported.Contains("code");
-            if (isCodeFlow && !dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Any())
-            {
-                // Log error message to the mandatory claim missing
-                errorMessage = ErrorMessage + " authorization_signed_response_alg";
-                return (errorMessage, "");
-            }
-
-            // Mandatory for code flow
-            if (isCodeFlow)
-            {
-                if (!dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("PS256") && !dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("ES256"))
-                {
-                    // Return the error
-                    errorMessage = ErrorMessage + " authorization_signed_response_alg";
-                    return (errorMessage, "");
-                }
-                
-                if (dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("PS256"))
-                {                    
-                    claims.Add(new Claim("authorization_signed_response_alg", "PS256"));
-                }
-                else if (dcrRequest.AuthorizationSigningResponseAlgValuesSupported.Contains("ES256"))
-                {                    
-                    claims.Add(new Claim("authorization_signed_response_alg", "ES256"));
-                }
-            }
-
-            // Check if the enc is empty but a alg is specified.
-            if ((dcrRequest.AuthorizationEncryptionResponseEncValuesSupported == null || !dcrRequest.AuthorizationEncryptionResponseEncValuesSupported.Any()) // No enc specified
-                && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256") 
-                && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP")) // but alg specified.
-            {                
-                errorMessage = ErrorMessage + " authorization_encrypted_response_enc";
-                return (errorMessage, "");
-            }
-
-
-            if (dcrRequest.AuthorizationEncryptionResponseEncValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseEncValuesSupported.Contains("A128CBC-HS256"))
-            {
-                claims.Add(new Claim("authorization_encrypted_response_enc", "A128CBC-HS256"));
-            }
-            else if (dcrRequest.AuthorizationEncryptionResponseEncValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseEncValuesSupported.Contains("A256GCM"))
-            {
-                claims.Add(new Claim("authorization_encrypted_response_enc", "A256GCM"));
-            }
-
-            // Conditional: Optional for response_type "code" if authorization_encryption_enc_values_supported is present            
-            if (isCodeFlow && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported != null && dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Any())
-            {                
-                if (dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP-256"))
-                {                    
-                    claims.Add(new Claim("authorization_encrypted_response_alg", "RSA-OAEP-256"));
-                }
-                else if (dcrRequest.AuthorizationEncryptionResponseAlgValuesSupported.Contains("RSA-OAEP"))
-                {                    
-                    claims.Add(new Claim("authorization_encrypted_response_alg", "RSA-OAEP"));
-                }
-            }
-
-            char[] delimiters = { ',', ' '};
-            var redirectUrisList = dcrRequest.RedirectUris?.Split(delimiters).ToList();
-            claims.Add(new Claim("redirect_uris", JsonConvert.SerializeObject(redirectUrisList), JsonClaimValueTypes.JsonArray));
-            
             var jwt = new JwtSecurityToken(
                 issuer: dcrRequest.SoftwareProductId,
                 audience: dcrRequest.Audience,
@@ -525,20 +392,18 @@ namespace CDR.DCR
                 signingCredentials: new X509SigningCredentials(dcrRequest.SignCertificate, SecurityAlgorithms.RsaSsaPssSha256));
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            return (errorMessage, tokenHandler.WriteToken(jwt));            
+            return (errorMessage, tokenHandler.WriteToken(jwt));
         }
 
         /// <summary>
         /// DCR
         /// </summary>
-        private static async Task<DcrResponse> Register(
-            string dcrEndpoint, 
-            X509Certificate2 clientCertificate, 
-            string payload,
-            bool ignoreServerCertificateErrors = false)
+        private async Task<DcrResponse> Register(
+            string dcrEndpoint,
+            string payload)
         {
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
+            var client = GetHttpClient();
 
             // Create the post content.
             var content = new StringContent(payload);
@@ -557,70 +422,53 @@ namespace CDR.DCR
             };
         }
 
-        private static HttpClient GetHttpClient(
-            X509Certificate2 clientCertificate = null, 
-            string accessToken = null, 
-            string version = null,
-            bool ignoreServerCertificateErrors = false)
+        private HttpClient GetHttpClient(string accessToken = null, string version = null)
         {
-            var clientHandler = new HttpClientHandler();
-
-            // Set the client certificate for the connection if supplied.
-            if (clientCertificate != null)
-            {
-                clientHandler.ClientCertificates.Add(clientCertificate);
-            }
-
-            if (ignoreServerCertificateErrors)
-            {
-                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            }
-
-            var client = new HttpClient(clientHandler);
-
+            var httpClient = _httpClientFactory.CreateClient(DcrConstants.DcrHttpClientName);
+                        
             // If an access token has been provided then add to the Authorization header of the client.
             if (!string.IsNullOrEmpty(accessToken))
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             // Add the x-v header to the request if provided.
             if (!string.IsNullOrEmpty(version))
-                client.DefaultRequestHeaders.Add("x-v", version);
+                httpClient.DefaultRequestHeaders.Add("x-v", version);
 
-            return client;
+            return httpClient;
         }
 
         /// <summary>
         /// Insert the Message into the Queue
         /// </summary>
-        private static async Task AddDeadLetterQueMsgAsync(ILogger log, string dbConnString, string qConnString, string dhBrandId, CloudQueueMessage myQueueItem, string qName)
+        private async Task AddDeadLetterQueMsgAsync( DcrQueueMessage myQueueItem, string qName, FunctionContext context)
         {
             QueueClientOptions options = new()
             {
                 MessageEncoding = QueueMessageEncoding.Base64
             };
-            QueueClient qClient = new(qConnString, qName, options);
+            QueueClient qClient = new(_options.StorageConnectionString, qName, options);
             await qClient.CreateIfNotExistsAsync();
 
             DeadLetterQueueMessage qMsg = new()
             {
                 MessageVersion = "1.0",
-                MessageSource = "dynamicclientregistration",
-                SourceMessageId = myQueueItem.Id,
-                SourceMessageInsertionTime = myQueueItem.InsertionTime.ToString(),
-                DataHolderBrandId = dhBrandId
+                MessageSource = _options.QueueName,
+                SourceMessageId = context.BindingContext.BindingData["Id"].ToString(),
+                SourceMessageInsertionTime = context.BindingContext.BindingData["InsertionTime"].ToString(),
+                DataHolderBrandId = myQueueItem.DataHolderBrandId
             };
             string qMessage = JsonConvert.SerializeObject(qMsg);
             await qClient.SendMessageAsync(qMessage);
 
-            int qCount = await GetQueueCountAsync(qConnString, qName);
+            int qCount = await GetQueueCountAsync(_options.StorageConnectionString, qName);
             DcrMessage dcrMsg = new()
             {
-                MessageId = myQueueItem.Id,
+                MessageId = context.BindingContext.BindingData["Id"].ToString(),
                 MessageState = Message.Abandoned.ToString(),
                 MessageError = $"DCR - {qCount} items queued, this DataHolderBrandId is malformed"
             };
-            await new SqlDataAccess(dbConnString).UpdateDcrMsgByMessageId(dcrMsg);
-            await InsertLog(log, dbConnString, $"DCR - {qCount} items in {qName} queue", "Error", "DCR");
+            await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgByMessageId(dcrMsg);
+            await InsertLog(_options.DataRecipient_DB_ConnectionString, $"DCR - {qCount} items in {qName} queue", "Error", "DCR");
         }
 
         /// <summary>
@@ -640,11 +488,11 @@ namespace CDR.DCR
         /// <summary>
         /// Update the Log table
         /// </summary>
-        private static async Task InsertLog(ILogger log, string dbConnString, string msg, string lvl, string methodName, Exception exMsg = null)
+        private async Task InsertLog( string DataRecipient_DB_ConnectionString, string msg, string lvl, string methodName, Exception exMsg = null)
         {
-            log.LogInformation($"{methodName} - {msg}");
+            _logger.LogInformation("{methodName} - {message}", methodName, msg);
 
-            string exMessage = "";
+            string exMessage = string.Empty;
 
             if (exMsg != null)
             {
@@ -654,7 +502,7 @@ namespace CDR.DCR
 
                 do
                 {
-                    // skip the first inner exeception message as it is the same as the exception message
+                    // skip the first inner exception message as it is the same as the exception message
                     if (ctr > 0)
                     {
                         innerMsg.Append(string.IsNullOrEmpty(innerException.Message) ? string.Empty : innerException.Message);
@@ -680,26 +528,24 @@ namespace CDR.DCR
                 exMessage = exMessage.Replace("'", "");
             }
 
-            using (SqlConnection db = new(dbConnString))
-            {
-                db.Open();
-                var cmdText = "";
+            using SqlConnection db = new(DataRecipient_DB_ConnectionString);
+            db.Open();
+            var cmdText = string.Empty;
 
-                if (string.IsNullOrEmpty(exMessage))
-                    cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(),@procName,@methodName,@srcContext)";
-                else
-                    cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [Exception], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(), @exMessage,@procName,@methodName,@srcContext)";
+            if (string.IsNullOrEmpty(exMessage))
+                cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(),@procName,@methodName,@srcContext)";
+            else
+                cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [Exception], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(), @exMessage,@procName,@methodName,@srcContext)";
 
-                using var cmd = new SqlCommand(cmdText, db);
-                cmd.Parameters.AddWithValue("@msg", msg);
-                cmd.Parameters.AddWithValue("@lvl", lvl);
-                cmd.Parameters.AddWithValue("@exMessage", exMessage);
-                cmd.Parameters.AddWithValue("@procName", "Azure Function");
-                cmd.Parameters.AddWithValue("@methodName", methodName);
-                cmd.Parameters.AddWithValue("@srcContext", "CDR.DCR");
-                await cmd.ExecuteNonQueryAsync();
-                db.Close();
-            }
+            using var cmd = new SqlCommand(cmdText, db);
+            cmd.Parameters.AddWithValue("@msg", msg);
+            cmd.Parameters.AddWithValue("@lvl", lvl);
+            cmd.Parameters.AddWithValue("@exMessage", exMessage);
+            cmd.Parameters.AddWithValue("@procName", "Azure Function");
+            cmd.Parameters.AddWithValue("@methodName", methodName);
+            cmd.Parameters.AddWithValue("@srcContext", "CDR.DCR");
+            await cmd.ExecuteNonQueryAsync();
+            db.Close();
         }
     }
 }

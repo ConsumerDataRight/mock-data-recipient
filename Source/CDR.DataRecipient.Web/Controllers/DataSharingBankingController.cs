@@ -29,7 +29,8 @@ namespace CDR.DataRecipient.Web.Controllers
                 return "Banking";
             }
         }
-
+        protected override string ApiGroupName => this.IndustryName;
+        
         protected override string CdsSwaggerLocation
         {
             get

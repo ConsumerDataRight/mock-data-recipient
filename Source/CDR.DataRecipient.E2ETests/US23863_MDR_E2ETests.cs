@@ -1,5 +1,6 @@
 using CDR.DataRecipient.E2ETests.Pages;
 using FluentAssertions;
+using FluentAssertions.Execution;
 using Microsoft.Data.SqlClient;
 using Microsoft.Playwright;
 using System;
@@ -51,7 +52,7 @@ namespace CDR.DataRecipient.E2ETests
             return clientId;
         }
 
-        public static async Task TestToken(IPage page, string menuText, string? expectedToken)
+        static async Task TestToken(IPage page, string menuText, string? expectedToken)
         {
             // Arrange - Goto home page, click menu button, check page loaded
             await page.GotoAsync(WEB_URL);
@@ -194,7 +195,218 @@ namespace CDR.DataRecipient.E2ETests
 
                 await TestAsync(testName, async (page) =>
                 {
-                    await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId);
+
+                    // Create a default Banking Dataholder Registration using defaults
+                    DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);                    
+                    await dcrPage.GotoDynamicClientRegistrationPage();
+                    await dcrPage.SelectDataHolderBrandId(DH_BRANDID);
+                    await dcrPage.ClickRegister();
+
+                    // Assert Software Product Registered
+                    var registrationResponse = await dcrPage.GetRegistrationResponse(includeHeading: true);
+                    registrationResponse.Should().Contain("Created - Registered");
+
+                });
+            }
+            finally
+            {
+                await CleanupAsync(async (page) =>
+                {
+                    try { await ClientRegistration_Delete(page); } catch { };
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID)]
+        [InlineData(DH_BRANDID_ENERGY, DR_BRANDID, DR_SOFTWAREPRODUCTID)] // Also test for Energy DH 
+        public async Task AC04_DynamicClientRegistration_Defaults(string dhBrandId = DH_BRANDID, string drBrandId = DR_BRANDID, string drSoftwareProductId = DR_SOFTWAREPRODUCTID)
+        {
+            string testName = $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC04_DynamicClientRegistration_Defaults)} - DH_BrandId={dhBrandId} - DR_BrandId={drBrandId} - DR_SoftwareProductId={drSoftwareProductId}";
+
+            await ArrangeAsync(testName, async (page) =>
+            {
+                await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
+                await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
+            });
+
+            await TestAsync(testName, async (page) =>
+            {
+
+                // Select Dataholder
+                DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);
+                await dcrPage.GotoDynamicClientRegistrationPage();
+                await dcrPage.SelectDataHolderBrandId(dhBrandId);
+
+                // Assert all default values
+                using (new AssertionScope())
+                {
+                    dcrPage.GetClientId().Result.Should().Be(String.Empty);
+                    dcrPage.GetSsaVersion().Result.Should().Be("3");
+                    dcrPage.GetIndustry().Result.Should().Be("ALL");
+                    dcrPage.GetSoftwareProductId().Result.Should().Be(drSoftwareProductId);
+                    dcrPage.GetRedirectUris().Result.Should().Be($"https://{BaseTest.HOSTNAME_DATARECIPIENT}:9001/consent/callback");
+                    dcrPage.GetScope().Result.Should().Be(DR_DEFAULT_SCOPES);
+                    dcrPage.GetTokenSigningAlgo().Result.Should().Be("PS256");
+                    dcrPage.GetGrantTypes().Result.Should().Be("client_credentials,authorization_code,refresh_token");
+                    dcrPage.GetResponseTypes().Result.Should().Be("code");
+                    dcrPage.GetApplicationType().Result.Should().Be("web");
+                    dcrPage.GetIdTokenSignedResponseAlgo().Result.Should().Be("PS256");
+                    dcrPage.GetIdTokenEncryptedResponseAlgo().Result.Should().Be(String.Empty);
+                    dcrPage.GetIdTokenEncryptedResponseEnc().Result.Should().Be(String.Empty);
+                    dcrPage.GetRequestSigningAlgo().Result.Should().Be("PS256");
+                    dcrPage.GetAuthorisedSignedResponsegAlgo().Result.Should().Be("PS256");
+                    dcrPage.GetAuthorisedEncryptedResponseAlgo().Result.Should().Be(String.Empty);
+                    dcrPage.GetAuthorisedEncryptedResponseEnc().Result.Should().Be(String.Empty);
+                }
+
+            });
+            
+        }
+
+        [Fact]
+        public async Task AC04_DynamicClientRegistrationViewRegistration()
+        {
+            string testName = $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC04_DynamicClientRegistrationViewRegistration)}";
+            try
+            {
+                string? dhClientId = null;
+                await ArrangeAsync(testName, async (page) =>
+                {
+                    await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
+                    dhClientId = await ClientRegistration_Create(page, DH_BRANDID) ?? throw new NullReferenceException(nameof(dhClientId));
+                });
+
+                await TestAsync(testName, async (page) =>
+                {
+                    // View newly created registration
+                    DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);
+                    await dcrPage.GotoDynamicClientRegistrationPage();
+                    await dcrPage.ClickViewRegistration(dhClientId);
+
+                    // Assert
+                    using (new AssertionScope())
+                    {
+                        string viewRegistrationResponse =  await dcrPage.GetViewRegistrationResponse();
+                        viewRegistrationResponse.Should().Contain("Registration retrieved successfully.");
+                        viewRegistrationResponse.Should().Contain($"\"client_id\": \"{dhClientId}\"");
+                    }
+
+                });
+            }
+            finally
+            {
+                await CleanupAsync(async (page) =>
+                {
+                    try { await ClientRegistration_Delete(page); } catch { };
+                });
+            }
+        }
+
+        [Fact]
+        public async Task AC04_DynamicClientRegistrationViewDiscoveryDocument()
+        {
+            string testName = $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC04_DynamicClientRegistrationViewDiscoveryDocument)}";
+
+            await ArrangeAsync(testName, async (page) =>
+            {
+                await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands                   
+            });
+
+            await TestAsync(testName, async (page) =>
+            {
+                // View discovery document
+                DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);
+                await dcrPage.GotoDynamicClientRegistrationPage();
+                await dcrPage.SelectDataHolderBrandId(DH_BRANDID);
+
+                // Assert
+                using (new AssertionScope())
+                {
+                    string discoveryDocumentDetails = await dcrPage.GetDiscoveryDocumentDetails("Discovery Document details loaded");
+                    discoveryDocumentDetails.Should().Contain($"Discovery Document details loaded from https://{HOSTNAME_DATAHOLDER}:8001/.well-known/openid-configuration");
+                    discoveryDocumentDetails.Should().Contain($"\"issuer\": \"https://{HOSTNAME_DATAHOLDER}:8001\"");
+                }
+
+            });            
+   
+        }
+
+        [Fact]
+        public async Task AC04_DynamicClientRegistrationViewDiscoveryDocument_Invalid()
+        {
+            string testName = $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC04_DynamicClientRegistrationViewDiscoveryDocument_Invalid)}";
+
+            await ArrangeAsync(testName, async (page) =>
+            {
+                await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands                   
+            });
+
+            await TestAsync(testName, async (page) =>
+            {
+                // View discovery document
+                DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);
+                await dcrPage.GotoDynamicClientRegistrationPage();
+                await dcrPage.SelectDataHolderBrandId(DH_BRANDID_DUMMY_DH);
+
+                // Assert
+                using (new AssertionScope())
+                {
+                    string discoveryDocumentDetails = await dcrPage.GetDiscoveryDocumentDetails("Discovery Document");
+                    discoveryDocumentDetails.Should().Contain("Unable to load Discovery Document from https://idp.bank2/.well-known/openid-configuration");
+                }
+
+            });
+        }
+
+        [Theory]
+        [InlineData(DH_BRANDID)]
+        [InlineData(DH_BRANDID_ENERGY)] // Also test for Energy DH 
+        public async Task AC04_DynamicClientRegistrationUpdate(string dhBrandId)
+        {
+            string testName = $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC04_DynamicClientRegistrationUpdate)}";
+            try
+            {
+                await ArrangeAsync(testName, async (page) =>
+                {
+                    await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
+                });
+
+                await TestAsync(testName, async (page) =>
+                {
+                    DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);
+
+                    // Create a default Banking Dataholder Registration using defaults
+                    await dcrPage.GotoDynamicClientRegistrationPage();
+                    await dcrPage.SelectDataHolderBrandId(dhBrandId);
+                    await dcrPage.ClickRegister();
+
+                    var registrationResponseJson = await dcrPage.GetRegistrationResponse();
+
+                    // Deserialise response and return DH client id
+                    string clientId = GetClientIdFromRegistrationResponse(registrationResponseJson);
+
+                    // Navigate to fresh DCR page
+                    await dcrPage.GotoDynamicClientRegistrationPage();
+                    await dcrPage.ClickEditRegistration(clientId);
+
+                    // Assert Client Correctly Loaded
+                    dcrPage.GetClientId().Result.Should().Be(clientId);
+
+                    // Modify to valid hybrid mode values
+                    await dcrPage.EnterResponseTypes("code,code id_token");
+                    await dcrPage.EnterIdTokenEncryptedResponseAlgo("RSA-OAEP");
+                    await dcrPage.EnterIdTokenEncryptedResponseEnc("A128CBC-HS256");
+
+                    await dcrPage.ClickUpdate();
+
+                    // Assert Software Product Registration Updated
+                    var registrationResponse = await dcrPage.GetRegistrationResponse(includeHeading: true);
+                    registrationResponse.Should().Contain("Registration update successful.");
+                    registrationResponse.Should().Contain("code id_token");
+                    registrationResponse.Should().Contain("\"id_token_encrypted_response_alg\": \"RSA-OAEP\"");
+                    registrationResponse.Should().Contain("\"id_token_encrypted_response_enc\": \"A128CBC-HS256\"");
+
                 });
             }
             finally
@@ -207,7 +419,7 @@ namespace CDR.DataRecipient.E2ETests
         }
 
         public delegate Task ConsentsDelegate(IPage page, ConsentAndAuthorisationResponse response);
-        public async Task Test_Consents(string dhBrandId, string drBrandId, string drSoftwareProductId, string customerId, string customerAccounts, string testName, ConsentsDelegate test)
+        async Task Test_Consents(string dhBrandId, string drBrandId, string drSoftwareProductId, string customerId, string customerAccounts, string testName, ConsentsDelegate test)
         {
             try
             {
@@ -217,7 +429,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
                     cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                        ?? throw new NullReferenceException(nameof(cdrArrangement));
@@ -245,6 +457,7 @@ namespace CDR.DataRecipient.E2ETests
         {
             await Test_Consents(dhBrandId, drBrandId, drSoftwareProductId, customerId, customerAccounts, $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC06_Consents_ViewIDToken)}", async (page, response) =>
             {
+                // CT: This needs to be a different exception type
                 await TestToken(page, "View ID Token", response?.IDToken ?? throw new ArgumentNullException(nameof(response.IDToken)));
             });
         }
@@ -256,6 +469,7 @@ namespace CDR.DataRecipient.E2ETests
         {
             await Test_Consents(dhBrandId, drBrandId, drSoftwareProductId, customerId, customerAccounts, $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC06_Consents_ViewAccessToken)}", async (page, response) =>
             {
+                // CT: This needs to be a different exception type
                 await TestToken(page, "View Access Token", response?.AccessToken ?? throw new ArgumentNullException(nameof(response.AccessToken)));
             });
         }
@@ -267,6 +481,7 @@ namespace CDR.DataRecipient.E2ETests
         {
             await Test_Consents(dhBrandId, drBrandId, drSoftwareProductId, customerId, customerAccounts, $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC06_Consents_ViewRefreshToken)}", async (page, response) =>
             {
+                // CT: This needs to be a different exception type
                 await TestToken(page, "View Refresh Token", response?.RefreshToken ?? throw new ArgumentNullException(nameof(response.RefreshToken)));
             });
         }
@@ -302,6 +517,7 @@ namespace CDR.DataRecipient.E2ETests
         {
             await Test_Consents(dhBrandId, drBrandId, drSoftwareProductId, customerId, customerAccounts, $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC06_Consents_Introspect)}", async (page, response) =>
             {
+                // CT: This needs to be a different exception type
                 var expected = new (string, string?)[]
                 {
                     ("cdr_arrangement_id", response?.CDRArrangementID ?? throw new ArgumentNullException(nameof(response.CDRArrangementID))),
@@ -399,7 +615,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
                     cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                        ?? throw new NullReferenceException(nameof(cdrArrangement));
@@ -441,7 +657,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
                     cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                        ?? throw new NullReferenceException(nameof(cdrArrangement));
@@ -478,7 +694,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
                     cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                        ?? throw new NullReferenceException(nameof(cdrArrangement));
@@ -513,7 +729,7 @@ namespace CDR.DataRecipient.E2ETests
                     await iFrame.ClickAsync("text=Try it out");
 
                     // Arrange - Set x-v
-                    await iFrame.FillAsync("[placeholder=\"x-v\"]", "1");
+                    await iFrame.FillAsync("[placeholder=\"x-v\"]", "2");
 
                     // Act - Click Execute
                     await iFrame.ClickAsync("text=Execute");
@@ -545,7 +761,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
                     cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                         ?? throw new NullReferenceException(nameof(cdrArrangement));
@@ -582,7 +798,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
                     await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId)
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId)
                         ?? throw new NullReferenceException(nameof(dhClientId));
                     cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
                         ?? throw new NullReferenceException(nameof(cdrArrangement));
@@ -612,6 +828,73 @@ namespace CDR.DataRecipient.E2ETests
 
                     // Arrange - Click GET​/energy​/accountsGet Energy Accounts
                     await iFrame.ClickAsync("text=Energy GET/energy/plansGet Generic PlansGET/energy/plans/{planId}Get Generic Pla >> [aria-label=\"get ​\\/energy​\\/accounts\"]");
+
+                    // Arrange - Click Try it out
+                    await iFrame.ClickAsync("text=Try it out");
+
+                    // Arrange - Set x-v
+                    await iFrame.FillAsync("[placeholder=\"x-v\"]", "1");
+
+                    // Act - Click Execute
+                    await iFrame.ClickAsync("text=Execute");
+
+                    // Assert - Status code should be 200 
+                    var statusCode = await iFrame.Locator("div.responses-inner > div > div > table > tbody > tr > td.response-col_status").TextContentAsync();
+                    statusCode.Should().Be("200");
+                });
+            }
+            finally
+            {
+                await CleanupAsync(async (page) =>
+                {
+                    try { await ClientRegistration_Delete(page); } catch { };
+                });
+            }
+        }
+
+        [Theory]
+        [InlineData(DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING)]
+        public async Task AC08_ConsumerDataSharing_Common_StatusGet(string dhBrandId, string drBrandId, string drSoftwareProductId, string customerId, string customerAccounts)
+        {
+            try
+            {
+                string testName = $"{nameof(US23863_MDR_E2ETests)} - {nameof(AC08_ConsumerDataSharing_Common_StatusGet)}";
+                string? dhClientId = null;
+                ConsentAndAuthorisationResponse? cdrArrangement = null;
+                await ArrangeAsync(testName, async (page) =>
+                {
+                    await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
+                    await SSA_Get(page, "ALL", "3", drBrandId, drSoftwareProductId, "OK - SSA Generated");
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId)
+                        ?? throw new NullReferenceException(nameof(dhClientId));
+                    cdrArrangement = await NewConsentAndAuthorisationWithPAR(page, dhClientId, customerId, customerAccounts, dhBrandId)
+                       ?? throw new NullReferenceException(nameof(cdrArrangement));
+                });
+
+                await TestAsync(testName, async (page) =>
+                {
+                    // Arrange - Goto home page, click menu button, check page loaded
+                    await page.GotoAsync(WEB_URL);
+                    await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Common\")").ClickAsync();
+                    await page.Locator("h2 >> text=Data Sharing - Common").TextContentAsync();
+
+                    // Arrange - Get Swagger iframe
+                    var iFrame = page.FrameByUrl($"{WEB_URL}/{SWAGGER_COMMON_IFRAME}") ?? throw new Exception($"IFrame not found - {SWAGGER_BANKING_IFRAME}");
+
+                    // Wait for the CDR arrangement <select> to be added and populated.
+                    System.Threading.Thread.Sleep(10000);
+
+                    // Arrange - Select CDR arrangement
+                    await iFrame.SelectOptionAsync(
+                        "select",
+                        new string[] {
+                            cdrArrangement!.CDRArrangementID ?? throw new NullReferenceException(nameof(cdrArrangement.CDRArrangementID))
+                        },
+                        new FrameSelectOptionOptions() { Timeout = 90000 }
+                    );
+
+                    // Arrange - Click GET/discovery/statu
+                    await iFrame.ClickAsync("text=Discovery GET/discovery/statusGet StatusGET/discovery/outagesGet Outages >> [aria-label=\"get ​\\/discovery​\\/status\"]");
 
                     // Arrange - Click Try it out
                     await iFrame.ClickAsync("text=Try it out");

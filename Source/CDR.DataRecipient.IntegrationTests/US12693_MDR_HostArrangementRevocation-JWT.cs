@@ -49,7 +49,7 @@ namespace CDR.DataRecipient.IntegrationTests
                     JWT_CertificateFilename = JWT_CERTIFICATE_FILENAME,
                     JWT_CertificatePassword = JWT_CERTIFICATE_PASSWORD,
                     ClientId = SOFTWAREPRODUCT_ID,
-                    Scope = "cdr-register:bank:read cdr-register:read",
+                    Scope = "cdr-register:read",
                     ClientAssertionType = CLIENTASSERTIONTYPE,
                     GrantType = "client_credentials",
                     Issuer = SOFTWAREPRODUCT_ID,

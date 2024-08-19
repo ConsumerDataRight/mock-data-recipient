@@ -23,11 +23,11 @@ namespace CDR.DataRecipient.Web
                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? configurationCommandLine.GetValue<string>("environment")}.json", true)
                 .AddEnvironmentVariables()
                 .Build();
-
-            Log.Logger = new LoggerConfiguration()
+            
+            try
+            {
+                Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
-                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-                .MinimumLevel.Override("System", LogEventLevel.Information)
                 .Enrich.FromLogContext()
                 .Enrich.WithProcessId()
                 .Enrich.WithProcessName()
@@ -36,8 +36,13 @@ namespace CDR.DataRecipient.Web
                 .Enrich.WithProperty("Environment", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"))
                 .CreateLogger();
 
-            Serilog.Debugging.SelfLog.Enable(msg => Log.Logger.Debug(msg));
-
+                Serilog.Debugging.SelfLog.Enable(msg => Log.Logger.Debug(msg));
+            }
+            catch (Exception) 
+            {
+                // Catch and handle exception here if required.
+            }
+           
             try
             {
                 Log.Information("Starting web host");

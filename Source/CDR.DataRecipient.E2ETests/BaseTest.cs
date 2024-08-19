@@ -8,6 +8,7 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using CDR.DataRecipient.E2ETests.Pages;
 using FluentAssertions;
@@ -15,7 +16,6 @@ using FluentAssertions.Execution;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -42,11 +42,13 @@ namespace CDR.DataRecipient.E2ETests
 
         // Data Holder
         public const string DH_BRANDID = "804fc2fb-18a7-4235-9a49-2af393d18bc7";
-        public const string DH_BRANDID_ENERGY = "cfcaf0df-401b-47f2-98af-94787289eca8"; // Mock Data Holder (Energy)
+        public const string DH_BRANDID_ENERGY = "cfcaf0df-401b-47f2-98af-94787289eca8"; // Mock Data Holder (Energy)        
+        public const string DH_BRANDID_DUMMY_DH = "e748eadf-4aa4-4e2f-b3da-fb4a9d511994";   // Use "Bank Brand 2" Dummy Data Holder for negative testing
 
         // Data Recipient
         public const string DR_BRANDID = "ffb1c8ba-279e-44d8-96f0-1bc34a6b436f";
         public const string DR_SOFTWAREPRODUCTID = "c6327f87-687a-4369-99a4-eaacd3bb8210";
+        public const string DR_DEFAULT_SCOPES = "openid profile common:customer.basic:read common:customer.detail:read bank:accounts.basic:read bank:accounts.detail:read bank:transactions:read bank:regular_payments:read bank:payees:read energy:accounts.basic:read energy:accounts.detail:read energy:accounts.concessions:read energy:accounts.paymentschedule:read energy:billing:read energy:electricity.servicepoints.basic:read energy:electricity.servicepoints.detail:read energy:electricity.der:read energy:electricity.usage:read cdr:registration";
 
         // URLs        
         static public string REGISTER_MTLS_BaseURL => Configuration["MTLS_BaseURL"]
@@ -160,7 +162,7 @@ namespace CDR.DataRecipient.E2ETests
                 // Setup browser
                 await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
                 {
-                    SlowMo = 250,
+                    SlowMo = 0,
 #if TEST_DEBUG_MODE
                     Headless = false,
                     Timeout = 5000 // DEBUG - 5 seconds
@@ -239,7 +241,7 @@ namespace CDR.DataRecipient.E2ETests
                 // Setup browser
                 await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
                 {
-                    SlowMo = 250,
+                    SlowMo = 0,
 #if TEST_DEBUG_MODE
                     Headless = false,
                     Timeout = 5000 // DEBUG - 5 seconds
@@ -261,9 +263,7 @@ namespace CDR.DataRecipient.E2ETests
                 try
                 {
                     var page = await context.NewPageAsync();
-                    page.Close += async (_, page) =>
-                    {
-                    };
+                    page.Close += (_, page) => { };
 
                     using (new AssertionScope())
                     {
@@ -310,7 +310,7 @@ namespace CDR.DataRecipient.E2ETests
             // Setup browser
             await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
             {
-                SlowMo = 250,
+                SlowMo = 0,
 #if TEST_DEBUG_MODE                
                 Headless = false,
                 Timeout = 5000 // DEBUG - 5 seconds
@@ -564,7 +564,7 @@ namespace CDR.DataRecipient.E2ETests
             // Arrange - Set industry
             if (String.IsNullOrEmpty(industry)) // Clear industry
             {
-                await page.Locator("select[name=\"Industry\"]").SelectOptionAsync(new SelectOptionValue[] { });
+                await page.Locator("select[name=\"Industry\"]").SelectOptionAsync(Array.Empty<SelectOptionValue>());
             }
             else
             {
@@ -581,6 +581,9 @@ namespace CDR.DataRecipient.E2ETests
 
             // Arrange - Set version
             await page.Locator("input[name=\"Version\"]").FillAsync(version);
+
+            // Workaround issue where Refresh is clicked before form has loaded.
+            Thread.Sleep(300);
 
             // Act - Click Refresh button
             await page.Locator(@"h5:has-text(""Refresh Data Holders"") ~ div.card-body >> input:has-text(""Refresh"")").ClickAsync();
@@ -636,52 +639,51 @@ namespace CDR.DataRecipient.E2ETests
 
         // Create Client Registration returning DH client ID of client that was registered
         static protected async Task<string> ClientRegistration_Create(IPage page,
-            string dhBrandId,
-            string drBrandId, 
-            string drSoftwareProductId, 
+            string dhBrandId, 
             string? jarmSigningAlgo = null,
-            string responseTypes = "code id_token", 
+            string responseTypes = "code,code id_token", 
             string? jarmEncrypAlg = null, 
             string? jarmEncryptEnc = null)
         {
-            // Arrange - Goto home page, click menu button, check page loaded
-            await page.GotoAsync(WEB_URL);
-            await page.Locator("a >> text=Dynamic Client Registration").ClickAsync();
-            await page.Locator("h2 >> text=Dynamic Client Registration").TextContentAsync();
 
-            // Set data holder brand id
-            await page.Locator("select[name=\"DataHolderBrandId\"]").SelectOptionAsync(new[] { dhBrandId });
+            DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);
 
-            // Assert - Check software product id
-            (await page.Locator("input[name=\"SoftwareProductId\"]").InputValueAsync()).Should().Be(drSoftwareProductId);
+            await dcrPage.GotoDynamicClientRegistrationPage();
 
-            await page.Locator("input[name=\"ResponseTypes\"]").FillAsync(responseTypes);
+            await dcrPage.SelectDataHolderBrandId(dhBrandId);
+            await dcrPage.EnterResponseTypes(responseTypes);
 
             if (jarmSigningAlgo != null)
             {
-                await page.Locator("input[name=\"AuthorizationSignedResponseAlg\"]").FillAsync(jarmSigningAlgo);
+                await dcrPage.EnterAuthorisedSignedResponsegAlgo(jarmSigningAlgo);
             }
             if (jarmEncrypAlg != null)
             {
-                await page.Locator("input[name=\"AuthorizationEncryptedResponseAlg\"]").FillAsync(jarmEncrypAlg);
+                await dcrPage.EnterAuthorisedEncryptedResponseAlgo(jarmEncrypAlg);
             }
             if (jarmEncryptEnc != null)
             {
-                await page.Locator("input[name=\"AuthorizationEncryptedResponseEnc\"]").FillAsync(jarmEncryptEnc);
+                await dcrPage.EnterAuthorisedEncryptedResponseEnc(jarmEncryptEnc);
             }
 
-            // Act - Click create button
-            await page.Locator(@"h5:has-text(""Create Client Registration"") ~ div.card-body >> input:has-text(""Register"")").ClickAsync();
+            if (responseTypes.Contains("id_token"))
+            {
+                await dcrPage.EnterIdTokenEncryptedResponseAlgo("RSA-OAEP");
+                await dcrPage.EnterIdTokenEncryptedResponseEnc("A128CBC-HS256");
+            }
 
-            // Assert - Check client was registered
-            await page.Locator(@"h5:has-text(""Create Client Registration"") ~ div.card-footer:has-text(""Created - Registered"")").TextContentAsync();
+            await dcrPage.ClickRegister();
 
-            // Assert - Get json result
-            var json = await page.Locator(@"h5:has-text(""Create Client Registration"") ~ div.card-footer >> pre").InnerTextAsync();
+            var registrationResponseJson = await dcrPage.GetRegistrationResponse();
+            return GetClientIdFromRegistrationResponse(registrationResponseJson);           
 
+        }
+
+        static protected string GetClientIdFromRegistrationResponse(string registrationResponseJson)
+        {
             // Deserialise response and return DH client id
-            DCRResponse dcrResponse = JsonConvert.DeserializeObject<DCRResponse>(json) ?? throw new NullReferenceException(nameof(json));
-            return dcrResponse.ClientId ?? throw new NullReferenceException(nameof(dcrResponse.ClientId));
+            DCRResponse dcrResponse = JsonConvert.DeserializeObject<DCRResponse>(registrationResponseJson) ?? throw new NullReferenceException(nameof(registrationResponseJson));
+            return dcrResponse.ClientId ?? throw new NullReferenceException($"{nameof(dcrResponse.ClientId)} could not be found in {nameof(registrationResponseJson)} - {registrationResponseJson}");
         }
 
         static protected async Task<ConsentAndAuthorisationResponse> ConsentAndAuthorisation2(IPage page, string customerId = CUSTOMERID_BANKING, string customerAccounts = CUSTOMERACCOUNTS_BANKING)

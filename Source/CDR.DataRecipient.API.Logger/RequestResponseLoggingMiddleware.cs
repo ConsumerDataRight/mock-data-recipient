@@ -38,7 +38,6 @@ namespace CDR.DataRecipient.API.Logger
         private string? _fapiInteractionId;
         private string? _dataHolderBrandId;
 
-
         private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
         readonly RequestDelegate _next;
         private readonly ILogger _requestResponseLogger;
@@ -94,7 +93,6 @@ namespace CDR.DataRecipient.API.Logger
                 logger.Write(LogEventLevel.Information, httpSummaryMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _statusCode, _elapsedTime);
             }
         }
-
 
         private async Task ExtractRequestProperties(HttpContext context)
         {
@@ -159,7 +157,7 @@ namespace CDR.DataRecipient.API.Logger
                         _dataHolderBrandId = String.Empty;
                         SetIdFromJwt(parameter, ClaimIdentifiers.Iss, ref _dataHolderBrandId);
                     }
-                }                
+                }
             }
             catch (Exception ex)
             {
@@ -234,7 +232,7 @@ namespace CDR.DataRecipient.API.Logger
                 await responseBody.CopyToAsync(originalBodyStream);
             }
         }
-        private string GetHost(HttpRequest request)
+        private string? GetHost(HttpRequest request)
         {
             // 1. check if the X-Forwarded-Host header has been provided -> use that
             // 2. If not, use the request.Host
@@ -260,7 +258,7 @@ namespace CDR.DataRecipient.API.Logger
             // The Client IP address may contain a comma separated list of ip addresses based on the network devices
             // the traffic traverses through.  We get the first (and potentially only) ip address from the list as the client IP.
             // We also remove any port numbers that may be included on the client IP.
-            return keys[0]
+            return keys[0]?
                 .Split(',')[0]  // Get the first IP address in the list, in case there are multiple.
                 .Split(':')[0]; // Strip off the port number, in case it is attached to the IP address.
         }

@@ -1,4 +1,11 @@
-# Build pipeline v2 (Containerised)
+schedules:
+- cron: '0 5 * * 0'
+  displayName: 'Run at 5:00 AM every Sunday (UTC)'
+  always: true
+  branches:
+    include:
+    - develop
+
 
 variables:  
 
@@ -194,18 +201,18 @@ jobs:
       artifact: Mock-Data-Recipient - E2E tests
 
     - task: UseDotNet@2
-      displayName: 'Use .NET 6 sdk'
+      displayName: 'Use .NET 8 sdk'
       condition: always()
       inputs:
         packageType: sdk
-        version: '6.0.x'
+        version: '8.0.x'
         performMultiLevelLookup: true
 
     - task: CmdLine@2
       displayName: 'Install dotnet-ef'
       condition: always()
       inputs:
-        script: 'dotnet tool install --version 7.0.13 --global dotnet-ef'
+        script: 'dotnet tool install --version 8.0.4 --global dotnet-ef'
 
     - task: CmdLine@2
       displayName: 'Check dotnet-ef version'

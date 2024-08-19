@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -77,6 +78,7 @@ namespace CDR.DataRecipient.Web.Controllers
             else
             {
                 var client = await _regRepository.GetRegistration(clientId, dataHolderBrandId);
+                model.TransactionType = "Update";
                 SetViewModel(model, client);
             }
 
@@ -93,7 +95,6 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 if (string.IsNullOrEmpty(model.ClientId))
                     await Register(model);
-
                 else
                     await UpdateRegistration(model);
 
@@ -173,6 +174,50 @@ namespace CDR.DataRecipient.Web.Controllers
                 StatusCode = Convert.ToInt32(regResp.StatusCode)
             };
         }
+
+
+        [FeatureGate(nameof(Feature.AllowDynamicClientRegistration))]
+        [HttpGet]
+        [Route("{dataHolderBrandId}/openid-configuration")]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
+        public async Task<IActionResult> GetOidcDocument(string dataHolderBrandId)
+        {
+            var response = new ResponseModel();            
+            string configUrl = String.Empty;
+
+            try
+            {                
+                DataHolderBrand dataHolder;
+                dataHolder = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
+
+                if (dataHolder == null)
+                {
+                    response.StatusCode = HttpStatusCode.BadRequest;
+                    response.Messages = $"Could not find data holder {dataHolderBrandId}";
+                }
+                else
+                {
+                    string infosecBaseUri = dataHolder.EndpointDetail.InfoSecBaseUri;                                        
+                    configUrl = string.Concat(infosecBaseUri.TrimEnd('/'), "/.well-known/openid-configuration");
+
+                    var oidcDiscovery = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(dataHolderBrandId);
+                    var payload = JsonConvert.SerializeObject(oidcDiscovery);
+                    response.Payload = payload;
+                    response.Messages = $"Discovery Document details loaded from {configUrl}";
+                    response.StatusCode = HttpStatusCode.OK;
+                }                
+            }
+            catch (Exception)
+            {                
+                response.Messages = $"Unable to load Discovery Document from {configUrl}";
+                response.StatusCode = HttpStatusCode.BadRequest;
+            }
+            return new JsonResult(response)
+            {
+                StatusCode = Convert.ToInt32(response.StatusCode)
+            };
+        }
+
 
         private async Task Register(DynamicClientRegistrationModel model)
         {
@@ -258,10 +303,11 @@ namespace CDR.DataRecipient.Web.Controllers
         }
 
         private async Task UpdateRegistration(DynamicClientRegistrationModel model)
-        {
+        {                        
             var sp = _config.GetSoftwareProductConfig();
             var ssa = await GetSSA(sp, model);
             var dataHolderDiscovery = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(model.DataHolderBrandId);
+            model.TransactionType = "Update";
 
             var accessToken = new AccessToken() 
             {
@@ -410,8 +456,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 tokenEndpoint, 
                 sp.SoftwareProductId, 
                 sp.ClientCertificate.X509Certificate, 
-                sp.SigningCertificate.X509Certificate,
-                scope: ScopeExtensions.GetRegisterScope(model.SsaVersion, 3));
+                sp.SigningCertificate.X509Certificate);
 
             if (!tokenResponse.IsSuccessful)
             {
@@ -453,12 +498,13 @@ namespace CDR.DataRecipient.Web.Controllers
                     .ToList();
 
                 // Fill the brand name
-                if (model.DataHolderBrands != null && model.DataHolderBrands.Any())
+                if (model.DataHolderBrands != null && model.DataHolderBrands.Count > 0)
                 {
                     var brandsDictionary = model.DataHolderBrands.ToDictionary(brand => brand.Value);
                     foreach (var registration in registrations)
                     {
-                        registration.BrandName = brandsDictionary.ContainsKey(registration.DataHolderBrandId) ? brandsDictionary[registration.DataHolderBrandId].Text : string.Empty;
+                        registration.BrandName = brandsDictionary.TryGetValue(registration.DataHolderBrandId, out var brandValue) ?
+                            brandValue.Text : string.Empty;
                     }
                 }
                 model.Registrations = registrations;
@@ -489,17 +535,17 @@ namespace CDR.DataRecipient.Web.Controllers
             model.TokenEndpointAuthSigningAlg = sp.DefaultSigningAlgorithm;
             model.TokenEndpointAuthMethod = "private_key_jwt";
             model.GrantTypes = "client_credentials,authorization_code,refresh_token";
-            model.ResponseTypes = "code id_token";
+            model.ResponseTypes = "code";
             model.ApplicationType = "web";
             model.IdTokenSignedResponseAlg = sp.DefaultSigningAlgorithm;
-            model.IdTokenEncryptedResponseAlg = "RSA-OAEP";
-            model.IdTokenEncryptedResponseEnc = "A256GCM";
+            model.IdTokenEncryptedResponseAlg = "";
+            model.IdTokenEncryptedResponseEnc = "";
             model.RequestObjectSigningAlg = sp.DefaultSigningAlgorithm;
             model.AuthorizationSignedResponseAlg = sp.DefaultSigningAlgorithm;
             model.AuthorizationEncryptedResponseAlg = "";
             model.AuthorizationEncryptedResponseEnc = "";
             model.SsaVersion = "3";
-            model.Messages = "Waiting...";
+            model.Messages = "";
         }
 
         private void SetViewModel(DynamicClientRegistrationModel model, Registration client)
@@ -515,12 +561,13 @@ namespace CDR.DataRecipient.Web.Controllers
             model.ResponseTypes = string.Join(",", client.ResponseTypes);            
             model.ApplicationType = "web";
             model.IdTokenSignedResponseAlg = sp.DefaultSigningAlgorithm;
-            model.IdTokenEncryptedResponseAlg = "RSA-OAEP";
-            model.IdTokenEncryptedResponseEnc = "A256GCM";
+            model.IdTokenEncryptedResponseAlg = "";
+            model.IdTokenEncryptedResponseEnc = "";
             model.RequestObjectSigningAlg = sp.DefaultSigningAlgorithm;
             model.AuthorizationSignedResponseAlg = client.AuthorizationSignedResponseAlg;
             model.AuthorizationEncryptedResponseAlg = client.AuthorizationEncryptedResponseAlg;
             model.AuthorizationEncryptedResponseEnc = client.AuthorizationEncryptedResponseEnc;
+            model.SsaVersion = "3";
             model.Messages = "Waiting...";
         }
     }

@@ -18,8 +18,7 @@ namespace CDR.DataRecipient.Web.Filters
 
 		public override void OnActionExecuting(ActionExecutingContext context)
 		{
-			var contentType = context.HttpContext.Request.Headers["Content-Type"];
-			if (contentType != _contentType)
+			if (context.HttpContext.Request.ContentType != _contentType)
 			{
 				context.Result = new BadRequestObjectResult(new ErrorListModel(Constants.ErrorCodes.InvalidHeader, Constants.ErrorTitles.InvalidHeader, string.Empty));
 			}

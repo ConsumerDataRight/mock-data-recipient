@@ -1,16 +1,18 @@
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 EXPOSE 9001
 
 # Default ASPNETCORE_ENVIRONMENT to Release
 ENV ASPNETCORE_ENVIRONMENT=Release 
 
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 COPY . ./
 
 FROM build AS publish
+
+COPY ./Directory.Build.props /app/Directory.Build.props
 
 COPY ./CDR.DataRecipient.Web/. /app/CDR.DataRecipient.Web
 COPY ./CDR.DataRecipient.Repository.SQL/. /app/CDR.DataRecipient.Repository.SQL
