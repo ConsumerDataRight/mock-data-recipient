@@ -5,111 +5,98 @@ using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.SDK.Enum;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Worker;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace CDR.DiscoverDataHolders
 {
-    public static class DiscoverDataHoldersFunction
+    public class DiscoverDataHoldersFunction
     {
+        private readonly ILogger _logger;
+        private readonly DHOptions _options;
+
+        private readonly X509Certificate2 _signCertificate;
+        private readonly IHttpClientFactory _httpClientFactory;
+
+        public DiscoverDataHoldersFunction(ILogger<DiscoverDataHoldersFunction> logger, IOptions<DHOptions> options, IHttpClientFactory httpClientFactory)
+        {
+            _logger = logger;
+            _options = options.Value;
+
+            byte[] clientCertBytes = Convert.FromBase64String(_options.Client_Certificate);
+            X509Certificate2 clientCertificate = new(clientCertBytes, _options.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            _logger.LogInformation("Client certificate loaded: {thumbprint}", clientCertificate.Thumbprint);
+
+            _logger.LogInformation("Loading the signing certificate...");
+            byte[] signCertBytes = Convert.FromBase64String(_options.Signing_Certificate);
+            _signCertificate = new(signCertBytes, _options.Signing_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            _logger.LogInformation("Signing certificate loaded: {thumbprint}", _signCertificate.Thumbprint);
+            _httpClientFactory=httpClientFactory;
+        }
+
         /// <summary>
         /// Discover Data Holders Function
         /// </summary>
         /// <remarks>Gets the Data Holders from the Register and updates the local repository</remarks>
-        [FunctionName("DiscoverDataHolders")]
-        public static async Task DHBRANDS([TimerTrigger("%Schedule%")] TimerInfo myTimer, ILogger log, ExecutionContext context)
+        [Function("DiscoverDataHolders")]
+        public async Task DHBRANDS([TimerTrigger("%Schedule%")] TimerInfo myTimer)
         {
             try
             {
-                var isLocalDev = Environment.GetEnvironmentVariable("AZURE_FUNCTIONS_ENVIRONMENT").Equals("Development");
-                var configBuilder = new ConfigurationBuilder().SetBasePath(context.FunctionAppDirectory);
-
-                if (isLocalDev)
-                {
-                    configBuilder = configBuilder.AddJsonFile("local.settings.json", optional: false, reloadOnChange: true);
-                }
-
-                // Get environment variables.
-                string qConnString = Environment.GetEnvironmentVariable("StorageConnectionString");
-                string dbConnString = Environment.GetEnvironmentVariable("DataRecipient_DB_ConnectionString");
-                string dbLoggingConnString = Environment.GetEnvironmentVariable("DataRecipient_Logging_DB_ConnectionString");
-                string tokenEndpoint = Environment.GetEnvironmentVariable("Register_Token_Endpoint");
-                string dhBrandsEndpoint = Environment.GetEnvironmentVariable("Register_Get_DH_Brands");
-                string xvVer = Environment.GetEnvironmentVariable("Register_Get_DH_Brands_XV");
-                string softwareProductId = Environment.GetEnvironmentVariable("Software_Product_Id");
-                string clientCert = Environment.GetEnvironmentVariable("Client_Certificate");
-                string clientCertPwd = Environment.GetEnvironmentVariable("Client_Certificate_Password");
-                string signCert = Environment.GetEnvironmentVariable("Signing_Certificate");
-                string signCertPwd = Environment.GetEnvironmentVariable("Signing_Certificate_Password");
-                bool ignoreServerCertificateErrors = Environment.GetEnvironmentVariable("Ignore_Server_Certificate_Errors").Equals("true", StringComparison.OrdinalIgnoreCase);
-
-                // DCR queue.
-                log.LogInformation("Retrieving count for dynamicclientregistration queue...");
-                var qName = "dynamicclientregistration";
-                int qCount = await GetQueueCountAsync(qConnString, qName);
-                log.LogInformation("qCount = {qCount}", qCount);
-
-                // Client certificate.
-                log.LogInformation("Loading the client certificate...");
-                byte[] clientCertBytes = Convert.FromBase64String(clientCert);
-                X509Certificate2 clientCertificate = new(clientCertBytes, clientCertPwd, X509KeyStorageFlags.MachineKeySet);
-                log.LogInformation("Client certificate loaded: {thumbprint}", clientCertificate.Thumbprint);
-
-                // Signing certificate.
-                log.LogInformation("Loading the signing certificate...");
-                byte[] signCertBytes = Convert.FromBase64String(signCert);
-                X509Certificate2 signCertificate = new(signCertBytes, signCertPwd, X509KeyStorageFlags.MachineKeySet);
-                log.LogInformation("Signing certificate loaded: {thumbprint}", signCertificate.Thumbprint);
+                _logger.LogInformation("Retrieving count for dynamicclientregistration queue...");
+                int qCount = await GetQueueCountAsync(_options.StorageConnectionString, _options.QueueName);
+                _logger.LogInformation("qCount = {qCount}", qCount);
+                _logger.LogInformation("Loading the client certificate...");
+                
 
                 string msg = $"DHBRANDS";
                 int inserted = 0;
                 int updated = 0;
                 int pendingReg = 0;
 
-                Response<Token> tokenRes = await GetAccessToken(tokenEndpoint, softwareProductId, clientCertificate, signCertificate, log, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
+                Response<Token> tokenRes = await GetAccessToken();
                 if (tokenRes.IsSuccessful)
                 {
-                    (string respBody, System.Net.HttpStatusCode statusCode, string reason) = await GetDataHolderBrands(dhBrandsEndpoint, xvVer, tokenRes.Data.AccessToken, clientCertificate, log, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
-                    if (statusCode == System.Net.HttpStatusCode.OK)
+                    var dataHolderBrandsResult = await GetDataHolderBrands(tokenRes.Data.AccessToken);
+                    if (dataHolderBrandsResult.statusCode == System.Net.HttpStatusCode.OK)
                     {
-                        Response<IList<DataHolderBrand>> dhResponse = JsonConvert.DeserializeObject<Response<IList<DataHolderBrand>>>(respBody);
+                        Response<IList<DataHolderBrand>> dhResponse = JsonConvert.DeserializeObject<Response<IList<DataHolderBrand>>>(dataHolderBrandsResult.body);
                         if (dhResponse.Data.Count == 0)
                         {
-                            await InsertLog(log, dbConnString, $"{msg}, Unable to get the DHBrands from: {dhBrandsEndpoint}, Ver: {xvVer}", "Error", "DHBRANDS");
+                            await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, Unable to get the DHBrands from: {_options.Register_Get_DH_Brands}, Ver: {_options.Register_Get_DH_Brands_XV}", "Error", "DHBRANDS");                            
                             return;
                         }
 
-                        log.LogInformation("Found {count} data holder brands.", dhResponse.Data.Count);
+                        _logger.LogInformation("Found {count} data holder brands.", dhResponse.Data.Count);
 
                         // Sync data holder brands metadata.
-                        await SynchroniseDataHolderBrandsMetadata(dhResponse.Data, dbConnString, log);
+                        await SynchroniseDataHolderBrandsMetadata(dhResponse.Data, _options.DataRecipient_DB_ConnectionString, _logger);
 
                         // RETURN a list of ALL DataHolderBrands that are NOT REGISTERED
-                        (IList<DataHolderBrand> dhBrandsInsert, IList<DataHolderBrand> dhBrandsUpd) = await new SqlDataAccess(dbConnString).CheckRegistrationsExist(dhResponse.Data);
-
-                        log.LogInformation("{ins} data holder brands inserted. {upd} data holder brands updated.", dhBrandsInsert.Count, dhBrandsUpd.Count);
+                        (IList<DataHolderBrand> dhBrandsInsert, IList<DataHolderBrand> dhBrandsUpd) = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckRegistrationsExist(dhResponse.Data);
+                        _logger.LogInformation("{ins} data holder brands inserted. {upd} data holder brands updated.", dhBrandsInsert.Count, dhBrandsUpd.Count);
 
                         // UPDATE DataHolderBrands
                         if (dhBrandsUpd.Count > 0)
                         {
                             foreach (var dh in dhBrandsUpd)
                             {
-                                bool result = await new SqlDataAccess(dbConnString).CheckRegistrationExist(dh.DataHolderBrandId);
+                                bool result = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckRegistrationExist(dh.DataHolderBrandId);
                                 if (!result)
                                 {
-                                    var qMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, "UPDATE QUEUED");
-                                    await AddDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "UPDATE DcrMessage");
+                                    var qMsgId = await AddQueueMessageAsync(_logger, _options.StorageConnectionString, _options.QueueName, dh.DataHolderBrandId, "UPDATE QUEUED");
+                                    await AddDcrMessage(dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "UPDATE DcrMessage");
                                     updated++;
                                 }
                             }
@@ -121,24 +108,24 @@ namespace CDR.DiscoverDataHolders
                             foreach (var dh in dhBrandsInsert)
                             {
                                 // DOES the DcrMessage exist?
-                                (string dcrMsgId, string dcrMsgState) = await new SqlDataAccess(dbConnString).CheckDcrMessageExistByDHBrandId(dh.DataHolderBrandId);
+                                (string dcrMsgId, string dcrMsgState) = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckDcrMessageExistByDHBrandId(dh.DataHolderBrandId);
 
                                 // NO - DcrMessage DOES NOT EXIST in DcrMessage table
                                 if (string.IsNullOrEmpty(dcrMsgId))
                                 {
-                                    qCount = await GetQueueCountAsync(qConnString, qName);
+                                    qCount = await GetQueueCountAsync(_options.StorageConnectionString, _options.QueueName);
                                     var proc = (qCount == 0) ? "NO REG (ADD to EMPTY QUEUE)" : "NO REG (ADD to QUEUE)";
 
                                     // ADD to QUEUE and DcrMessage table
-                                    var qMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, proc);
-                                    await AddDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "ADD to DcrMessage table");
+                                    var qMsgId = await AddQueueMessageAsync(_logger, _options.StorageConnectionString, _options.QueueName, dh.DataHolderBrandId, proc);                                    
+                                    await AddDcrMessage(dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "ADD to DcrMessage table");
                                     pendingReg++;
                                 }
 
                                 // YES - DcrMessage EXISTS in DcrMessage table
                                 else
                                 {
-                                    qCount = await GetQueueCountAsync(qConnString, qName);
+                                    qCount = await GetQueueCountAsync(_options.StorageConnectionString, _options.QueueName);
                                     var proc = (qCount == 0) ? "NO REG (ADD to EMPTY QUEUE)" : "NO REG (ADD to QUEUE)";
 
                                     if ((dcrMsgState.Equals(Message.Pending.ToString()) || dcrMsgState.Equals(Message.DCRFailed.ToString())))
@@ -146,10 +133,10 @@ namespace CDR.DiscoverDataHolders
                                         Enum.TryParse(dcrMsgState, out Message dcrMsgStatus);
 
                                         // DcrMessage STATE = Pending -> ADD MESSAGE to the QUEUE
-                                        var newMsgId = await AddQueueMessageAsync(log, qConnString, qName, dh.DataHolderBrandId, proc);
+                                        var newMsgId = await AddQueueMessageAsync(_logger, _options.StorageConnectionString, _options.QueueName, dh.DataHolderBrandId, proc);
 
-                                        // UPDATE EXISTING DcrMessage (with ADDED Queue MessageId)
-                                        await UpdateDcrMessage(log, dbConnString, dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, dcrMsgStatus, newMsgId, "Update DcrMessage table");
+                                        // UPDATE EXISTING DcrMessage (with ADDED Queue MessageId)                                        
+                                        await UpdateDcrMessage(dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, dcrMsgId, dcrMsgStatus, newMsgId, "Update DcrMessage table");
                                         pendingReg++;
                                     }
                                 }
@@ -172,25 +159,25 @@ namespace CDR.DiscoverDataHolders
                                 msg += $" - {pendingReg} existing data holder brands queued to be registered.";
                         }
 
-                        await InsertLog(log, dbLoggingConnString, $"{msg}", "Information", "DHBRANDS");
+                        await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}", "Information", "DHBRANDS");
 
-                        qCount = await GetQueueCountAsync(qConnString, qName);
-                        msg = $"DHBRANDS - {qCount} items in {qName} queue";
-                        await InsertLog(log, dbLoggingConnString, $"{msg}", "Information", "DHBRANDS");
+                        qCount = await GetQueueCountAsync(_options.StorageConnectionString, _options.QueueName);
+                        msg = $"DHBRANDS - {qCount} items in {_options.QueueName} queue";
+                        await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}", "Information", "DHBRANDS");
                     }
                     else
                     {
-                        await InsertLog(log, dbConnString, $"{msg}, Unable to get the DHBrands from: {dhBrandsEndpoint}, Ver: {xvVer}", "Error", "DHBRANDS");
+                        await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, Unable to get the DHBrands from: {_options.Register_Get_DH_Brands}, Ver: {_options.Register_Get_DH_Brands_XV}", "Error", "DHBRANDS");
                     }
                 }
                 else
                 {
-                    await InsertLog(log, dbConnString, $"Unable to get the Access Token for SoftwareProductId - {softwareProductId} - at the endpoint - {tokenEndpoint}", "Error", "DHBRANDS");
+                    await InsertLog(_options.DataRecipient_DB_ConnectionString, $"Unable to get the Access Token for SoftwareProductId - {_options.Software_Product_Id} - at the endpoint - {_options.Register_Token_Endpoint}", "Error", "DHBRANDS");
                 }
             }
             catch (Exception ex)
             {
-                await InsertLog(log, Environment.GetEnvironmentVariable("DataRecipient_Logging_DB_ConnectionString"), "Exception Error", "Exception", "DHBRANDS", ex);
+                await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, "Exception Error", "Exception", "DHBRANDS", ex);
             }
         }
 
@@ -198,11 +185,11 @@ namespace CDR.DiscoverDataHolders
         /// Save the latest data holder brand metadata to the DataHolderBrand table.
         /// </summary>
         /// <param name="data"></param>
-        private async static Task SynchroniseDataHolderBrandsMetadata(IList<DataHolderBrand> data, string dbConnString, ILogger log)
+        private async static Task SynchroniseDataHolderBrandsMetadata(IList<DataHolderBrand> data, string DataRecipient_DB_ConnectionString, ILogger log)
         {
             log.LogInformation("Synchronising {count} data holder brands", data.Count);
 
-            var sql = new SqlDataAccess(dbConnString);
+            var sql = new SqlDataAccess(DataRecipient_DB_ConnectionString);
             var existingBrands = await sql.GetDataHolderBrands();
 
             if (existingBrands == null)
@@ -229,17 +216,17 @@ namespace CDR.DiscoverDataHolders
                 }
             }
 
-            log.LogInformation("Synchronising existing {count} data holder brands", existingBrands?.Count());
-            foreach (var existingDataHolderBrand in existingBrands)
+            log.LogInformation("Synchronising existing {count} data holder brands", existingBrands.Count());
+            foreach (var existingDataHolderBrandId in existingBrands.Select(brand => brand.DataHolderBrandId))
             {
                 //existing data holders that don't exist in mdh should be removed from the mdr
-                var exists = data.Any(x => x.DataHolderBrandId.Equals(existingDataHolderBrand.DataHolderBrandId, StringComparison.OrdinalIgnoreCase));
+                var exists = data.Any(x => x.DataHolderBrandId.Equals(existingDataHolderBrandId, StringComparison.OrdinalIgnoreCase));
 
                 //Remove additional or extra brands to reflect correct brand data
                 if (!exists)
                 {
-                    log.LogInformation("Deleting existing data holder brand: {brandId}", existingDataHolderBrand.DataHolderBrandId);
-                    await sql.DeleteDataHolder(existingDataHolderBrand.DataHolderBrandId);
+                    log.LogInformation("Deleting existing data holder brand: {brandId}", existingDataHolderBrandId);
+                    await sql.DeleteDataHolder(existingDataHolderBrandId);
                 }
             }
         }
@@ -248,25 +235,18 @@ namespace CDR.DiscoverDataHolders
         /// Get Access Token
         /// </summary>
         /// <returns>JWT</returns>
-        private static async Task<Response<Token>> GetAccessToken(
-            string tokenEndpoint,
-            string clientId,
-            X509Certificate2 clientCertificate,
-            X509Certificate2 signingCertificate,
-            ILogger log,
-            bool ignoreServerCertificateErrors = false)
+        private async Task<Response<Token>> GetAccessToken()
         {
-
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, ignoreServerCertificateErrors: ignoreServerCertificateErrors);
+            var client = GetHttpClient();
 
             // Make the request to the token endpoint.
-            log.LogInformation("Retrieving access_token from the Register: {tokenEndpoint}", tokenEndpoint);
+            _logger.LogInformation("Retrieving access_token from the Register: {tokenEndpoint}", _options.Register_Token_Endpoint);
             var response = await client.SendPrivateKeyJwtRequest(
-                tokenEndpoint,
-                signingCertificate,
-                clientId,
-                clientId,
+                _options.Register_Token_Endpoint,
+                _signCertificate,
+                _options.Software_Product_Id,
+                _options.Software_Product_Id,
                 scope: Constants.Scopes.CDR_REGISTER,
                 grantType: Constants.GrantTypes.CLIENT_CREDENTIALS);
 
@@ -276,7 +256,7 @@ namespace CDR.DiscoverDataHolders
                 StatusCode = response.StatusCode
             };
 
-            log.LogInformation("Register response: {statusCode} - {body}", tokenResponse.StatusCode, body);
+            _logger.LogInformation("Register response: {statusCode} - {body}", tokenResponse.StatusCode, body);
 
             if (response.IsSuccessStatusCode)
                 tokenResponse.Data = JsonConvert.DeserializeObject<Token>(body);
@@ -290,76 +270,49 @@ namespace CDR.DiscoverDataHolders
         /// Get the Data Holder Brands from the Register
         /// </summary>
         /// <returns>Raw data</returns>
-        private static async Task<(string, System.Net.HttpStatusCode, string)> GetDataHolderBrands(
-            string dhBrandsEndpoint,
-            string version,
-            string accessToken,
-            X509Certificate2 clientCertificate,
-            ILogger log,
-            bool ignoreServerCertificateErrors = false)
+        private async Task<(string body, System.Net.HttpStatusCode statusCode, string reason)> GetDataHolderBrands(string accessToken)
         {
             // NB: THE MAX VALID PAGE SIZE in MDH is 1000
-            dhBrandsEndpoint = dhBrandsEndpoint.AppendQueryString("page-size", "1000");
+            var dhBrandsEndpoint = _options.Register_Get_DH_Brands.AppendQueryString("page-size", "1000");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken, version, ignoreServerCertificateErrors);
+            var client = GetHttpClient(accessToken, _options.Register_Get_DH_Brands_XV);
 
             // Make the request to the get data holder brands endpoint.
-            log.LogInformation("Retrieving data holder brands from the Register: {dhBrandsEndpoint}", dhBrandsEndpoint);
+            _logger.LogInformation("Retrieving data holder brands from the Register: {dhBrandsEndpoint}", dhBrandsEndpoint);
             var response = await client.GetAsync(dhBrandsEndpoint);
             var body = await response.Content.ReadAsStringAsync();
-            log.LogInformation("Register response: {statusCode} - {body}", response.StatusCode, body);
+            _logger.LogInformation("Register response: {statusCode} - {body}", response.StatusCode, body);
 
             return (body, response.StatusCode, response.ReasonPhrase.ToString());
         }
 
-        private static HttpClient GetHttpClient(
-            X509Certificate2 clientCertificate = null,
-            string accessToken = null,
-            string version = null,
-            bool ignoreServerCertificateErrors = false)
+        private HttpClient GetHttpClient(string accessToken = null, string version = null)
         {
-            var clientHandler = new HttpClientHandler();
-
-            // Set the client certificate for the connection if supplied.
-            if (clientCertificate != null)
-            {
-                clientHandler.ClientCertificates.Add(clientCertificate);
-            }
-
-            if (ignoreServerCertificateErrors)
-            {
-                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            }
-
-            var client = new HttpClient(clientHandler);
+            var httpClient = _httpClientFactory.CreateClient(DiscoverDHConstants.DHHttpClientName);
 
             // If an access token has been provided then add to the Authorization header of the client.
             if (!string.IsNullOrEmpty(accessToken))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-            }
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             // Add the x-v header to the request if provided.
             if (!string.IsNullOrEmpty(version))
-            {
-                client.DefaultRequestHeaders.Add("x-v", version);
-            }
+                httpClient.DefaultRequestHeaders.Add("x-v", version);
 
-            return client;
+            return httpClient;
         }
 
         /// <summary>
         /// Insert the Message into the Queue
         /// </summary>
         /// <returns>Message Id</returns>
-        private static async Task<string> AddQueueMessageAsync(ILogger log, string qConnString, string qName, string dhBrandId, string proc)
+        private static async Task<string> AddQueueMessageAsync(ILogger log, string StorageConnectionString, string qName, string dhBrandId, string proc)
         {
             QueueClientOptions options = new()
             {
                 MessageEncoding = QueueMessageEncoding.Base64
             };
-            QueueClient qClient = new(qConnString, qName, options);
+            QueueClient qClient = new(StorageConnectionString, qName, options);
             await qClient.CreateIfNotExistsAsync();
 
             DcrQueueMessage qMsg = new()
@@ -375,7 +328,7 @@ namespace CDR.DiscoverDataHolders
             {
                 proc += " ";
             } while (proc.Length < 30);
-            log.LogInformation($"{proc}- dhBrandId: {dhBrandId}, MessageId: {msgReceipt.Value.MessageId}");
+            log.LogInformation("{proc}- dhBrandId: {dhBrandId}, MessageId: {messageId}", proc, dhBrandId, msgReceipt.Value.MessageId);
 
             return msgReceipt.Value.MessageId;
         }
@@ -384,7 +337,7 @@ namespace CDR.DiscoverDataHolders
         /// Insert into the DcrMessage table
         /// </summary>
         /// <returns>Message Id</returns>
-        private static async Task AddDcrMessage(ILogger log, string dbConnString, string dhBrandId, string brandName, string infosecBaseUri, string msgId, string proc)
+        private async Task AddDcrMessage(string dhBrandId, string brandName, string infosecBaseUri, string msgId, string proc)
         {
             DcrMessage dcrMsg = new()
             {
@@ -394,21 +347,21 @@ namespace CDR.DiscoverDataHolders
                 MessageId = msgId,
                 MessageState = Message.Pending.ToString()
             };
-            await new SqlDataAccess(dbConnString).InsertDcrMessage(dcrMsg);
+            await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).InsertDcrMessage(dcrMsg);
 
             // Format console logging message layout to aid with readability
             do
             {
                 proc += " ";
             } while (proc.Length < 30);
-            log.LogInformation($"{proc}- dhBrandId: {dhBrandId}, brandName: {brandName}, MessageId: {msgId}");
+            _logger.LogInformation("{proc}- dhBrandId: {dhBrandId}, brandName: {brandName}, MessageId: {msgId}", proc, dhBrandId, brandName, msgId);
         }
 
         /// <summary>
         /// Update the DcrMessage table
         /// </summary>
         /// <returns>Message Id</returns>
-        private static async Task UpdateDcrMessage(ILogger log, string dbConnString, string dhBrandId, string brandName, string infosecBaseUri, string msgId, Message messageState, string newMsgId, string proc)
+        private async Task UpdateDcrMessage(string dhBrandId, string brandName, string infosecBaseUri, string msgId, Message messageState, string newMsgId, string proc)
         {
             DcrMessage dcrMsg = new()
             {
@@ -418,38 +371,22 @@ namespace CDR.DiscoverDataHolders
                 MessageId = msgId,
                 MessageState = messageState.ToString()
             };
-            await new SqlDataAccess(dbConnString).UpdateDcrMsgReplaceMessageId(dcrMsg, newMsgId);
+            await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).UpdateDcrMsgReplaceMessageId(dcrMsg, newMsgId);
 
             // Format console logging message layout to aid with readability
             do
             {
                 proc += " ";
             } while (proc.Length < 30);
-            log.LogInformation($"{proc}- dhBrandId: {dhBrandId}, brandName: {brandName}, MessageId: {msgId}");
-        }
-
-        /// <summary>
-        /// Does the DcrMessage exist in the Queue?
-        /// </summary>
-        /// <returns>[true|false]</returns>
-        private static async Task<bool> IsMessageInQueue(string msgId, string qConnString, string qName)
-        {
-            QueueClient qClient = new(qConnString, qName);
-            PeekedMessage[] messages = await qClient.PeekMessagesAsync(32);
-            foreach (PeekedMessage message in messages)
-            {
-                if (message.MessageId.Equals(msgId))
-                    return true;
-            }
-            return false;
+            _logger.LogInformation("{proc}- dhBrandId: {dhBrandId}, brandName: {brandName}, MessageId: {msgId}", proc, dhBrandId, brandName, msgId);
         }
 
         /// <summary>
         /// Queue Item Count
         /// </summary>
-        private static async Task<int> GetQueueCountAsync(string qConnString, string qName)
+        private static async Task<int> GetQueueCountAsync(string storageConnectionString, string qName)
         {
-            QueueClient queueClient = new(qConnString, qName);
+            QueueClient queueClient = new(storageConnectionString, qName);
             if (queueClient.Exists())
             {
                 QueueProperties properties = await queueClient.GetPropertiesAsync();
@@ -461,15 +398,14 @@ namespace CDR.DiscoverDataHolders
         /// <summary>
         /// Update the Log table
         /// </summary>
-        private static async Task InsertLog(ILogger log, string dbConnString, string msg, string lvl, string methodName, Exception exMsg = null)
+        private async Task InsertLog(string dataRecipient_DB_ConnectionString, string msg, string lvl, string methodName, Exception ex = null)
         {
-            log.LogInformation($"{msg}");
-
             string exMessage = "";
+           
 
-            if (exMsg != null)
+            if (ex != null)
             {
-                Exception innerException = exMsg;
+                Exception innerException = ex;
                 StringBuilder innerMsg = new();
                 int ctr = 0;
 
@@ -492,35 +428,39 @@ namespace CDR.DiscoverDataHolders
 
                 // USE the EXCEPTION MESSAGE
                 if (innerMsg.Length == 0)
-                    exMessage = exMsg.Message;
+                    exMessage = ex.Message;
 
                 // USE the INNER EXCEPTION MESSAGE (INCLUDES the EXCEPTION MESSAGE)	
                 else
                     exMessage = innerMsg.ToString();
 
                 exMessage = exMessage.Replace("'", "");
-            }
 
-            using (SqlConnection db = new(dbConnString))
+                _logger.LogError("{message}", exMessage);
+            }
+            else
             {
-                db.Open();
-                var cmdText = "";
-
-                if (string.IsNullOrEmpty(exMessage))
-                    cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(),@procName,@methodName,@srcContext)";
-                else
-                    cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [Exception], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(), @exMessage,@procName,@methodName,@srcContext)";
-
-                using var cmd = new SqlCommand(cmdText, db);
-                cmd.Parameters.AddWithValue("@msg", msg);
-                cmd.Parameters.AddWithValue("@lvl", lvl);
-                cmd.Parameters.AddWithValue("@exMessage", exMessage);
-                cmd.Parameters.AddWithValue("@procName", "Azure Function");
-                cmd.Parameters.AddWithValue("@methodName", methodName);
-                cmd.Parameters.AddWithValue("@srcContext", "CDR.DiscoverDataHolders");
-                await cmd.ExecuteNonQueryAsync();
-                db.Close();
+                _logger.LogInformation("{message}", msg);
             }
+
+            using SqlConnection db = new(dataRecipient_DB_ConnectionString);
+            db.Open();
+            var cmdText = "";
+
+            if (string.IsNullOrEmpty(exMessage))
+                cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(),@procName,@methodName,@srcContext)";
+            else
+                cmdText = $"INSERT INTO [LogEventsDcrService] ([Message], [Level], [TimeStamp], [Exception], [ProcessName], [MethodName], [SourceContext]) VALUES (@msg,@lvl,GETUTCDATE(), @exMessage,@procName,@methodName,@srcContext)";
+
+            using var cmd = new SqlCommand(cmdText, db);
+            cmd.Parameters.AddWithValue("@msg", msg);
+            cmd.Parameters.AddWithValue("@lvl", lvl);
+            cmd.Parameters.AddWithValue("@exMessage", exMessage);
+            cmd.Parameters.AddWithValue("@procName", "Azure Function");
+            cmd.Parameters.AddWithValue("@methodName", methodName);
+            cmd.Parameters.AddWithValue("@srcContext", "CDR.DiscoverDataHolders");
+            await cmd.ExecuteNonQueryAsync();
+            db.Close();
         }
     }
 }

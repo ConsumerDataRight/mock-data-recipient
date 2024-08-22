@@ -6,7 +6,6 @@
         {
             public const string CDR_DYNAMIC_CLIENT_REGISTRATION = "cdr:registration";
             public const string CDR_REGISTER = "cdr-register:read";
-            public const string CDR_REGISTER_BANKING = "cdr-register:bank:read";
         }
 
         public static class GrantTypes

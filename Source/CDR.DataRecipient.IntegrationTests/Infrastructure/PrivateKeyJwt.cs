@@ -151,8 +151,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
                     {"kty", "RSA"},
                     {"n", n}
                 };
-            var hash = SHA256.Create();
-            var hashBytes = hash.ComputeHash(System.Text.Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(dict)));
+            var hashBytes = SHA256.HashData(System.Text.Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(dict)));
             return Base64UrlEncoder.Encode(hashBytes);
         }
 

@@ -39,6 +39,10 @@ namespace CDR.DataRecipient.Web.Controllers
 
         protected abstract string BasePath { get; }
         protected abstract string IndustryName { get; }
+        /// <summary>
+        /// This is the group name of the APIs according to the standards. e.g. "Banking" API, "Common" API.
+        /// </summary>
+        protected abstract string ApiGroupName { get; }
         protected abstract string CdsSwaggerLocation { get; }
 
         protected List<string> _allowedHeaders;
@@ -215,7 +219,7 @@ namespace CDR.DataRecipient.Web.Controllers
         protected virtual void PopulateModel(DataSharingModel model)
         {
             model.BasePath = this.BasePath;
-            model.IndustryName = this.IndustryName;
+            model.ApiGroupName = this.ApiGroupName;
             model.CdsSwaggerLocation = this.CdsSwaggerLocation;
         }
 
@@ -227,12 +231,10 @@ namespace CDR.DataRecipient.Web.Controllers
         protected virtual async Task<ConsentArrangement> GetCdrArrangement(HttpRequest request)
         {
             // Get the cdr arrangement id from the http header.
-            if (!request.Headers.ContainsKey(HEADER_INJECT_CDR_ARRANGEMENT_ID))
+            if (!request.Headers.TryGetValue(HEADER_INJECT_CDR_ARRANGEMENT_ID, out var cdrArrangementId))
             {
                 return null;
             }
-
-            var cdrArrangementId = request.Headers[HEADER_INJECT_CDR_ARRANGEMENT_ID];
 
             if (string.IsNullOrEmpty(cdrArrangementId))
             {
@@ -248,7 +250,7 @@ namespace CDR.DataRecipient.Web.Controllers
         protected virtual bool IsValidRequestPath(string requestPath)
         {
             // Validate the request path prefix.
-            var validPath = $"/cds-au/v1/{this.IndustryName.ToLower()}/";
+            var validPath = $"/cds-au/v1/{this.IndustryName.ToLower()}";
             if (requestPath.StartsWith(validPath))
             {
                 return true;

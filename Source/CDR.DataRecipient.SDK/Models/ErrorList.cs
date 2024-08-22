@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 namespace CDR.DataRecipient.SDK.Models
 {
@@ -9,7 +8,7 @@ namespace CDR.DataRecipient.SDK.Models
 
         public bool HasErrors()
         {
-            return Errors != null && Errors.Any();
+            return Errors != null && Errors.Count > 0;
         }
 
         public ErrorList()

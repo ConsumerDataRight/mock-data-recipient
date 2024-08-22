@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Azure.Storage.Queues.Models;
+using Newtonsoft.Json;
+using System;
 
 namespace CDR.DCR
 {

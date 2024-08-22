@@ -2,6 +2,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
@@ -102,8 +103,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 { "scope", authorisationRequestJwt.Scope },
                 { "state", authorisationRequestJwt.State },
                 { "nonce", authorisationRequestJwt.Nonce },
-                { "claims", new AuthorisationRequestClaims(authorisationRequestJwt.AcrValueSupported) 
-                                { sharing_duration = authorisationRequestJwt.SharingDuration, cdr_arrangement_id = authorisationRequestJwt.CdrArrangementId } }
+                { "claims", JsonSerializer.SerializeToElement(new AuthorisationRequestClaims(authorisationRequestJwt.AcrValueSupported)
+                                { sharing_duration = authorisationRequestJwt.SharingDuration, cdr_arrangement_id = authorisationRequestJwt.CdrArrangementId } )}
             };
 
             if (authorisationRequestJwt.Pkce != null)
@@ -375,11 +376,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 CodeVerifier = string.Concat(System.Guid.NewGuid().ToString(), '-', System.Guid.NewGuid().ToString())
             };
 
-            using (var sha256 = SHA256.Create())
-            {
-                var challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(pkce.CodeVerifier));
-                pkce.CodeChallenge = Base64Url.Encode(challengeBytes);
-            }
+            var challengeBytes = SHA256.HashData(Encoding.UTF8.GetBytes(pkce.CodeVerifier));
+            pkce.CodeChallenge = Base64Url.Encode(challengeBytes);
 
             return pkce;
         }

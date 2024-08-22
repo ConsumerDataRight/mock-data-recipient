@@ -1,12 +1,6 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using Microsoft.Playwright;
+﻿using Microsoft.Playwright;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using System.Web;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace CDR.DataRecipient.E2ETests.Pages
 {
@@ -23,10 +17,13 @@ namespace CDR.DataRecipient.E2ETests.Pages
         private readonly ILocator _txtResponseType;
         private readonly ILocator _txtResponseMode;
         private readonly ILocator _btnInitiatePar;
+        private readonly ILocator _btnViewRegistration;
+        private readonly ILocator _divViewRegistrationError;
         private readonly ILocator _lnkRequestUri;
         private readonly ILocator _chkUsePkce;
         private readonly ILocator _divErrorMessage;
         private readonly ILocator _lblRequestUri;
+        private readonly ILocator _divRegistrationModal;  
 
         public ParPage(IPage page)
         {
@@ -41,10 +38,12 @@ namespace CDR.DataRecipient.E2ETests.Pages
             _txtResponseType = _page.Locator("input[name=\"ResponseType\"]");
             _txtResponseMode = _page.Locator("input[name=\"ResponseMode\"]");
             _btnInitiatePar = _page.Locator("div.form >> text=Initiate PAR");
+            _btnViewRegistration = _page.Locator("#ViewRegistration");
+            _divViewRegistrationError = _page.Locator("#registrationid-validation-message");            
             _lnkRequestUri = _page.Locator("p.results > a");
             _divErrorMessage = _page.Locator(".card-footer");
             _lblRequestUri = _page.Locator("dd:has-text(\"urn:\")");
-
+            _divRegistrationModal = _page.Locator("//div[@id='modal-registration' and @class='modal show']//div[@class='modal-body']");
         }
 
         public async Task GotoPar()
@@ -53,31 +52,18 @@ namespace CDR.DataRecipient.E2ETests.Pages
             await _hedPageHeading.TextContentAsync();
         }
 
-        public async Task CompleteParFormOld(string dhClientId, string dhBrandId, string cdrArrangement, string sharingDuration)
-        {
-            await _selSelectRegistration.SelectOptionAsync(new[] { $"{dhClientId}|||{dhBrandId}" });
-            await _selSelectRegistration.ClickAsync(); // there is JS that runs on the click event, so simulate click here
-            await Task.Delay(2000);
-            await _selSelectArrangementId.SelectOptionAsync(new[] { cdrArrangement });
-            await _txtSharingDuration.FillAsync(sharingDuration);
-            await _btnInitiatePar.ClickAsync();
-            await _lnkRequestUri.ClickAsync();
-
-        }
-
         public async Task CompleteParForm(
             string dhClientId,
             string dhBrandId,
             string scope = null,
             string cdrArrangement = null,
-            string responseType = "code id_token",
-            string responseMode = "fragment",            
+            string responseType = "code",
+            string responseMode = "jwt",            
             string sharingDuration = "",
             bool usePkce = true)
         {
-            await _selSelectRegistration.SelectOptionAsync(new[] { $"{dhClientId}|||{dhBrandId}" });
-            await _selSelectRegistration.ClickAsync(); // there is JS that runs on the click event, so simulate click here
-            await Task.Delay(2000);
+            await SelectRegistration(dhBrandId, dhClientId);
+
             if (cdrArrangement != null)
             {
                 await _selSelectArrangementId.SelectOptionAsync(new[] { cdrArrangement });
@@ -103,11 +89,24 @@ namespace CDR.DataRecipient.E2ETests.Pages
 
         }
 
+        public async Task SelectRegistration(string dhBrandId, string dhClientId)
+        {
+            await _selSelectRegistration.SelectOptionAsync(new[] { $"{dhClientId}|||{dhBrandId}" });
+            await _selSelectRegistration.ClickAsync(); // there is JS that runs on the click event, so simulate click here
+            await Task.Delay(2000);
+        }
         public async Task ClickInitiatePar()
         {
             await _btnInitiatePar.ClickAsync();
         }
-
+        public async Task ClickViewRegistration()
+        {
+            await _btnViewRegistration.ClickAsync();
+        }
+        public async Task<string> GetViewRegistrationError()
+        {
+            return await _divViewRegistrationError.InnerTextAsync();
+        }
         public async Task ClickAuthorizeUrl()
         {
             await _lnkRequestUri.ClickAsync();
@@ -124,15 +123,17 @@ namespace CDR.DataRecipient.E2ETests.Pages
         {
             return await _divErrorMessage.InnerTextAsync();
         }
-
         public async Task<string> GetResponseType()
         {
             return await _txtResponseType.InputValueAsync();
         }
-
         public async Task<string> GetResponseMode()
         {
             return await _txtResponseMode.InputValueAsync();
+        }
+        public async Task<string> GetViewRegistrationResponse()
+        {
+            return await _divRegistrationModal.InnerTextAsync();
         }
         public async Task<bool> ErrorExists(string errorToCheckFor)
         {

@@ -22,19 +22,19 @@ namespace CDR.DataRecipient.E2ETests
         private const string DEFAULT_JWT_EXP_IN_SECONDS= "300";
 
         [Theory]
-        [InlineData("Banking_PS256_NoJarmEnc", DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "PS256", null, null)]
-        [InlineData("Banking_ES256_NoJarmEnc", DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "ES256", null, null)]
-        [InlineData("Banking_PS256_Jarm_Enc_RSA-OAEP_A256GCM", DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "PS256", "RSA-OAEP", "A256GCM")]
-        [InlineData("Banking_ES256_Jarm_Enc_RSA-OAEP_A128CBC-HS256", DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "ES256", "RSA-OAEP", "A128CBC-HS256")]
-        [InlineData("Banking_PS256_Jarm_Enc_RSA-OAEP-256_A256GCM", DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "PS256", "RSA-OAEP-256", "A256GCM")]
-        [InlineData("Banking_ES256_Jarm_Enc_RSA-OAEP-256_A128CBC-HS256", DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "ES256", "RSA-OAEP-256", "A128CBC-HS256")]
+        [InlineData("Banking_PS256_NoJarmEnc", DH_BRANDID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "PS256", null, null)]
+        [InlineData("Banking_ES256_NoJarmEnc", DH_BRANDID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "ES256", null, null)]
+        [InlineData("Banking_PS256_Jarm_Enc_RSA-OAEP_A256GCM", DH_BRANDID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "PS256", "RSA-OAEP", "A256GCM")]
+        [InlineData("Banking_ES256_Jarm_Enc_RSA-OAEP_A128CBC-HS256", DH_BRANDID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "ES256", "RSA-OAEP", "A128CBC-HS256")]
+        [InlineData("Banking_PS256_Jarm_Enc_RSA-OAEP-256_A256GCM", DH_BRANDID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "PS256", "RSA-OAEP-256", "A256GCM")]
+        [InlineData("Banking_ES256_Jarm_Enc_RSA-OAEP-256_A128CBC-HS256", DH_BRANDID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "ES256", "RSA-OAEP-256", "A128CBC-HS256")]
         //ENERGY
-        [InlineData("Energy_PS256_NoJarmEnc", DH_BRANDID_ENERGY, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "PS256", null, null)]
-        [InlineData("Energy_ES256_NoJarmEnc", DH_BRANDID_ENERGY, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "ES256", null, null)]
-        [InlineData("Energy_PS256_Jarm_Enc_RSA-OAEP_A256GCM", DH_BRANDID_ENERGY, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "PS256", "RSA-OAEP", "A256GCM")]
-        [InlineData("Energy_ES256_Jarm_Enc_RSA-OAEP-256_A128CBC-HS256", DH_BRANDID_ENERGY, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "ES256", "RSA-OAEP-256", "A128CBC-HS256")]
+        [InlineData("Energy_PS256_NoJarmEnc", DH_BRANDID_ENERGY, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "PS256", null, null)]
+        [InlineData("Energy_ES256_NoJarmEnc", DH_BRANDID_ENERGY, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "ES256", null, null)]
+        [InlineData("Energy_PS256_Jarm_Enc_RSA-OAEP_A256GCM", DH_BRANDID_ENERGY, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "PS256", "RSA-OAEP", "A256GCM")]
+        [InlineData("Energy_ES256_Jarm_Enc_RSA-OAEP-256_A128CBC-HS256", DH_BRANDID_ENERGY, CUSTOMERID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "ES256", "RSA-OAEP-256", "A128CBC-HS256")]
 
-        public async Task AC01_AC03_AC04_AC05_AC19_Valid_Authorisation_Code_Par(string testSuffix, string dhBrandId, string drBrandId, string drSoftwareProductId, string customerId, string customerAccounts, string jarmSigningAlgo, string jarmEncryptAlg, string jarmEncryptEnc)
+        public async Task AC01_AC03_AC04_AC05_AC19_Valid_Authorisation_Code_Par(string testSuffix, string dhBrandId, string customerId, string customerAccounts, string jarmSigningAlgo, string? jarmEncryptAlg, string? jarmEncryptEnc)
         {
             try
             {
@@ -42,9 +42,8 @@ namespace CDR.DataRecipient.E2ETests
                 string? dhClientId = null;
                 await ArrangeAsync(testName, async (page) =>
                 {
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId, jarmSigningAlgo: jarmSigningAlgo, jarmEncrypAlg: jarmEncryptAlg, jarmEncryptEnc: jarmEncryptEnc, responseTypes: "code")
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId, jarmSigningAlgo: jarmSigningAlgo, jarmEncrypAlg: jarmEncryptAlg, jarmEncryptEnc: jarmEncryptEnc, responseTypes: "code")
                         ?? throw new NullReferenceException(nameof(dhClientId));
-
                 });
 
                 await TestAsync(testName, async (page) =>
@@ -72,10 +71,10 @@ namespace CDR.DataRecipient.E2ETests
 
         [Theory]
         //BANKING without JARM Enc
-        [InlineData("Banking_PS256_NoJarmEnc", DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERID_BANKING, "PS256", null, null)]
+        [InlineData("Banking_PS256_NoJarmEnc", DH_BRANDID, CUSTOMERID_BANKING, "PS256", null, null)]
         //ENERGY with JARM Enc
-        [InlineData("Energy_PS256_Jarm_Enc_RSA-OAEP_A256GCM", DH_BRANDID_ENERGY, DR_BRANDID, DR_SOFTWAREPRODUCTID, CUSTOMERACCOUNTS_ENERGY, "PS256", "RSA-OAEP", "A256GCM")]
-        public async Task AC20_Cancel_Par(string testSuffix, string dhBrandId, string drBrandId, string drSoftwareProductId, string customerId, string jarmSigningAlgo, string jarmEncryptAlg, string jarmEncryptEnc)
+        [InlineData("Energy_PS256_Jarm_Enc_RSA-OAEP_A256GCM", DH_BRANDID_ENERGY, CUSTOMERACCOUNTS_ENERGY, "PS256", "RSA-OAEP", "A256GCM")]
+        public async Task AC20_Cancel_Par(string testSuffix, string dhBrandId, string customerId, string jarmSigningAlgo, string? jarmEncryptAlg, string? jarmEncryptEnc)
         {
             try
             {
@@ -83,9 +82,8 @@ namespace CDR.DataRecipient.E2ETests
                 string? dhClientId = null;
                 await ArrangeAsync(testName, async (page) =>
                 {
-                    dhClientId = await ClientRegistration_Create(page, dhBrandId, drBrandId, drSoftwareProductId, jarmSigningAlgo: jarmSigningAlgo, jarmEncrypAlg: jarmEncryptAlg, jarmEncryptEnc: jarmEncryptEnc, responseTypes: "code")
+                    dhClientId = await ClientRegistration_Create(page, dhBrandId, jarmSigningAlgo: jarmSigningAlgo, jarmEncrypAlg: jarmEncryptAlg, jarmEncryptEnc: jarmEncryptEnc, responseTypes: "code")
                         ?? throw new NullReferenceException(nameof(dhClientId));
-
                 });
 
                 await TestAsync(testName, async (page) =>
@@ -155,7 +153,6 @@ namespace CDR.DataRecipient.E2ETests
                     string expectedError = "Token Validation Failed (IDX10214)";
                     bool errorMessageExists = await parPage.ErrorExists(expectedError);
                     errorMessageExists.Should().Be(true, $"'{expectedError} should be displayed when 'code' is missing.");
-
                 });
             }
             finally
@@ -199,7 +196,6 @@ namespace CDR.DataRecipient.E2ETests
                     string expectedError = "Token Validation Error (IDX12729)";
                     bool errorMessageExists = await parPage.ErrorExists(expectedError);
                     errorMessageExists.Should().Be(true, $"{expectedError} should be displayed when JWT is malformed.");
-
                 });
             }
             finally
@@ -259,7 +255,7 @@ namespace CDR.DataRecipient.E2ETests
         [InlineData("Aud_Mismatch",     "USE_VALID_ISS",    "foo",              DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10214):  Audience validation failed. Audiences: 'foo'.", "'aud' is different to the expected uri in simulated callback..")]
         [InlineData("missing_Exp",      "USE_VALID_ISS",    "USE_VALID_AUD",    null,                       "Token Validation Failed (IDX10225):  Lifetime validation failed. The token is missing an Expiration Time.", "'exp' is blank in simulated callback.")]
         [InlineData("Expired_Token",    "USE_VALID_ISS",    "USE_VALID_AUD",    "-500",                     "Token Validation Failed (IDX10223):  Lifetime validation failed. The token is expired.", "JWT has expired. (now - 500 seconds)")]
-        public async Task AC12_AC13_AC14_AC15_Jwt_Missing_And_Mismatch_Metadata(string testSuffix, string? issuer, string? audience, string jwtExpiry, string expectedError, string becauseText)
+        public async Task AC12_AC13_AC14_AC15_Jwt_Missing_And_Mismatch_Metadata(string testSuffix, string? issuer, string? audience, string? jwtExpiry, string expectedError, string becauseText)
         {
             try
             {
@@ -297,8 +293,6 @@ namespace CDR.DataRecipient.E2ETests
                     // Act/Assert - verify error message
                     bool errorMessageExists = await parPage.ErrorExists(expectedError);
                     errorMessageExists.Should().Be(true, $"{expectedError} should be displayed when {becauseText}: Callback URL Used: {callbackUrl}");
-
-
                 });
             }
             finally
@@ -342,7 +336,6 @@ namespace CDR.DataRecipient.E2ETests
                     string expectedError = "Token Validation Failed (IDX10511)";
                     bool errorMessageExists = await parPage.ErrorExists(expectedError);
                     errorMessageExists.Should().Be(true, $"'{expectedError} should be displayed when JWT was signed with a different certificate.");
-                    
                 });
             }
             finally
@@ -354,9 +347,9 @@ namespace CDR.DataRecipient.E2ETests
             }
         }
 
-        private async Task<string> CreateBankingRegistration(IPage page, string responseType = "code id_token")
+        private static async Task<string> CreateBankingRegistration(IPage page, string responseType = "code id_token")
         {
-            return await ClientRegistration_Create(page, DH_BRANDID, DR_BRANDID, DR_SOFTWAREPRODUCTID, responseTypes: responseType);
+            return await ClientRegistration_Create(page, DH_BRANDID, responseTypes: responseType);
         }
 
         private static string GetAuthenticationCodeJwt(string state = "",
@@ -367,7 +360,6 @@ namespace CDR.DataRecipient.E2ETests
             string? authCode = null,
             string? expiryTimeInSeconds = DEFAULT_JWT_EXP_IN_SECONDS)
         {
-
             authCode = authCode ?? Guid.NewGuid().ToString();
 
             return new AuthenticationCodeJwt
@@ -383,9 +375,8 @@ namespace CDR.DataRecipient.E2ETests
             }.Get();
         }
 
-        private string GetDataholderClientId(string connectionString, string urnToLookUp)
+        private static string GetDataholderClientId(string connectionString, string urnToLookUp)
         {
-
             JObject? grantJson = GetDataholderGrantFromDb(connectionString, urnToLookUp);
 
             string clientId = (string?)grantJson["client_id"] ?? throw new ArgumentNullException($"client_id not found in request JSON {grantJson}.");
@@ -393,18 +384,16 @@ namespace CDR.DataRecipient.E2ETests
             return clientId;
         }
 
-         private string GetDataholderAuthenticationState(string connectionString, string urnToLookUp)
+        private static string GetDataholderAuthenticationState(string connectionString, string urnToLookUp)
         {
-
             JObject? grantJson = GetDataholderGrantFromDb(connectionString, urnToLookUp);
 
             string state = (string?)grantJson["state"] ?? throw new ArgumentNullException($"State not found in request JSON {grantJson}.");
 
             return state;
-          
         }
 
-        private JObject GetDataholderGrantFromDb(string connectionString, string urnToLookUp)
+        private static JObject GetDataholderGrantFromDb(string connectionString, string urnToLookUp)
         {
             using var dhAuthServerConnection = new SqlConnection(connectionString);
             dhAuthServerConnection.Open();
@@ -417,13 +406,13 @@ namespace CDR.DataRecipient.E2ETests
 
             JObject dataJson = JObject.Parse(data);
 
+            // CT: needs a different type of exception
             string? request = (string?)dataJson["request"] ?? throw new ArgumentNullException($"Request Json not found in 'data' from 'Grants' table.");
 
             return JObject.Parse(request);
-
         }
 
-        private string GetInfosecBaseUriFromRegister(string brandId)
+        private static string GetInfosecBaseUriFromRegister(string brandId)
         {
 
             using var registerDbServerConnection = new SqlConnection(IntegrationTests.BaseTest.REGISTER_CONNECTIONSTRING);
@@ -436,7 +425,6 @@ namespace CDR.DataRecipient.E2ETests
                 throw new Exception($"Could not find InfosecBaseUri for '{brandId}' in Register Endpoint Table.");
 
             return infosecBaseUri;
-
         }
     }
 }

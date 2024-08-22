@@ -35,7 +35,7 @@ namespace CDR.DataRecipient.Web.Extensions
 
         public static bool IsUserNameUnknown(this ClaimsPrincipal user)
         {
-            return user.GetUserName().ToLower().CompareTo(Defaults.DefaultUserName) == 0;
+            return user.GetUserName().Equals(Defaults.DefaultUserName, System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }
