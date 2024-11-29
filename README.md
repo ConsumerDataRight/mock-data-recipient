@@ -49,6 +49,13 @@ A version of the Mock Data Recipient is built into a single Docker image that is
 docker pull consumerdataright/mock-data-recipient
 ```
 
+### Using azd to deploy to azure
+```bash
+git clone https://github.com/ConsumerDataRight/mock-data-recipient.git
+cd ./deployment/azure
+azd up
+```
+
 To get help on launching and debugging the solutions as containers and switching out your solution(s), see the [help guide](./Help/container/HELP.md).
 
 #### Certificate Management
