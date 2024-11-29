@@ -104,5 +104,4 @@ module functions 'functions.bicep' = {
 // To see these outputs, run `azd env get-values`,  or `azd env get-values --output json` for json output.
 output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenant().tenantId
-output TEMP string = sqlAdminPassword
 output AZURE_RESOURCE_GROUP string = rg.name
