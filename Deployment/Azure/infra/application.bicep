@@ -485,4 +485,4 @@ output applicationUamiName string = applicationUami.name
 output sqlServerName string = sqlServer.name
 output dataRecipientDbName string = sqlServer::dataRecipientDb.name
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
-
+output dataHolderHostName string = 'https://${dataHolderContainerHostName}:8001'

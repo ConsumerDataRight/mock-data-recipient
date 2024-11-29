@@ -105,3 +105,7 @@ module functions 'functions.bicep' = {
 output AZURE_LOCATION string = location
 output AZURE_TENANT_ID string = tenant().tenantId
 output AZURE_RESOURCE_GROUP string = rg.name
+
+output MOCK_DATA_HOLDER_URL string = apps.outputs.dataHolderHostName
+output MOCK_DATA_RECIPIENT_URL string = apps.outputs.dataRecipientHostName
+output MOCK_REGISTER_URL string = apps.outputs.registerHostName
