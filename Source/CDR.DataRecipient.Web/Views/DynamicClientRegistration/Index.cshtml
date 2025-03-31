@@ -1,7 +1,7 @@
 ﻿@{
     ViewData["Title"] = "Dynamic Client Registration";
-	var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDynamicClientRegistration));    
-    
+    var allowDynamicClientRegistration = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDynamicClientRegistration));
+
     var mdrDisplayName = "Mock Data Recipient";
 
     @if (!Context.User.IsLocal())
@@ -27,19 +27,20 @@
     <p>The page allows you to perform Dynamic Client Registration (DCR) with a Data Holder Brand that is currently stored in the Mock Data Recipient's memory - see the Discover Data Holders page for more detail.</p>
 }
 else
-{    
-    <p>This page shows Data Holders for which this @(mdrDisplayName) has attempted a Dynamic Client Registration flow and the last response received.</p>
-    <p>This @(mdrDisplayName) will periodically attempt to perform Dynamic Client Registration with new Data Holder Brand Ids, or retry Dynamic Client Registration with Data Holder Brand Ids that were previously unsuccessful.</p>
+{
+    <p>This page shows Data Holders for which this @(mdrDisplayName) has attempted a <em>Dynamic Client Registration (DCR)</em>.</p>
+    <p>This @(mdrDisplayName) will periodically attempt to perform DCR with new Data Holder Brand Ids, or retry DCR with Data Holder Brand Ids that were previously unsuccessful.</p>
+    <p>Successful DCR’s can be viewed or updated in the <em>Current Dynamic Client Registrations</em> table. Unsuccessful DCR attempts are also listed in the <em>Failed Client Registrations table</em>.</p>
 }
 @if (Context.User.IsLocal())
 {
     <p>If you would like to DCR to a CDR Mock Data Holder, firstly ensure the relevant solution is running then select either <strong>Mock Data Holder (Banking)</strong> or <strong>Mock Data Holder (Energy)</strong> from the 'DH Brand Name' dropdown.</p>
     <p>Alternatively, you can select your own data holder solution if you have added it to the Mock Register and have refreshed the data holders held in memory by the Mock Data Recipient. </p>
-    
+
     <p><strong><em>Note:</em></strong>.</p>
     <ul>
         <li><strong><em>The dummy data holder brands displayed here are for other testing purposes and they should not be used</em></strong>.</li>
-        <li><strong><em>As per CDS FAPI 1.0 Migration 4, OIDC Hybrid Flow may be retired and is recommended to use Authorisation Code Flow</em></strong>.</li>
+        <li><strong><em>As per CDS v1.33.0, OIDC Hybrid Flow is now retired and Authorisation Code Flow must be supported</em></strong>.</li>
     </ul>
 }
 
@@ -53,7 +54,7 @@ else
             <div class="card">
                 <h5 class="card-header">@(allowDynamicClientRegistration ? $"{Model.TransactionType} Client Registration" : "Dynamic Client Registrations")</h5>
                 <div class="card-body">
-                    <div class="card-text">                        
+                    <div class="card-text">
                         @using (Html.BeginForm("Index", "dcr", FormMethod.Post, new { id = "clientRegistrationFrom" }))
                         {
                             @Html.HiddenFor(m => m.DataRecipientBrandId)
@@ -81,7 +82,7 @@ else
                                         </div>
                                     </div>
 
-                                   <div class="row mb-3">
+                                    <div class="row mb-3">
                                         @Html.LabelFor(m => m.SsaVersion, new { @class = "col-sm-3 col-form-label" })
                                         <div class="col-sm-9">
                                             @Html.TextBoxFor(m => m.SsaVersion, new { @class = "form-control" })
@@ -160,20 +161,6 @@ else
                                         </div>
 
                                         <div class="row mb-3">
-                                            @Html.LabelFor(m => m.IdTokenEncryptedResponseAlg, new { @class = "col-sm-3 col-form-label" })
-                                            <div class="col-sm-9">
-                                                @Html.TextBoxFor(m => m.IdTokenEncryptedResponseAlg, new { @class = "form-control" })
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            @Html.LabelFor(m => m.IdTokenEncryptedResponseEnc, new { @class = "col-sm-3 col-form-label" })
-                                            <div class="col-sm-9">
-                                                @Html.TextBoxFor(m => m.IdTokenEncryptedResponseEnc, new { @class = "form-control" })
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
                                             @Html.LabelFor(m => m.RequestObjectSigningAlg, new { @class = "col-sm-3 col-form-label" })
                                             <div class="col-sm-9">
                                                 @Html.TextBoxFor(m => m.RequestObjectSigningAlg, new { @class = "form-control" })
@@ -204,7 +191,7 @@ else
                                     </div>
 
                                     <div class="row mb-3 buttons">
-                                        <div class="col-sm-9 offset-sm-3">                                            
+                                        <div class="col-sm-9 offset-sm-3">
                                             @if (Model.TransactionType == "Create")
                                             {
                                                 <input name="register" type="submit" value="Register" class="btn btn-primary" />
@@ -231,7 +218,7 @@ else
 
                             <br />
                             <pre>@json</pre>
-                        }                                                
+                        }
                     </small>
                 </div>
             </div>
@@ -240,7 +227,7 @@ else
 
     <div class="@(allowDynamicClientRegistration ? "col-sm-5" : "col-sm-5 col-md-12")">
         <div id="registrations" class="card">
-            <h5 class="card-header">Current Registrations</h5>
+            <h5 class="card-header">Current Dynamic Client Registrations</h5>
             <div class="card-body" style="max-height: 400px; overflow-y: scroll;">
                 <p class="card-text">
                     @if (@Model.Registrations.Count() > 0)
@@ -251,36 +238,27 @@ else
                                 <tr>
                                     <th scope="col">Client ID</th>
                                     <th scope="col">DH Brand Name</th>
-                                    @if (!allowDynamicClientRegistration)
-                                    {
-                                        <th scope="col">Status</th>
-                                        <th scope="col">Last Update</th>
-                                    }
                                     <th scope="col">Actions</th>
                                 </tr>
                             </thead>
                             @foreach (var reg in Model.Registrations)
                             {
                                 <tr id="@reg.ClientId" style="height:30px;">
-                                    <td>                                        
+                                    <td>
                                         @reg.ClientId
                                     </td>
                                     <td>@reg.BrandName (@reg.DataHolderBrandId)</td>
-                                    @if (!allowDynamicClientRegistration)
-                                    {
-                                        <td>@reg.MessageState</td>
-										<td>@reg.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                                    }
                                     <td>
                                         @if (allowDynamicClientRegistration)
                                         {
                                             <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-primary btn-sm view" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId">View</a>
                                             <a href="~/dcr?clientId=@reg.ClientId&dataHolderBrandId=@reg.DataHolderBrandId" class="btn btn-primary btn-sm">Edit</a>
-                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId">Delete</a>                                            
+                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-danger btn-sm delete" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId">Delete</a>
                                         }
                                         else if (!string.IsNullOrEmpty(@reg.ClientId))
                                         {
-                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-primary btn-sm view" style="display:inline-block; height:30px;" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId">View</a>
+                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-primary btn-sm view" style="display:inline-block; height:30px;" data-id="@reg.ClientId" data-brandId="@reg.DataHolderBrandId" title="View current Dynamic Client Registration">View</a>
+                                            <a href="/dcr/registrations/@reg.ClientId/@reg.DataHolderBrandId" class="btn btn-success btn-sm update" title="Update current Dynamic Client Registration">Update</a>
                                         }
                                     </td>
                                 </tr>
@@ -314,9 +292,54 @@ else
                             </small>
                         </p>
                     </div>
-                </div>                
-            }                        
+                </div>
+            }
         </div>
+        @if (!allowDynamicClientRegistration)
+        {
+            <br />
+            <br />
+            <div id="failedDCRMessages" class="card">
+                <h5 class="card-header">Failed Dynamic Client Registrations</h5>
+                <div class="card-body" style="max-height: 400px; overflow-y: scroll;">
+                    <p class="card-text">
+                        @if (@Model.FailedDCRMessages.Count() > 0)
+                        {
+                            <table class="table table-sm table-striped table-hover table-bordered">
+                                <caption>CDR Failed Registrations</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Client ID</th>
+                                        <th scope="col">DH Brand Name</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Last Update</th>
+                                    </tr>
+                                </thead>
+                                @foreach (var reg in Model.FailedDCRMessages)
+                                {
+                                    <tr style="height:30px;">
+                                        <td>@reg.ClientId</td>
+                                        <td>@reg.BrandName (@reg.DataHolderBrandId)</td>
+                                        <td>@reg.MessageState</td>
+                                        <td>@reg.LastUpdated.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            </table>
+                        }
+                        else
+                        {
+                            <div>No existing registrations found.</div>
+                        }
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <span>Failed registrations: <strong>@Model.FailedDCRMessages.Count()</strong></span>
+                    </small>
+                </div>
+            </div>
+        }
+
     </div>
 </div>
 
@@ -338,135 +361,181 @@ else
     </div>
 </div>
 
+<div id="modal-update-registration" class="modal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="update-modal-messages"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-<script type="text/javascript">
-        
-    // Show|Hide the view
-    if ('@allowDynamicClientRegistration' == 'True') {
+    <script type="text/javascript">
 
-        var checkFormVisibility = function () {
+        // Show|Hide the view
+        if ('@allowDynamicClientRegistration' == 'True') {
 
-            // Select picker option selected = Select Data Holder Brand...
-            var currentBrandId = document.getElementById("DataHolderBrandId");            
-            if (currentBrandId.value === "") {
-                $('#dcr-view').hide();
-                
-                $('#discovery-messages').html("Please select a Data Holder Brand to display the Discovery Document.");
-                $('#dcr-oidc-spinner').hide();
+            var checkFormVisibility = function () {
+
+                // Select picker option selected = Select Data Holder Brand...
+                var currentBrandId = document.getElementById("DataHolderBrandId");
+                if (currentBrandId.value === "") {
+                    $('#dcr-view').hide();
+
+                    $('#discovery-messages').html("Please select a Data Holder Brand to display the Discovery Document.");
+                    $('#dcr-oidc-spinner').hide();
+                }
+                else {
+                    $('#dcr-view').show();
+                }
             }
-            else {
-                $('#dcr-view').show();                
+
+            var getDataHolderDiscoveryDocument = function (brandId) {
+                if (!!brandId) {
+                    var dcrurl = '/dcr/' + brandId + '/openid-configuration'
+                    $('#discovery-payload').html("");
+                    $('#discovery-messages').html("");
+                    $('#dcr-oidc-spinner').show();
+                    $.ajax({
+                        url: dcrurl,
+                        type: 'GET',
+                        success: function (result) {
+                            $('#dcr-oidc-spinner').hide();
+                            var obj = JSON.parse(result.payload);
+                            $('#discovery-payload').html(JSON.stringify(obj, null, 2));
+                            $('#discovery-messages').html(result.messages);
+
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            $('#dcr-oidc-spinner').hide();
+                            $('#discovery-messages').html(xhr.responseJSON.messages);
+                        }
+                    });
+                }
+            }
+
+            var resetClientRegisteration = function (brandId) {
+                document.getElementById("clientRegistrationFrom").reset();
+                $('#DataHolderBrandId').val(brandId);
             }
         }
 
-        var getDataHolderDiscoveryDocument = function (brandId) {            
-            if (!!brandId) {
-                var dcrurl = '/dcr/' + brandId + '/openid-configuration'
-                $('#discovery-payload').html("");
-                $('#discovery-messages').html("");
-                $('#dcr-oidc-spinner').show();
-                $.ajax({
-                    url: dcrurl,
-                    type: 'GET',
-                    success: function (result) {
-                        $('#dcr-oidc-spinner').hide();
-                        var obj = JSON.parse(result.payload);                            
-                        $('#discovery-payload').html(JSON.stringify(obj, null, 2));
-                        $('#discovery-messages').html(result.messages);
-                        
-                    },
-                    error: function (xhr, textStatus, errorThrown) {
-                        $('#dcr-oidc-spinner').hide();
-                        $('#discovery-messages').html(xhr.responseJSON.messages);                        
-                    }
+        $(document).ready(function () {
+            var modal = new bootstrap.Modal(document.getElementById('modal-registration'), {
+                keyboard: false
+            });
+
+            var updateModal = new bootstrap.Modal(document.getElementById('modal-update-registration'), {
+                keyboard: false
+            });
+
+            // on Form Load
+            if ('@allowDynamicClientRegistration' == 'True') {
+                checkFormVisibility();
+            }
+            $('#dcr-spinner').hide();
+
+            // on Select Item Picked
+            if ('@allowDynamicClientRegistration' == 'True') {
+                var brandId = $('#DataHolderBrandId option:selected').val();
+                getDataHolderDiscoveryDocument(brandId);
+
+                $('#DataHolderBrandId').change(function () {
+                    checkFormVisibility();
+
+                    // Get the discovery document - display on the page
+                    var brandId = $('#DataHolderBrandId option:selected').val();
+                    resetClientRegisteration(brandId);
+                    getDataHolderDiscoveryDocument(brandId);
                 });
             }
-        }
 
-        var resetClientRegisteration = function (brandId) {           
-            document.getElementById("clientRegistrationFrom").reset();
-            $('#DataHolderBrandId').val(brandId);                
-        }
-    }
-
-    $(document).ready(function () {
-        var modal = new bootstrap.Modal(document.getElementById('modal-registration'), {
-            keyboard: false
-        });
-
-        // on Form Load
-        if ('@allowDynamicClientRegistration' == 'True') {
-            checkFormVisibility();           
-        }
-        $('#dcr-spinner').hide();
-
-        // on Select Item Picked
-        if ('@allowDynamicClientRegistration' == 'True') {
-            var brandId = $('#DataHolderBrandId option:selected').val();
-            getDataHolderDiscoveryDocument(brandId);
-
-            $('#DataHolderBrandId').change(function () {
-                checkFormVisibility();                
-                
-                // Get the discovery document - display on the page                                    
-                var brandId = $('#DataHolderBrandId option:selected').val();
-                resetClientRegisteration(brandId);
-                getDataHolderDiscoveryDocument(brandId);
-            });
-        }
-
-        $('#registrations .view').click(function () {
-            // Get the registration - display in modal view
-            $('#dcr-spinner').show();
-            $.ajax({
-                url: this.href,
-                type: 'GET',
-                success: function (result) {
-                    modal.show();
-                    $('#modal-messages').html(result.messages);
-                    var obj = JSON.parse(result.payload);
-                    $('#modal-payload').html(JSON.stringify(obj, null, 2));
-                    $('#dcr-spinner').hide();
-                },
-                error: function (xhr, textStatus, errorThrown) {
-                    modal.show();
-                    $('#modal-messages').html(xhr.responseJSON.messages);
-                    $('#dcr-spinner').hide();
-                }
-            });
-
-            return false;
-        });
-
-        if ('@allowDynamicClientRegistration' == 'True') {
-            $('#registrations .delete').click(function () {
-                var clientId = $(this).data('id');
-
-                // Post -> Delete the registration
+            $('#registrations .view').click(function () {
+                // Get the registration - display in modal view
                 $('#dcr-spinner').show();
                 $.ajax({
                     url: this.href,
-                    type: 'DELETE',
-                    statusCode: {
-                        204: function () {
-                            window.location = "/dcr";
-                        }
-                    },
+                    type: 'GET',
                     success: function (result) {
-                        window.location = "/dcr";
+                        modal.show();
+                        $('#modal-messages').html(result.messages);
+                        var obj = JSON.parse(result.payload);
+                        $('#modal-payload').html(JSON.stringify(obj, null, 2));
                         $('#dcr-spinner').hide();
                     },
                     error: function (xhr, textStatus, errorThrown) {
-                        alert(xhr.responseJSON.messages);
+                        modal.show();
+                        $('#modal-messages').html(xhr.responseJSON.messages);
                         $('#dcr-spinner').hide();
                     }
                 });
 
                 return false;
             });
-        }
-    });
 
-    setSidebarMenuItem('dcr');
-</script>
+
+            if ('@allowDynamicClientRegistration' == 'False') {
+                $('#registrations .update').click(function () {
+                    // Get the registration - display in modal view
+                    $('#dcr-spinner').show();
+                    $.ajax({
+                        url: this.href,
+                        type: 'PUT',
+                        success: function (result) {
+                            updateModal.show();
+                            $('#update-modal-messages').html(result.messages);
+                            $('#dcr-spinner').hide();
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            updateModal.show();
+                            $('#update-modal-messages').html(xhr.responseJSON.messages);
+                            $('#dcr-spinner').hide();
+                        }
+                    });
+
+                    return false;
+                });
+            }
+
+
+            if ('@allowDynamicClientRegistration' == 'True') {
+                $('#registrations .delete').click(function () {
+                    var clientId = $(this).data('id');
+
+                    // Post -> Delete the registration
+                    $('#dcr-spinner').show();
+                    $.ajax({
+                        url: this.href,
+                        type: 'DELETE',
+                        statusCode: {
+                            204: function () {
+                                window.location = "/dcr";
+                            }
+                        },
+                        success: function (result) {
+                            window.location = "/dcr";
+                            $('#dcr-spinner').hide();
+                        },
+                        error: function (xhr, textStatus, errorThrown) {
+                            alert(xhr.responseJSON.messages);
+                            $('#dcr-spinner').hide();
+                        }
+                    });
+
+                    return false;
+                });
+            }
+        });
+
+        setSidebarMenuItem('dcr');
+    </script>
 }

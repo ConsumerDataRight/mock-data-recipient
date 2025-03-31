@@ -27,7 +27,7 @@ namespace CDR.DataRecipient.Web.Controllers
         private readonly IMetadataService _metadataService;
         private readonly IDataHoldersRepository _repository;
         private readonly IFeatureManager _featureManager;
-        
+
         public DataHoldersController(
             IConfiguration config,
             IInfosecService infosecService,
@@ -71,9 +71,9 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Get the access token from the Register.
             var tokenResponse = await _infosecService.GetAccessToken(
-                tokenEndpoint, 
-                sp.SoftwareProductId, 
-                sp.ClientCertificate.X509Certificate, 
+                tokenEndpoint,
+                sp.SoftwareProductId,
+                sp.ClientCertificate.X509Certificate,
                 sp.SigningCertificate.X509Certificate);
 
             if (!tokenResponse.IsSuccessful)
@@ -84,12 +84,12 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Using the access token, make a request to Get Data Holder Brands.
             (string respBody, System.Net.HttpStatusCode statusCode, string reason) = await _metadataService.GetDataHolderBrands(
-                reg.MtlsBaseUri, 
-                model.Version, 
-                tokenResponse.Data.AccessToken, 
-                sp.ClientCertificate.X509Certificate, 
-                sp.SoftwareProductId, 
-                model.Industry, 
+                reg.MtlsBaseUri,
+                model.Version,
+                tokenResponse.Data.AccessToken,
+                sp.ClientCertificate.X509Certificate,
+                sp.SoftwareProductId,
+                model.Industry,
                 pageSize: _config.GetDefaultPageSize());
 
             if (statusCode != System.Net.HttpStatusCode.OK)
@@ -137,7 +137,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 Url = reg.GetDataHolderBrandsEndpoint,
                 RequiresClientCertificate = true,
                 RequiresAccessToken = true,
-                SupportsVersion = true
+                SupportsVersion = true,
             };
             SetDefaults(model);
         }

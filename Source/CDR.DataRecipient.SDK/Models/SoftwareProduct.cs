@@ -16,7 +16,7 @@
         {
             get
             {
-                return (string.IsNullOrEmpty(this.RedirectUris) ? null : this.RedirectUris.Split(',')[0]);
+                return string.IsNullOrEmpty(this.RedirectUris) ? null : this.RedirectUris.Split(',')[0];
             }
         }
 

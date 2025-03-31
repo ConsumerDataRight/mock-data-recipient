@@ -9,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 
 namespace CDR.DataRecipient.IntegrationTests
 {
-class PrivateKeyJwt2
+    class PrivateKeyJwt2
     {
         public string CertificateFilename { get; set; }
         public string CertificatePassword { get; set; }
@@ -25,7 +25,7 @@ class PrivateKeyJwt2
                 new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer)
             };
 
-            return Generate(claims,  DateTime.UtcNow.AddMinutes(10));
+            return Generate(claims, DateTime.UtcNow.AddMinutes(10));
         }
 
         private string Generate(IEnumerable<Claim> claims, DateTime expires)

@@ -14,6 +14,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56CFBFDE-5522-4AC1-9592-C74FB04EADF6}"
 	ProjectSection(SolutionItems) = preProject
 		.dockerignore = .dockerignore
+		.editorconfig = .editorconfig
 		docker-compose.E2ETests.yml = docker-compose.E2ETests.yml
 		docker-compose.IntegrationTests.yml = docker-compose.IntegrationTests.yml
 		docker-compose.UnitTests.yml = docker-compose.UnitTests.yml

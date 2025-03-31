@@ -6,24 +6,24 @@ using System;
 
 namespace CDR.DataRecipient.Web.Filters
 {
-	[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
-	public class MustConsumeAttribute : ActionFilterAttribute
-	{
-		private readonly string _contentType;
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false)]
+    public class MustConsumeAttribute : ActionFilterAttribute
+    {
+        private readonly string _contentType;
 
-		public MustConsumeAttribute(string contentType)
-		{
-			_contentType = contentType;
-		}
+        public MustConsumeAttribute(string contentType)
+        {
+            _contentType = contentType;
+        }
 
-		public override void OnActionExecuting(ActionExecutingContext context)
-		{
-			if (context.HttpContext.Request.ContentType != _contentType)
-			{
-				context.Result = new BadRequestObjectResult(new ErrorListModel(Constants.ErrorCodes.InvalidHeader, Constants.ErrorTitles.InvalidHeader, string.Empty));
-			}
+        public override void OnActionExecuting(ActionExecutingContext context)
+        {
+            if (context.HttpContext.Request.ContentType != _contentType)
+            {
+                context.Result = new BadRequestObjectResult(new ErrorListModel(Constants.ErrorCodes.InvalidHeader, Constants.ErrorTitles.InvalidHeader, string.Empty));
+            }
 
-			base.OnActionExecuting(context);
-		}
-	}
+            base.OnActionExecuting(context);
+        }
+    }
 }

@@ -16,6 +16,5 @@ namespace CDR.DataRecipient.SDK.Services.Register
         Task<Response<OidcDiscovery>> GetOidcDiscovery(string registerOidcConfigEndpoint);
 
         Task<string> GetTokenEndpoint(string registerOidcConfigEndpoint);
-
     }
 }

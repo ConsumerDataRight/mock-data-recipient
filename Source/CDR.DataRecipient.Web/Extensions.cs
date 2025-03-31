@@ -34,6 +34,7 @@ namespace CDR.DataRecipient.Web.Extensions
             config.GetSection(key).Bind(sp);
             return sp;
         }
+
         public static DataHolderEndpoints GetDefaultDataHolderConfig(this IConfiguration config, string key = Common.Constants.ConfigurationKeys.MockDataRecipient.DefaultDataHolder.Root)
         {
             var dh = new DataHolderEndpoints();
@@ -62,6 +63,5 @@ namespace CDR.DataRecipient.Web.Extensions
 
             return DateTime.Parse(obligationDate);
         }
-
     }
 }

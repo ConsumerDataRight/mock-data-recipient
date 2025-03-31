@@ -1,4 +1,11 @@
-﻿using CDR.DataRecipient.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Text;
+using System.Threading.Tasks;
+using CDR.DataRecipient.Models;
 using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.SDK.Exceptions;
 using CDR.DataRecipient.SDK.Extensions;
@@ -15,20 +22,14 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Security;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
     [Authorize]
     public abstract class DataSharingControllerBase : Controller
     {
+        private readonly IHttpClientFactory _clientFactory;
+
         protected const string HEADER_INJECT_CDR_ARRANGEMENT_ID = "x-inject-cdr-arrangement-id";
         protected readonly IConfiguration _config;
         protected readonly IDistributedCache _cache;
@@ -38,11 +39,14 @@ namespace CDR.DataRecipient.Web.Controllers
         protected readonly ILogger<DataSharingControllerBase> _logger;
 
         protected abstract string BasePath { get; }
+
         protected abstract string IndustryName { get; }
+
         /// <summary>
         /// This is the group name of the APIs according to the standards. e.g. "Banking" API, "Common" API.
         /// </summary>
         protected abstract string ApiGroupName { get; }
+
         protected abstract string CdsSwaggerLocation { get; }
 
         protected List<string> _allowedHeaders;
@@ -53,7 +57,8 @@ namespace CDR.DataRecipient.Web.Controllers
             IConsentsRepository consentsRepository,
             IDataHoldersRepository dhRepository,
             IInfosecService infosecService,
-            ILogger<DataSharingControllerBase> logger)
+            ILogger<DataSharingControllerBase> logger,
+            IHttpClientFactory clientFactory)
         {
             _config = config;
             _cache = cache;
@@ -61,7 +66,8 @@ namespace CDR.DataRecipient.Web.Controllers
             _dhRepository = dhRepository;
             _infosecService = infosecService;
             _logger = logger;
-            _allowedHeaders = _config.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificHeaders).Split(',').ToList();
+            _allowedHeaders = [.. _config.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificHeaders).Split(',')];
+            _clientFactory = clientFactory;
         }
 
         [HttpGet]
@@ -76,14 +82,14 @@ namespace CDR.DataRecipient.Web.Controllers
         /// <summary>
         /// Endpoint that outputs a customised version of the CDS swagger in order to utilise the SwaggerUI.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Task.</returns>
         [HttpGet]
         [Route("swagger")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task Swagger()
         {
             var sp = _config.GetSoftwareProductConfig();
-            var client = new HttpClient();
+            var client = _clientFactory.CreateClient();
             Uri uri = new Uri(sp.RecipientBaseUri);
 
             // Get the CDS swagger file.
@@ -104,7 +110,7 @@ namespace CDR.DataRecipient.Web.Controllers
         /// <summary>
         /// The Proxy action captures requests from the SwaggerUI and forwards them on to the appropriate data holder.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Task.</returns>
         [Route("proxy/{**path}")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task Proxy()
@@ -121,7 +127,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 return;
             }
 
-            var requestPath = this.Request.Path.ToString().Replace($"/{this.BasePath}/proxy", "");
+            var requestPath = this.Request.Path.ToString().Replace($"/{this.BasePath}/proxy", string.Empty);
             if (!IsValidRequestPath(requestPath))
             {
                 Response.ContentType = "application/json";
@@ -135,7 +141,7 @@ namespace CDR.DataRecipient.Web.Controllers
             var isPublic = IsPublic(this.Request.Path);
             var baseUri = isPublic ? dh.EndpointDetail.PublicBaseUri : dh.EndpointDetail.ResourceBaseUri;
 
-            _logger.LogDebug("Proxying call to Data Holder: {DataHolderBrandId}.  Is Public: {isPublic}.  Base Uri: {baseUri}.  Path: {path}.", dh.DataHolderBrandId, isPublic, baseUri, this.Request.Path);
+            _logger.LogDebug("Proxying call to Data Holder: {DataHolderBrandId}.  Is Public: {IsPublic}.  Base Uri: {BaseUri}.  Path: {Path}.", dh.DataHolderBrandId, isPublic, baseUri, this.Request.Path);
 
             // Build the Http Request to the data holder.
             var clientHandler = new HttpClientHandler();
@@ -152,11 +158,12 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             var client = new HttpClient(clientHandler);
-            var requestUri = String.Concat(baseUri, requestPath, this.Request.QueryString);
+
+            var requestUri = string.Concat(baseUri, requestPath, this.Request.QueryString);
             var request = new HttpRequestMessage()
             {
                 Method = this.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase) ? HttpMethod.Get : HttpMethod.Post,
-                RequestUri = new Uri(requestUri)
+                RequestUri = new Uri(requestUri),
             };
 
             // Add the body to the request for POST requests.
@@ -213,7 +220,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
         protected virtual async Task<IEnumerable<ConsentArrangement>> GetConsents(string userId, string industry = null)
         {
-            return await _consentsRepository.GetConsents("", "", userId, industry);
+            return await _consentsRepository.GetConsents(string.Empty, string.Empty, userId, industry);
         }
 
         protected virtual void PopulateModel(DataSharingModel model)
@@ -245,6 +252,7 @@ namespace CDR.DataRecipient.Web.Controllers
         }
 
         protected abstract JObject PrepareSwaggerJson(JObject json, Uri uri);
+
         protected abstract bool IsPublic(string requestPath);
 
         protected virtual bool IsValidRequestPath(string requestPath)

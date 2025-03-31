@@ -9,34 +9,34 @@ using System.Linq;
 
 namespace CDR.DataRecipient.IntegrationTests
 {
-	public class US12964_MDR_Jwks : BaseTest
-	{
-		class Jwks_Expected
-		{
-			public class Key
-			{
-#pragma warning disable IDE1006                
-				public string kty { get; set; }
-				public string use { get; set; }
-				public string kid { get; set; }
-				public string e { get; set; }
+    public class US12964_MDR_Jwks : BaseTest
+    {
+        class Jwks_Expected
+        {
+            public class Key
+            {
+#pragma warning disable IDE1006
+                public string kty { get; set; }
+                public string use { get; set; }
+                public string kid { get; set; }
+                public string e { get; set; }
                 public string n { get; set; }
                 public string alg { get; set; }
 #pragma warning restore IDE1006
             }
 
-			public Key[] Keys { get; set; }
-		}
+            public Key[] Keys { get; set; }
+        }
 
-		[Fact]
-		public async Task AC01_Get_ShouldRespondWith_200OK_ValidJWKS()
-		{			
-			// Arrange
-			var apiCall = new Infrastructure.API
-			{
-				HttpMethod = HttpMethod.Get,
-				URL = $"https://{HOSTNAME_DATARECIPIENT}:9001/jwks",
-			};
+        [Fact]
+        public async Task AC01_Get_ShouldRespondWith_200OK_ValidJWKS()
+        {
+            // Arrange
+            var apiCall = new Infrastructure.API
+            {
+                HttpMethod = HttpMethod.Get,
+                URL = $"https://{HOSTNAME_DATARECIPIENT}:9001/jwks",
+            };
 
             // Act
             var response = await apiCall.SendAsync();
@@ -62,5 +62,5 @@ namespace CDR.DataRecipient.IntegrationTests
                 encKeyOaep256.Should().NotBeNull();
             }
         }
-	}
+    }
 }

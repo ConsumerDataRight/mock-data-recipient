@@ -1,4 +1,4 @@
-using Azure.Storage.Queues;
+﻿using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
 using CDR.DataRecipient.Repository.SQL;
 using CDR.DataRecipient.SDK;
@@ -79,7 +79,7 @@ namespace CDR.DCR
 
                     Response<Token> tokenResponse = await GetAccessToken();
                     if (tokenResponse.IsSuccessful)
-                    {                        
+                    {
                         var ssa = await GetSoftwareStatementAssertion(tokenResponse.Data.AccessToken);
                         if (ssa.IsSuccessful)
                         {
@@ -89,13 +89,13 @@ namespace CDR.DCR
                             {
                                 // NO - DOES the DcrMessage exist?
                                 var result = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckDcrMessageExistByDHBrandId(myQueueItem.DataHolderBrandId);
-                                if (!string.IsNullOrEmpty(result.msgId))
+                                if (!string.IsNullOrEmpty(result.MsgId))
                                 {
                                     // YES - UPDATE EXISTING DcrMessage (with ADDED Queue MessageId, Failed STATE and ERROR)
                                     DcrMessage dcrMsg = new()
                                     {
                                         DataHolderBrandId = Guid.Empty,
-                                        MessageId = result.msgId,
+                                        MessageId = result.MsgId,
                                         MessageState = Message.DCRFailed.ToString(),
                                         MessageError = $"{msg} - does not exist in the repo"
                                     };
@@ -107,7 +107,7 @@ namespace CDR.DCR
                             else
                             {
                                 dataHolderBrandName = dh.BrandName;
-                                // YES - DOES a Registration already exist for the DataHolderBrandId in the local repo?
+                                // YES - DOES a Registration already exist for the DataHolderBrandId in the local repo? If yes, then no need to do any registration
                                 string clientId = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).GetRegByDHBrandId(dh.DataHolderBrandId);
                                 if (string.IsNullOrEmpty(clientId))
                                 {
@@ -238,11 +238,6 @@ namespace CDR.DCR
                                         await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg}, REGISTRATION FAILED{extraMsg}", "Exception", "DCR");
                                     }
                                 }
-                                else
-                                {
-                                    // YES - log this result
-                                    await InsertLog(_options.DataRecipient_Logging_DB_ConnectionString, $"{msg} - is trying to be REGISTERED, but is already REGISTERED to ClientId - {clientId}", "Error", "DCR");
-                                }
                             }
                         }
                         else
@@ -328,7 +323,7 @@ namespace CDR.DCR
             var endpoint = $"{_options.Register_Get_SSA_Endpoint}{_options.Brand_Id}/software-products/{_options.Software_Product_Id}/ssa";
 
             // Setup the http client.
-            var client = GetHttpClient( accessToken, _options.Register_Get_SSA_XV);
+            var client = GetHttpClient(accessToken, _options.Register_Get_SSA_XV);
 
             _logger.LogInformation("Retrieving SSA from the Register: {ssaEndpoint}", endpoint);
 
@@ -425,7 +420,7 @@ namespace CDR.DCR
         private HttpClient GetHttpClient(string accessToken = null, string version = null)
         {
             var httpClient = _httpClientFactory.CreateClient(DcrConstants.DcrHttpClientName);
-                        
+
             // If an access token has been provided then add to the Authorization header of the client.
             if (!string.IsNullOrEmpty(accessToken))
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
@@ -440,7 +435,7 @@ namespace CDR.DCR
         /// <summary>
         /// Insert the Message into the Queue
         /// </summary>
-        private async Task AddDeadLetterQueMsgAsync( DcrQueueMessage myQueueItem, string qName, FunctionContext context)
+        private async Task AddDeadLetterQueMsgAsync(DcrQueueMessage myQueueItem, string qName, FunctionContext context)
         {
             QueueClientOptions options = new()
             {
@@ -488,7 +483,7 @@ namespace CDR.DCR
         /// <summary>
         /// Update the Log table
         /// </summary>
-        private async Task InsertLog( string DataRecipient_DB_ConnectionString, string msg, string lvl, string methodName, Exception exMsg = null)
+        private async Task InsertLog(string DataRecipient_DB_ConnectionString, string msg, string lvl, string methodName, Exception exMsg = null)
         {
             _logger.LogInformation("{methodName} - {message}", methodName, msg);
 

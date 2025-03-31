@@ -13,11 +13,12 @@ namespace CDR.DataRecipient.Web.Models
         public IEnumerable<ConsentArrangement> ConsentArrangements { get; set; }
 
         /// <summary>
-		/// This has the format of {ClientId}|||{DataHolderBrandId}
-		/// </summary>
-		[Display(Name = "Registration")]
+        /// This has the format of {ClientId}|||{DataHolderBrandId}.
+        /// </summary>
+        [Display(Name = "Registration")]
         [Required(ErrorMessage = "Please select a registration")]
         public string RegistrationId { get; set; }
+
         public string ClientId
         {
             get
@@ -25,6 +26,7 @@ namespace CDR.DataRecipient.Web.Models
                 return Registration.SplitRegistrationId(RegistrationId).ClientId;
             }
         }
+
         public string DataHolderBrandId
         {
             get
@@ -51,7 +53,7 @@ namespace CDR.DataRecipient.Web.Models
 
         [Display(Name = "Response Mode")]
         public string ResponseMode { get; set; }
-        
+
         public IEnumerable<SelectListItem> RegistrationListItems { get; set; }
 
         public IEnumerable<SelectListItem> ConsentArrangementListItems { get; set; }
@@ -59,5 +61,7 @@ namespace CDR.DataRecipient.Web.Models
         public string AuthorisationUri { get; set; }
 
         public PushedAuthorisation PushedAuthorisation { get; set; }
+
+        public string AcfOnlyErrorMessage { get; set; }
     }
 }

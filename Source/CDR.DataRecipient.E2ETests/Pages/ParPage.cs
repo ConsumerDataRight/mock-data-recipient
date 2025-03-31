@@ -23,7 +23,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
         private readonly ILocator _chkUsePkce;
         private readonly ILocator _divErrorMessage;
         private readonly ILocator _lblRequestUri;
-        private readonly ILocator _divRegistrationModal;  
+        private readonly ILocator _divRegistrationModal;
 
         public ParPage(IPage page)
         {
@@ -39,7 +39,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
             _txtResponseMode = _page.Locator("input[name=\"ResponseMode\"]");
             _btnInitiatePar = _page.Locator("div.form >> text=Initiate PAR");
             _btnViewRegistration = _page.Locator("#ViewRegistration");
-            _divViewRegistrationError = _page.Locator("#registrationid-validation-message");            
+            _divViewRegistrationError = _page.Locator("#registrationid-validation-message");
             _lnkRequestUri = _page.Locator("p.results > a");
             _divErrorMessage = _page.Locator(".card-footer");
             _lblRequestUri = _page.Locator("dd:has-text(\"urn:\")");
@@ -58,7 +58,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
             string scope = null,
             string cdrArrangement = null,
             string responseType = "code",
-            string responseMode = "jwt",            
+            string responseMode = "jwt",
             string sharingDuration = "",
             bool usePkce = true)
         {
@@ -68,7 +68,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
             {
                 await _selSelectArrangementId.SelectOptionAsync(new[] { cdrArrangement });
             }
-            
+
             await _txtSharingDuration.FillAsync(sharingDuration);
 
             if (scope != null)

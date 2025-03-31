@@ -7,9 +7,9 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure.API2
 {
     public class AuthenticationCodeJwt
     {
-        public string? CertificateFilename { get; init; } 
-        public string? CertificatePassword { get; init; } 
-        public string? Iss { get; init; } 
+        public string? CertificateFilename { get; init; }
+        public string? CertificatePassword { get; init; }
+        public string? Iss { get; init; }
         public string? Aud { get; init; }
         public string? Kid { get; init; }
         public string? Nfb { get; init; }
@@ -33,7 +33,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure.API2
                 { "iat", new DateTimeOffset(now).ToUnixTimeSeconds() },
             };
 
-            if(ExpiryTimeInSeconds != null)
+            if (ExpiryTimeInSeconds != null)
             {
                 var exp = now.AddSeconds(int.Parse(ExpiryTimeInSeconds));
                 subject.Add("exp", new DateTimeOffset(exp).ToUnixTimeSeconds());
@@ -43,7 +43,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure.API2
             {
                 subject.Add("iss", Iss.ToLower());
             }
-            
+
             if (Aud != null)
             {
                 subject.Add("aud", Aud);

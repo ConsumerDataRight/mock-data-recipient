@@ -1,22 +1,21 @@
-﻿using CDR.DataRecipient.SDK.Enumerations;
+﻿using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using CDR.DataRecipient.SDK.Enumerations;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.SDK.Services.Register
 {
     public class MetadataService : BaseService, IMetadataService
     {
         public MetadataService(
-            IConfiguration config, 
+            IConfiguration config,
             ILogger<MetadataService> logger,
-            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
+            IServiceConfiguration serviceConfiguration)
+            : base(config, logger, serviceConfiguration)
         {
-
         }
 
         public async Task<(string, System.Net.HttpStatusCode, string)> GetDataHolderBrands(
@@ -37,7 +36,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             // Setup the http client.
             var client = GetHttpClient(clientCertificate, accessToken, version);
 
-            _logger.LogDebug("Requesting data holder brands from Register: {endpoint}.  Client Certificate: {thumbprint}", endpoint, clientCertificate.Thumbprint);
+            _logger.LogDebug("Requesting data holder brands from Register: {Endpoint}.  Client Certificate: {Thumbprint}", endpoint, clientCertificate.Thumbprint);
 
             // Add the query parameters.
             if (page.HasValue)
@@ -54,7 +53,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             var response = await client.GetAsync(EnsureValidEndpoint(endpoint));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Get Data Holder Brands Response: {statusCode}.  Body: {body}", response.StatusCode, body);
+            _logger.LogDebug("Get Data Holder Brands Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return (body, response.StatusCode, response.ReasonPhrase.ToString());
         }
@@ -72,13 +71,13 @@ namespace CDR.DataRecipient.SDK.Services.Register
             // Setup the http client.
             var client = GetHttpClient(version: version);
 
-            _logger.LogDebug("Requesting data recipients from Register: {endpoint}.", endpoint);
+            _logger.LogDebug("Requesting data recipients from Register: {Endpoint}.", endpoint);
 
             // Make the request to the get data recipients endpoint.
             var response = await client.GetAsync(EnsureValidEndpoint(endpoint));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Get Data Recipients Response: {statusCode}.  Body: {body}", response.StatusCode, body);
+            _logger.LogDebug("Get Data Recipients Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return (body, response.StatusCode, response.ReasonPhrase.ToString());
         }

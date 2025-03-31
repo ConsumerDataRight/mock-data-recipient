@@ -5,7 +5,7 @@
         private string _payload;
 
         public string ClientId
-        { 
+        {
             get
             {
                 if (this.Data == null)
@@ -17,18 +17,18 @@
             }
         }
 
-        public string Payload 
-        { 
+        public string Payload
+        {
             get
             {
                 return _payload;
             }
+
             set
             {
                 _payload = value;
                 this.Data = Newtonsoft.Json.JsonConvert.DeserializeObject<Registration>(_payload);
             }
         }
-
     }
 }

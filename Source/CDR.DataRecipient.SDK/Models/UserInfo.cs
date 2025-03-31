@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
+﻿using System.Collections.Generic;
 
 namespace CDR.DataRecipient.SDK.Models
 {
-    [Serializable]
     public class UserInfo : Dictionary<string, object>
     {
-        public UserInfo() : base() { }
-
-        protected UserInfo(SerializationInfo info, StreamingContext context) : base(info, context)
+        public UserInfo()
+            : base()
         {
         }
     }

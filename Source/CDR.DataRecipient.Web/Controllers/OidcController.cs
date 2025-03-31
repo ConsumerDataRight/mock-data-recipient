@@ -1,25 +1,24 @@
-﻿using CDR.DataRecipient.Web.Models;
+﻿using System;
+using System.Threading.Tasks;
+using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using System.Linq;
-using System;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
     [Route("oidc")]
     public class OidcController : Controller
-    {        
+    {
         public OidcController()
-        {                 
+        {
         }
 
         [Route("remoteerror")]
         [HttpGet]
         public IActionResult RemoteError([FromQuery(Name = "error_message")] string errMsg)
         {
-            return View("Error", new ErrorViewModel {  ErrorTitle = "Remote Error", Message = ProcessMessage(errMsg) });
+            return View("Error", new ErrorViewModel { ErrorTitle = "Remote Error", Message = ProcessMessage(errMsg) });
         }
 
         [Route("autherror")]
@@ -38,7 +37,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
         private static string ProcessMessage(string errMsg)
         {
-            var msg = "";
+            var msg = string.Empty;
             if (!string.IsNullOrEmpty(errMsg))
             {
                 var msgParts = errMsg.Split("|");
@@ -48,6 +47,7 @@ namespace CDR.DataRecipient.Web.Controllers
                     msg = errorMessage;
                 }
             }
+
             return msg;
         }
 
@@ -58,7 +58,7 @@ namespace CDR.DataRecipient.Web.Controllers
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             var prop = new AuthenticationProperties()
             {
-                RedirectUri = "/"
+                RedirectUri = "/",
             };
             await HttpContext.SignOutAsync("OpenIdConnect", prop);
         }

@@ -10,7 +10,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
     internal class ConsentAndAuthorisationPages
     {
         private readonly IPage _page;
-        private readonly ILocator _txtCustomerId;        
+        private readonly ILocator _txtCustomerId;
         private readonly ILocator _btnContinue;
         private readonly ILocator _txtOneTimePassword;
         private readonly ILocator _btnAuthorise;
@@ -19,7 +19,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
         public ConsentAndAuthorisationPages(IPage page)
         {
             _page = page;
-            _txtCustomerId = _page.Locator("id=customerId");            
+            _txtCustomerId = _page.Locator("id=customerId");
             _btnContinue = _page.Locator("button:has-text(\"Continue\")");
             _txtOneTimePassword = _page.Locator("id=otp");
             _btnAuthorise = _page.Locator("text=Authorise");

@@ -5,6 +5,6 @@
         Abandoned,
         DCRComplete,
         DCRFailed,
-        Pending
+        Pending,
     }
 }

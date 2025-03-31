@@ -7,7 +7,8 @@
             this.Meta = new object();
         }
 
-        public Error(string code, string title, string detail) : this()
+        public Error(string code, string title, string detail)
+            : this()
         {
             this.Code = code;
             this.Title = title;
@@ -15,17 +16,17 @@
         }
 
         /// <summary>
-        /// Error code
+        /// Error code.
         /// </summary>
         public string Code { get; set; }
 
         /// <summary>
-        /// Error title
+        /// Error title.
         /// </summary>
         public string Title { get; set; }
 
         /// <summary>
-        /// Error detail
+        /// Error detail.
         /// </summary>
         public string Detail { get; set; }
 

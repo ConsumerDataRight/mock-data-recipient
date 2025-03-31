@@ -7,20 +7,23 @@ namespace CDR.DataRecipient.Infrastructure
     {
         public RecipientDatabaseContext()
         {
-
         }
 
-        public RecipientDatabaseContext(DbContextOptions<RecipientDatabaseContext> options) : base(options)
+        public RecipientDatabaseContext(DbContextOptions<RecipientDatabaseContext> options)
+            : base(options)
         {
-
         }
 
         public DbSet<CdrArrangement> CdrArrangements { get; set; }
+
         public DbSet<DataHolderBrand> DataHolderBrands { get; set; }
+
         public DbSet<SoftwareProduct> SoftwareProducts { get; set; }
+
         public DbSet<Registration> Registrations { get; set; }
 
         public DbSet<DcrMessage> DcrMessage { get; set; }
+
         public DbSet<LogEventsDcrService> LogEvents_DCRService { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
