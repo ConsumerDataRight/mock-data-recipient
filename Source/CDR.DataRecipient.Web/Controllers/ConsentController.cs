@@ -40,16 +40,16 @@ namespace CDR.DataRecipient.Web.Controllers
         private readonly IDistributedCache _cache;
         private readonly IInfosecService _dhInfosecService;
         private readonly IRegistrationsRepository _registrationsRepository;
-        private readonly IConsentsRepository _consentsRepository;        
+        private readonly IConsentsRepository _consentsRepository;
         private readonly IDataHolderDiscoveryCache _dataHolderDiscoveryCache;
-        protected readonly ILogger<ConsentController> _logger;        
+        protected readonly ILogger<ConsentController> _logger;
 
         public ConsentController(
             IConfiguration config,
             IDistributedCache cache,
             IInfosecService dhInfosecService,
             IRegistrationsRepository registrationsRepository,
-            IConsentsRepository consentsRepository,            
+            IConsentsRepository consentsRepository,
             IDataHolderDiscoveryCache dataHolderDiscoveryCache,
             ILogger<ConsentController> logger)
         {
@@ -57,12 +57,10 @@ namespace CDR.DataRecipient.Web.Controllers
             _cache = cache;
             _dhInfosecService = dhInfosecService;
             _registrationsRepository = registrationsRepository;
-            _consentsRepository = consentsRepository;            
+            _consentsRepository = consentsRepository;
             _dataHolderDiscoveryCache = dataHolderDiscoveryCache;
-            _logger = logger;            
+            _logger = logger;
         }
-
-        
 
         [HttpPost]
         [Route("registration/detail")]
@@ -70,9 +68,9 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> RegistrationDetail(string registrationId)
         {
             // Return the software product detail.
-            string message = "";
-            string redirectUris = "";
-            string scope = "";
+            string message = string.Empty;
+            string redirectUris = string.Empty;
+            string scope = string.Empty;
 
             var registrationInfo = Registration.SplitRegistrationId(registrationId);
             Registration myResponse = await _registrationsRepository.GetRegistration(registrationInfo.ClientId, registrationInfo.DataHolderBrandId);
@@ -88,22 +86,24 @@ namespace CDR.DataRecipient.Web.Controllers
                     sb.Append(item);
                     sb.Append(' ');
                 }
+
                 redirectUris = sb.ToString().Trim();
                 scope = myResponse.Scope;
             }
+
             return new JsonResult(new { message, redirectUris, scope }) { };
         }
 
-        [HttpGet]        
+        [HttpGet]
         [HttpPost]
-        [Route("callback")]        
+        [Route("callback")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         [AllowAnonymous]
         public async Task<IActionResult> Callback()
         {
             var model = new TokenModel();
             var sp = _config.GetSoftwareProductConfig();
-            
+
             (bool isvalid, string authCode, AuthorisationState authState, ErrorList errorList) = await ValidateCallback(this.Request);
 
             if (errorList != null && errorList.Errors.Count > 0)
@@ -111,9 +111,9 @@ namespace CDR.DataRecipient.Web.Controllers
                 model.Messages = "An error has occurred.";
                 model.ErrorList.Errors.AddRange(errorList.Errors);
             }
-            
+
             if (isvalid)
-            {                                
+            {
                 // Request a token from the data holder.
                 var tokenEndpoint = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri)).TokenEndpoint;
 
@@ -123,11 +123,11 @@ namespace CDR.DataRecipient.Web.Controllers
                     ClientId = authState.ClientId,
                     ClientCertificate = sp.ClientCertificate.X509Certificate,
                     SigningCertificate = sp.SigningCertificate.X509Certificate,
-                    Scope = "",
+                    Scope = string.Empty,
                     RedirectUri = authState.RedirectUri,
                     Code = authCode,
                     GrantType = "authorization_code",
-                    Pkce = authState.Pkce
+                    Pkce = authState.Pkce,
                 };
 
                 model.TokenResponse = await _dhInfosecService.GetAccessToken(accessToken);
@@ -141,14 +141,14 @@ namespace CDR.DataRecipient.Web.Controllers
                         DataHolderBrandId = authState.DataHolderBrandId,
                         ClientId = authState.ClientId,
                         SharingDuration = authState.SharingDuration,
-                        CdrArrangementId = model.TokenResponse.Data.CdrArrangementId ?? String.Empty,
+                        CdrArrangementId = model.TokenResponse.Data.CdrArrangementId ?? string.Empty,
                         IdToken = model.TokenResponse.Data.IdToken,
-                        AccessToken = model.TokenResponse.Data.AccessToken ?? String.Empty,
-                        RefreshToken = model.TokenResponse.Data.RefreshToken ?? String.Empty,
+                        AccessToken = model.TokenResponse.Data.AccessToken ?? string.Empty,
+                        RefreshToken = model.TokenResponse.Data.RefreshToken ?? string.Empty,
                         ExpiresIn = model.TokenResponse.Data.ExpiresIn,
                         Scope = model.TokenResponse.Data.Scope,
                         TokenType = model.TokenResponse.Data.TokenType,
-                        CreatedOn = DateTime.UtcNow
+                        CreatedOn = DateTime.UtcNow,
                     };
 
                     await _consentsRepository.PersistConsent(consentArrangement);
@@ -163,13 +163,13 @@ namespace CDR.DataRecipient.Web.Controllers
                 if (!string.IsNullOrEmpty(qs["title"]))
                 {
                     model.ErrorList.Errors.Add(new SDK.Models.Error(qs["code"], qs["title"], qs["detail"]));
-                }                
+                }
             }
 
             return View(model);
         }
 
-        private async Task<(bool isvalid, string authCode, AuthorisationState authState, ErrorList errorList)> ValidateCallback(HttpRequest request)
+        private async Task<(bool Isvalid, string AuthCode, AuthorisationState AuthState, ErrorList ErrorList)> ValidateCallback(HttpRequest request)
         {
             bool isValid = false;
             string authCode = string.Empty;
@@ -177,38 +177,39 @@ namespace CDR.DataRecipient.Web.Controllers
             AuthorisationState authState = null;
             ErrorList errorList = new ErrorList();
 
-            //GET Request
+            // GET Request
             if (request.Method.Equals("get", StringComparison.OrdinalIgnoreCase))
-            {                                                
-                //code, jwt                
+            {
+                // code, jwt
                 if (request.QueryString.HasValue && request.QueryString.Value.Contains("response"))
-                {                                        
+                {
                     var responseToken = request.Query["response"].ToString();
 
                     if (string.IsNullOrEmpty(responseToken))
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingResponse));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingResponse));
                         return (isValid, authCode, authState, errorList);
                     }
 
                     (isValid, authCode, authState, errorList) = await ValidateJARMToken(responseToken);
                 }
             }
-            //code id_token, form_post
-            //code, form_post.jwt
+
+            // code id_token, form_post
+            // code, form_post.jwt
             else if (request.Method.Equals("post", StringComparison.OrdinalIgnoreCase) && request.Form != null)
             {
-                //form_post 
-                if (request.Form.ContainsKey("id_token"))
+                // form_post
+                if (request.Form.ContainsKey(SDK.Constants.TokenTypes.ID_TOKEN))
                 {
                     authCode = request.Form["code"].ToString();
                     state = request.Form["state"].ToString();
-                    
+
                     if (string.IsNullOrEmpty(state))
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingState));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingState));
                         return (isValid, authCode, authState, errorList);
                     }
 
@@ -217,28 +218,29 @@ namespace CDR.DataRecipient.Web.Controllers
                     if (authState == null)
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthState));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthState));
                         return (isValid, authCode, authState, errorList);
                     }
 
                     if (string.IsNullOrEmpty(authCode))
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthCode));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthCode));
                         return (isValid, authCode, authState, errorList);
                     }
 
                     isValid = true;
                 }
-                //form_post.jwt is JARM callback
+
+                // form_post.jwt is JARM callback
                 else if (request.Form.ContainsKey("response"))
                 {
                     var responseToken = request.Form["response"].ToString();
-                    
+
                     if (string.IsNullOrEmpty(responseToken))
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingResponse));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingResponse));
                         return (isValid, authCode, authState, errorList);
                     }
 
@@ -251,7 +253,7 @@ namespace CDR.DataRecipient.Web.Controllers
                     var errorDescription = request.Form["error_description"].ToString();
                     var errorCode = request.Form["error_code"].ToString();
 
-                    //error and error_description
+                    // error and error_description
                     if (!string.IsNullOrEmpty(error))
                     {
                         errorList.Errors.Add(new Error(code: errorCode, title: error, detail: errorDescription));
@@ -264,8 +266,8 @@ namespace CDR.DataRecipient.Web.Controllers
             return (isValid, authCode, authState, errorList);
         }
 
-        //Validating JARM token
-        private async Task<(bool isvalid, string authCode, AuthorisationState authState, ErrorList errorList)> ValidateJARMToken(string responseToken)
+        // Validating JARM token
+        private async Task<(bool Isvalid, string AuthCode, AuthorisationState AuthState, ErrorList ErrorList)> ValidateJARMToken(string responseToken)
         {
             bool isValid = false;
             string authCode = string.Empty;
@@ -283,7 +285,8 @@ namespace CDR.DataRecipient.Web.Controllers
                     // Check if the token is encrypted
                     if (!string.IsNullOrEmpty(token.Header.Enc))
                     {
-                        var failedDecryptionError = new Error(code: "", title: ErrorTitles.InvalidResponse, detail: ErrorDescription.FailedDecryption);
+                        var failedDecryptionError = new Error(code: string.Empty, title: ErrorTitles.InvalidResponse, detail: ErrorDescription.FailedDecryption);
+
                         // Load the signing certificate and make sure the keys match
                         var sp = _config.GetSoftwareProductConfig();
                         var encryptionKeys = sp.SigningCertificate.X509Certificate.GetEncryptionCredentials();
@@ -307,11 +310,11 @@ namespace CDR.DataRecipient.Web.Controllers
                         token = handler.ReadJwtToken(responseToken);
                     }
 
-                    state = token.Claims.FirstOrDefault(x => x.Type == "state")?.Value ?? "";
+                    state = token.Claims.FirstOrDefault(x => x.Type == "state")?.Value ?? string.Empty;
                     if (string.IsNullOrEmpty(state))
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingState));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingState));
                         return (isValid, authCode, authState, errorList);
                     }
 
@@ -320,22 +323,22 @@ namespace CDR.DataRecipient.Web.Controllers
                     if (authState == null)
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthState));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthState));
                         return (isValid, authCode, authState, errorList);
                     }
 
-                    //Validate token against JWKS of the Data holder                
-                    var dataholderDiscoveryDocument = (await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri));
+                    // Validate token against JWKS of the Data holder
+                    var dataholderDiscoveryDocument = await _dataHolderDiscoveryCache.GetOidcDiscoveryByInfoSecBaseUri(authState.DataHolderInfosecBaseUri);
                     if (dataholderDiscoveryDocument == null)
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingDiscoveryDocument));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingDiscoveryDocument));
                         return (isValid, authCode, authState, errorList);
                     }
 
-                    _logger.LogDebug("Validating token against {jwksUri}.", dataholderDiscoveryDocument.JwksUri);
+                    _logger.LogDebug("Validating token against {JwksUri}.", dataholderDiscoveryDocument.JwksUri);
 
-                    //Validate the token
+                    // Validate the token
                     var validated = await responseToken.ValidateToken(
                         dataholderDiscoveryDocument.JwksUri,
                         _logger,
@@ -344,14 +347,14 @@ namespace CDR.DataRecipient.Web.Controllers
                         validateLifetime: true,
                         acceptAnyServerCertificate: _config.IsAcceptingAnyServerCertificate());
 
-                    _logger.LogDebug("Validated token: {isValid}.", validated.IsValid);
+                    _logger.LogDebug("Validated token: {IsValid}.", validated.IsValid);
                     isValid = validated.IsValid;
 
-                    var errorTitle = token.Claims.FirstOrDefault(x => x.Type == "error")?.Value ?? validated.validationError?.Title ?? "";
-                    var errorDescription = token.Claims.FirstOrDefault(x => x.Type == "error_description")?.Value ?? validated.validationError?.Detail ?? "";
-                    var errorCode = validated.validationError?.Code;
+                    var errorTitle = token.Claims.FirstOrDefault(x => x.Type == "error")?.Value ?? validated.ValidationError?.Title ?? string.Empty;
+                    var errorDescription = token.Claims.FirstOrDefault(x => x.Type == "error_description")?.Value ?? validated.ValidationError?.Detail ?? string.Empty;
+                    var errorCode = validated.ValidationError?.Code;
 
-                    //Error description
+                    // Error description
                     if (!string.IsNullOrEmpty(errorTitle))
                     {
                         errorList.Errors.Add(new Error(code: errorCode, title: errorTitle, detail: errorDescription));
@@ -359,19 +362,19 @@ namespace CDR.DataRecipient.Web.Controllers
                         return (isValid, authCode, authState, errorList);
                     }
 
-                    authCode = token.Claims.FirstOrDefault(x => x.Type == "code")?.Value ?? "";
+                    authCode = token.Claims.FirstOrDefault(x => x.Type == "code")?.Value ?? string.Empty;
 
                     if (string.IsNullOrEmpty(authCode))
                     {
                         isValid = false;
-                        errorList.Errors.Add(new Error(code: "", title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthCode));
+                        errorList.Errors.Add(new Error(code: string.Empty, title: ErrorTitles.MissingField, detail: ErrorDescription.MissingAuthCode));
                         return (isValid, authCode, authState, errorList);
                     }
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     _logger.LogError(ex, "An error occurred validating the JARM token");
-                    var (errorCode, errorTitle, errorDescription)= ex.Message.ParseErrorString("Token Validation Error", "error", ex.Message);
+                    var (errorCode, errorTitle, errorDescription) = ex.Message.ParseErrorString("Token Validation Error", "error", ex.Message);
                     errorList.Errors.Add(new Error(code: errorCode, title: errorTitle, detail: errorDescription));
 
                     return (false, authCode, authState, errorList);
@@ -387,7 +390,7 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Consents()
         {
             var model = new ConsentsModel();
-            model.ConsentArrangements = await _consentsRepository.GetConsents("", "", HttpContext.User.GetUserId(), "");
+            model.ConsentArrangements = await _consentsRepository.GetConsents(string.Empty, string.Empty, HttpContext.User.GetUserId(), string.Empty);
             return View(model);
         }
 
@@ -401,12 +404,12 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 StatusCode = reg.StatusCode,
                 Messages = reg.Messages,
-                Payload = reg.Payload
+                Payload = reg.Payload,
             };
 
             return new JsonResult(response)
             {
-                StatusCode = 200
+                StatusCode = 200,
             };
         }
 
@@ -420,12 +423,12 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 StatusCode = reg.StatusCode,
                 Messages = reg.Messages,
-                Payload = reg.Payload
+                Payload = reg.Payload,
             };
 
             return new JsonResult(response)
             {
-                StatusCode = 200
+                StatusCode = 200,
             };
         }
 
@@ -439,12 +442,12 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 StatusCode = reg.StatusCode,
                 Messages = reg.Messages,
-                Payload = reg.Payload
+                Payload = reg.Payload,
             };
 
             return new JsonResult(response)
             {
-                StatusCode = 200
+                StatusCode = 200,
             };
         }
 
@@ -458,12 +461,12 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 StatusCode = reg.StatusCode,
                 Messages = reg.Messages,
-                Payload = reg.Payload
+                Payload = reg.Payload,
             };
 
             return new JsonResult(response)
             {
-                StatusCode = 200
+                StatusCode = 200,
             };
         }
 
@@ -477,12 +480,12 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 StatusCode = reg.StatusCode,
                 Messages = reg.Messages,
-                Payload = reg.Payload
+                Payload = reg.Payload,
             };
 
             return new JsonResult(response)
             {
-                StatusCode = 200
+                StatusCode = 200,
             };
         }
 
@@ -618,7 +621,7 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 StatusCode = introspection == null ? System.Net.HttpStatusCode.NotFound : System.Net.HttpStatusCode.OK,
                 Messages = introspection == null ? "Failed to retrieve introspection details." : "Introspection details found.",
-                Payload = introspection == null ? null : JsonConvert.SerializeObject(introspection)
+                Payload = introspection == null ? null : JsonConvert.SerializeObject(introspection),
             };
         }
 
@@ -657,10 +660,10 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 StatusCode = userInfo == null ? System.Net.HttpStatusCode.NotFound : System.Net.HttpStatusCode.OK,
                 Messages = userInfo == null ? "Failed to retrieve userinfo." : "userinfo details found.",
-                Payload = userInfo == null ? null : JsonConvert.SerializeObject(userInfo)
+                Payload = userInfo == null ? null : JsonConvert.SerializeObject(userInfo),
             };
         }
-        
+
         private async Task<ResponseModel> RevokeToken(string cdrArrangementId, string tokenType)
         {
             var sp = _config.GetSoftwareProductConfig();

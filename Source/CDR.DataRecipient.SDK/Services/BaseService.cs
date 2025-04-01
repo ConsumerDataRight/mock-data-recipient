@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
 using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.Extensions.Configuration;
@@ -18,7 +14,6 @@ namespace CDR.DataRecipient.SDK.Services
         protected readonly IConfiguration _config;
         protected readonly ILogger _logger;
         protected readonly IServiceConfiguration _serviceConfiguration;
-
 
         protected BaseService(
             IConfiguration config,

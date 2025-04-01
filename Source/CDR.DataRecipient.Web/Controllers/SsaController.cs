@@ -57,9 +57,9 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Get the access token from the Register.
             var tokenResponse = await _infosecService.GetAccessToken(
-                tokenEndpoint, 
-                model.SoftwareProductId, 
-                sp.ClientCertificate.X509Certificate, 
+                tokenEndpoint,
+                model.SoftwareProductId,
+                sp.ClientCertificate.X509Certificate,
                 sp.SigningCertificate.X509Certificate);
 
             if (!tokenResponse.IsSuccessful)
@@ -70,12 +70,12 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(
-                reg.MtlsBaseUri, 
-                model.Version, 
-                tokenResponse.Data.AccessToken, 
-                sp.ClientCertificate.X509Certificate, 
-                model.BrandId, 
-                model.SoftwareProductId, 
+                reg.MtlsBaseUri,
+                model.Version,
+                tokenResponse.Data.AccessToken,
+                sp.ClientCertificate.X509Certificate,
+                model.BrandId,
+                model.SoftwareProductId,
                 model.Industry);
 
             model.StatusCode = ssaResponse.StatusCode;
@@ -98,7 +98,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 RequiresAccessToken = true,
                 RequiresClientCertificate = true,
                 SupportsVersion = true,
-                Url = reg.GetSsaEndpoint
+                Url = reg.GetSsaEndpoint,
             };
         }
 

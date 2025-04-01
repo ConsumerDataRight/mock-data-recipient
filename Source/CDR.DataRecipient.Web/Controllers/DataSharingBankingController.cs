@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Http;
 using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using Microsoft.AspNetCore.Mvc;
@@ -29,8 +30,9 @@ namespace CDR.DataRecipient.Web.Controllers
                 return "Banking";
             }
         }
+
         protected override string ApiGroupName => this.IndustryName;
-        
+
         protected override string CdsSwaggerLocation
         {
             get
@@ -45,9 +47,11 @@ namespace CDR.DataRecipient.Web.Controllers
             IConsentsRepository consentsRepository,
             IDataHoldersRepository dhRepository,
             IInfosecService infosecService,
-            ILogger<DataSharingControllerBase> logger) : base(config, cache, consentsRepository, dhRepository, infosecService, logger)
+            ILogger<DataSharingBankingController> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(config, cache, consentsRepository, dhRepository, infosecService, logger, httpClientFactory)
         {
-		}
+        }
 
         protected override JObject PrepareSwaggerJson(JObject json, Uri uri)
         {
@@ -58,13 +62,12 @@ namespace CDR.DataRecipient.Web.Controllers
         /// <summary>
         /// Determine if the target request is for a public endpoint, or a resource endpoint.
         /// </summary>
-        /// <param name="requestPath">Request Path</param>
-        /// <returns>True if the request is for the /discovery or /banking/products endpoints, otherwise false</returns>
+        /// <param name="requestPath">Request Path.</param>
+        /// <returns>True if the request is for the /discovery or /banking/products endpoints, otherwise false.</returns>
         protected override bool IsPublic(string requestPath)
         {
             return requestPath.Contains("/cds-au/v1/discovery", StringComparison.OrdinalIgnoreCase)
                 || requestPath.Contains("/cds-au/v1/banking/products", StringComparison.OrdinalIgnoreCase);
         }
-
     }
 }

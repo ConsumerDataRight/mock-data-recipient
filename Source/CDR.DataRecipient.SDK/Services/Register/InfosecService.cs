@@ -15,7 +15,8 @@ namespace CDR.DataRecipient.SDK.Services.Register
             IConfiguration config,
             ILogger<InfosecService> logger,
             IAccessTokenService accessTokenService,
-            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
+            IServiceConfiguration serviceConfiguration)
+            : base(config, logger, serviceConfiguration)
         {
             _accessTokenService = accessTokenService;
         }
@@ -29,13 +30,13 @@ namespace CDR.DataRecipient.SDK.Services.Register
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetAccessToken)}.");
 
-            var accessToken = new AccessToken() 
+            var accessToken = new AccessToken()
             {
-                TokenEndpoint =  tokenEndpoint,
+                TokenEndpoint = tokenEndpoint,
                 ClientId = clientId,
                 ClientCertificate = clientCertificate,
                 SigningCertificate = signingCertificate,
-                Scope = scope
+                Scope = scope,
             };
 
             return await _accessTokenService.GetAccessToken(accessToken);

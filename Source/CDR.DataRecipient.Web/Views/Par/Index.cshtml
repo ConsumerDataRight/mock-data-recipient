@@ -23,7 +23,7 @@
                         <div class="col-sm-10">
                             @Html.DropDownListFor(m => m.RegistrationId, Model.RegistrationListItems, "Select registration...", new { @class = "form-control" })
                             <div id="registrationid-validation-message">
-                            @Html.ValidationMessageFor(model => model.RegistrationId, "", new {@class = "text-danger"})
+                                @Html.ValidationMessageFor(model => model.RegistrationId, "", new {@class = "text-danger"})
                             </div>
                         </div>
                     </div>
@@ -58,7 +58,7 @@
                             </div>
                         </div>
 
-                       <div class="row mb-3">
+                        <div class="row mb-3">
                             <div class="col-sm-10 offset-sm-2">
                                 <div class="form-check  mb-3">
                                     @Html.CheckBoxFor(m => m.UsePkce, new { @class = "form-check-input" })
@@ -71,7 +71,7 @@
                             @Html.LabelFor(m => m.ResponseType, new { @class = "col-sm-2 col-form-label" })
                             <div class="col-sm-10">
                                 @Html.TextBoxFor(m => m.ResponseType, new { @class = "form-control" })
-                                <small><i>* As per CDS FAPI 1.0 Migration 4, OIDC Hybrid Flow may be retired and is recommended to use Authorisation Code Flow.</i></small>
+                                <small><i>* As per CDS v1.33.0, OIDC Hybrid Flow is now retired and Authorisation Code Flow must be supported.</i></small>
                             </div>
                         </div>
 
@@ -93,6 +93,12 @@
 
         </div>
         <p class="results">
+            @if (!string.IsNullOrEmpty(Model.AcfOnlyErrorMessage))
+            {
+                <br />
+                <p class="text-danger">@Model.AcfOnlyErrorMessage</p>
+            }
+
             @if (!string.IsNullOrEmpty(Model.AuthorisationUri))
             {
                 <a href="@Model.AuthorisationUri">@Model.AuthorisationUri</a>

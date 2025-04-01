@@ -13,12 +13,17 @@ namespace CDR.DataRecipient.API.Logger
 {
     public class RequestResponseLoggingMiddleware
     {
-        const string httpSummaryMessageTemplate =
+        private const string HttpSummaryMessageTemplate =
             "HTTP {RequestMethod} {RequestScheme:l}://{RequestHost:l}{RequestPathBase:l}{RequestPath:l} responded {StatusCode} in {ElapsedTime:0.0000} ms.";
 
-        const string httpSummaryExceptionMessageTemplate =
+        private const string HttpSummaryExceptionMessageTemplate =
             "HTTP {RequestMethod} {RequestScheme:l}://{RequestHost:l}{RequestPathBase:l}{RequestPath:l} encountered following error {error}";
 
+        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
+
+        private readonly RequestDelegate _next;
+        private readonly ILogger _requestResponseLogger;
+        private readonly IConfiguration _configuration;
         private string? _requestMethod;
         private string? _requestBody;
         private string? _requestHeaders;
@@ -37,11 +42,6 @@ namespace CDR.DataRecipient.API.Logger
         private string? _softwareId;
         private string? _fapiInteractionId;
         private string? _dataHolderBrandId;
-
-        private readonly RecyclableMemoryStreamManager _recyclableMemoryStreamManager;
-        readonly RequestDelegate _next;
-        private readonly ILogger _requestResponseLogger;
-        private readonly IConfiguration _configuration;
 
         public RequestResponseLoggingMiddleware(RequestDelegate next, IRequestResponseLogger requestResponseLogger, IConfiguration configuration)
         {
@@ -86,11 +86,11 @@ namespace CDR.DataRecipient.API.Logger
 
             if (!string.IsNullOrEmpty(_exceptionMessage))
             {
-                logger.Error(httpSummaryExceptionMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _exceptionMessage);
+                logger.Error(HttpSummaryExceptionMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _exceptionMessage);
             }
             else
             {
-                logger.Write(LogEventLevel.Information, httpSummaryMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _statusCode, _elapsedTime);
+                logger.Write(LogEventLevel.Information, HttpSummaryMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _statusCode, _elapsedTime);
             }
         }
 
@@ -124,7 +124,7 @@ namespace CDR.DataRecipient.API.Logger
             }
         }
 
-        static class ClaimIdentifiers
+        public static class ClaimIdentifiers
         {
             public const string Iss = "iss";
         }
@@ -135,7 +135,7 @@ namespace CDR.DataRecipient.API.Logger
             if (handler.CanReadToken(jwt))
             {
                 var decodedJwt = handler.ReadJwtToken(jwt);
-                var id = decodedJwt.Claims.FirstOrDefault(x => x.Type == identifierType)?.Value ?? String.Empty;
+                var id = decodedJwt.Claims.FirstOrDefault(x => x.Type == identifierType)?.Value ?? string.Empty;
 
                 idToSet = id;
             }
@@ -145,7 +145,7 @@ namespace CDR.DataRecipient.API.Logger
         {
             try
             {
-                //try fetching from the JWT in the authorization header - /arrangements/revoke
+                // try fetching from the JWT in the authorization header - /arrangements/revoke
                 var authorization = request.Headers[HeaderNames.Authorization];
                 if (AuthenticationHeaderValue.TryParse(authorization, out var headerValue))
                 {
@@ -154,7 +154,7 @@ namespace CDR.DataRecipient.API.Logger
 
                     if (scheme == JwtBearerDefaults.AuthenticationScheme && parameter != null)
                     {
-                        _dataHolderBrandId = String.Empty;
+                        _dataHolderBrandId = string.Empty;
                         SetIdFromJwt(parameter, ClaimIdentifiers.Iss, ref _dataHolderBrandId);
                     }
                 }
@@ -163,7 +163,6 @@ namespace CDR.DataRecipient.API.Logger
             {
                 _exceptionMessage = ex.Message;
             }
-
         }
 
         private string ReadStreamInChunks(Stream stream)
@@ -180,7 +179,8 @@ namespace CDR.DataRecipient.API.Logger
                 {
                     readChunkLength = reader.ReadBlock(readChunk, 0, readChunkBufferLength);
                     textWriter.Write(readChunk, 0, readChunkLength);
-                } while (readChunkLength > 0);
+                }
+                while (readChunkLength > 0);
                 return textWriter.ToString();
             }
             catch (Exception ex)
@@ -188,13 +188,11 @@ namespace CDR.DataRecipient.API.Logger
                 _exceptionMessage = ex.Message;
             }
 
-            return "";
+            return string.Empty;
         }
-
 
         private async Task ExtractResponseProperties(HttpContext httpContext)
         {
-
             var originalBodyStream = httpContext.Response.Body;
             await using var responseBody = _recyclableMemoryStreamManager.GetStream();
             httpContext.Response.Body = responseBody;
@@ -232,6 +230,7 @@ namespace CDR.DataRecipient.API.Logger
                 await responseBody.CopyToAsync(originalBodyStream);
             }
         }
+
         private string? GetHost(HttpRequest request)
         {
             // 1. check if the X-Forwarded-Host header has been provided -> use that
@@ -259,9 +258,8 @@ namespace CDR.DataRecipient.API.Logger
             // the traffic traverses through.  We get the first (and potentially only) ip address from the list as the client IP.
             // We also remove any port numbers that may be included on the client IP.
             return keys[0]?
-                .Split(',')[0]  // Get the first IP address in the list, in case there are multiple.
+                .Split(',')[0] // Get the first IP address in the list, in case there are multiple.
                 .Split(':')[0]; // Strip off the port number, in case it is attached to the IP address.
         }
-
     }
 }

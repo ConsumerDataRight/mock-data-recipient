@@ -6,7 +6,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
 {
     public interface IMetadataService
     {
-        Task<(string, System.Net.HttpStatusCode, string)> GetDataHolderBrands(
+        Task<(string RespBody, System.Net.HttpStatusCode StatusCode, string Reason)> GetDataHolderBrands(
             string registerMtlsBaseUri,
             string version,
             string accessToken,
@@ -16,7 +16,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             int? page = null,
             int? pageSize = null);
 
-        Task<(string, System.Net.HttpStatusCode, string)> GetDataRecipients(
+        Task<(string RespBody, System.Net.HttpStatusCode StatusCode, string Reason)> GetDataRecipients(
             string registerTlsBaseUri,
             string version,
             Industry industry);

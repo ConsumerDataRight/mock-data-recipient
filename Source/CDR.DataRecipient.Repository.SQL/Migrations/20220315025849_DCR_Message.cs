@@ -18,7 +18,7 @@ namespace CDR.DataRecipient.Repository.SQL.Migrations
                     MessageId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     MessageState = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: true),
                     MessageError = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LastUpdated = table.Column<DateTime>(type: "datetime", nullable: false)
+                    LastUpdated = table.Column<DateTime>(type: "datetime", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -39,7 +39,7 @@ namespace CDR.DataRecipient.Repository.SQL.Migrations
                     ProcessName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     ThreadId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     MethodName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    SourceContext = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
+                    SourceContext = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                 },
                 constraints: table =>
                 {

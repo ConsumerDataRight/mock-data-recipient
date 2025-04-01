@@ -33,9 +33,9 @@ namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
     }
 
     public class IdToken
-    {        
+    {
         public IdToken(int supportedAcr)
-        {            
+        {
             this.acr = new Acr() { essential = true, values = new string[] { $"urn:cds.au:cdr:{supportedAcr}" } };
         }
 

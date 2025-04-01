@@ -7,7 +7,7 @@ namespace CDR.DataRecipient.Web.Extensions
     public static class LinqExtensions
     {
         public static IEnumerable<DataHolderBrand> OrderByMockDataHolders(
-            this IEnumerable<DataHolderBrand> dataHolderBrands, 
+            this IEnumerable<DataHolderBrand> dataHolderBrands,
             bool mockDataHoldersFirst)
         {
             if (!mockDataHoldersFirst)

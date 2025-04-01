@@ -2,15 +2,16 @@
 
 namespace CDR.DataRecipient.Web.Models
 {
-	public class ErrorModel
-	{
+    public class ErrorModel
+    {
         public ErrorModel()
         {
             Meta = null;
-            Detail = "";
+            Detail = string.Empty;
         }
 
-        public ErrorModel(string code, string title, string description) : this()
+        public ErrorModel(string code, string title, string description)
+            : this()
         {
             Code = code;
             Title = title;
@@ -19,9 +20,12 @@ namespace CDR.DataRecipient.Web.Models
 
         [Required]
         public string Code { get; set; }
+
         [Required]
         public string Title { get; set; }
+
         public string Detail { get; set; }
+
         public object Meta { get; set; }
     }
 }

@@ -14,7 +14,7 @@ namespace CDR.DataRecipient.SDK.Extensions
 {
     public static class TokenExtensions
     {
-        public static async Task<(bool IsValid, JwtSecurityToken ValidatedToken, ClaimsPrincipal ClaimsPrincipal, Models.Error validationError)> ValidateToken(
+        public static async Task<(bool IsValid, JwtSecurityToken ValidatedToken, ClaimsPrincipal ClaimsPrincipal, Models.Error ValidationError)> ValidateToken(
             this string jwt,
             string jwksUri,
             ILogger logger,
@@ -28,11 +28,11 @@ namespace CDR.DataRecipient.SDK.Extensions
             var jwks = await jwksUri.GetJwks(acceptAnyServerCertificate, enforceHttpsEndpoint);
             if (jwks == null || jwks.Keys.Count == 0)
             {
-                logger.LogDebug("Keys not found in JWKS: {jwksUri}", jwksUri);
+                logger.LogDebug("Keys not found in JWKS: {JwksUri}", jwksUri);
                 return (false, null, null, new Models.Error("ERR-JWT-003", "keys_not_found", $"Keys not found in JWKS: {jwksUri}"));
             }
 
-            logger.LogDebug("Keys found in JWKS: {keys}", string.Join(',', jwks.Keys.Select(k => k.Kid).ToArray()));
+            logger.LogDebug("Keys found in JWKS: {Keys}", string.Join(',', jwks.Keys.Select(k => k.Kid).ToArray()));
 
             var tokenValidationParameters = new TokenValidationParameters
             {
@@ -45,8 +45,8 @@ namespace CDR.DataRecipient.SDK.Extensions
                 ValidateAudience = validAudiences != null && validAudiences.Length > 0,
                 RequireSignedTokens = true,
                 ValidateLifetime = validateLifetime,
-            };                        
-            logger.LogDebug("Validating token: {jwt}", jwt);
+            };
+            logger.LogDebug("Validating token: {Jwt}", jwt);
 
             var errorCode = string.Empty;
             var errorTitle = string.Empty;
@@ -111,8 +111,7 @@ namespace CDR.DataRecipient.SDK.Extensions
                 claimsCollection: claims,
                 expires: DateTime.UtcNow.AddSeconds(expirySeconds),
                 issuedAt: DateTime.UtcNow,
-                notBefore: DateTime.UtcNow
-                );
+                notBefore: DateTime.UtcNow);
 
             var jwt = new JwtSecurityToken(jwtHeader, jwtPayload);
             var tokenHandler = new JwtSecurityTokenHandler();

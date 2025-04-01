@@ -9,11 +9,11 @@ namespace CDR.DataRecipient.SDK.Models
             this.Errors = new ErrorList();
         }
 
-        public bool IsSuccessful 
-        { 
+        public bool IsSuccessful
+        {
             get
             {
-                return ((int) this.StatusCode) < 400;
+                return ((int)this.StatusCode) < 400;
             }
         }
 

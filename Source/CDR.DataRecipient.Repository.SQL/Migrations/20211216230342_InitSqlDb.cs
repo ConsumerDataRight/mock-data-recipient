@@ -13,7 +13,7 @@ namespace CDR.DataRecipient.Repository.SQL.Migrations
                 {
                     CdrArrangementId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ClientId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    JsonDocument = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    JsonDocument = table.Column<string>(type: "nvarchar(max)", nullable: true),
                 },
                 constraints: table =>
                 {
@@ -25,7 +25,7 @@ namespace CDR.DataRecipient.Repository.SQL.Migrations
                 columns: table => new
                 {
                     DataHolderBrandId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    JsonDocument = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    JsonDocument = table.Column<string>(type: "nvarchar(max)", nullable: true),
                 },
                 constraints: table =>
                 {
@@ -37,7 +37,7 @@ namespace CDR.DataRecipient.Repository.SQL.Migrations
                 columns: table => new
                 {
                     ClientId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    JsonDocument = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    JsonDocument = table.Column<string>(type: "nvarchar(max)", nullable: true),
                 },
                 constraints: table =>
                 {
@@ -57,7 +57,7 @@ namespace CDR.DataRecipient.Repository.SQL.Migrations
                     RedirectUri = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     JwksUri = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     Scope = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: true)
+                    Status = table.Column<string>(type: "nvarchar(25)", maxLength: 25, nullable: true),
                 },
                 constraints: table =>
                 {

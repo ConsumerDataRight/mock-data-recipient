@@ -19,7 +19,7 @@ namespace CDR.DataRecipient.E2ETests
         private const string WRONG_CERTIFICATE_PASSWORD = "#M0ckDataRecipient#";
         private const string DEFAULT_KID = "7C5716553E9B132EF325C49CA2079737196C03DB";
         private const string DEFAULT_AUD = "cbe67fb4-999d-43bc-833d-8dee6d1a89a4";
-        private const string DEFAULT_JWT_EXP_IN_SECONDS= "300";
+        private const string DEFAULT_JWT_EXP_IN_SECONDS = "300";
 
         [Theory]
         [InlineData("Banking_PS256_NoJarmEnc", DH_BRANDID, CUSTOMERID_BANKING, CUSTOMERACCOUNTS_BANKING, "PS256", null, null)]
@@ -218,7 +218,7 @@ namespace CDR.DataRecipient.E2ETests
                 string? dhClientId = null;
                 await ArrangeAsync(testName, async (page) =>
                 {
-                    dhClientId =await CreateBankingRegistration(page);
+                    dhClientId = await CreateBankingRegistration(page);
                 });
 
                 await TestAsync(testName, async (page) =>
@@ -249,12 +249,12 @@ namespace CDR.DataRecipient.E2ETests
         }
 
         [Theory]
-        [InlineData("Iss_Missing",      null,               "USE_VALID_AUD",    DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10211):  Unable to validate issuer. The 'issuer' parameter is null or whitespace", "'iss' is blank in simulated callback.")]
-        [InlineData("Iss_Mismatch",     "foo",              "USE_VALID_AUD",    DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10205):  Issuer validation failed. Issuer: 'foo'.", "'iss' is different to the expected client Id in simulated callback.")]
-        [InlineData("Aud_Missing",      "USE_VALID_ISS",    null,               DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10206):  Unable to validate audience. The 'audiences' parameter is empty.", "'aud' is blank in simulated callback.")]
-        [InlineData("Aud_Mismatch",     "USE_VALID_ISS",    "foo",              DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10214):  Audience validation failed. Audiences: 'foo'.", "'aud' is different to the expected uri in simulated callback..")]
-        [InlineData("missing_Exp",      "USE_VALID_ISS",    "USE_VALID_AUD",    null,                       "Token Validation Failed (IDX10225):  Lifetime validation failed. The token is missing an Expiration Time.", "'exp' is blank in simulated callback.")]
-        [InlineData("Expired_Token",    "USE_VALID_ISS",    "USE_VALID_AUD",    "-500",                     "Token Validation Failed (IDX10223):  Lifetime validation failed. The token is expired.", "JWT has expired. (now - 500 seconds)")]
+        [InlineData("Iss_Missing", null, "USE_VALID_AUD", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10211):  Unable to validate issuer. The 'issuer' parameter is null or whitespace", "'iss' is blank in simulated callback.")]
+        [InlineData("Iss_Mismatch", "foo", "USE_VALID_AUD", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10205):  Issuer validation failed. Issuer: 'foo'.", "'iss' is different to the expected client Id in simulated callback.")]
+        [InlineData("Aud_Missing", "USE_VALID_ISS", null, DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10206):  Unable to validate audience. The 'audiences' parameter is empty.", "'aud' is blank in simulated callback.")]
+        [InlineData("Aud_Mismatch", "USE_VALID_ISS", "foo", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10214):  Audience validation failed. Audiences: 'foo'.", "'aud' is different to the expected uri in simulated callback..")]
+        [InlineData("missing_Exp", "USE_VALID_ISS", "USE_VALID_AUD", null, "Token Validation Failed (IDX10225):  Lifetime validation failed. The token is missing an Expiration Time.", "'exp' is blank in simulated callback.")]
+        [InlineData("Expired_Token", "USE_VALID_ISS", "USE_VALID_AUD", "-500", "Token Validation Failed (IDX10223):  Lifetime validation failed. The token is expired.", "JWT has expired. (now - 500 seconds)")]
         public async Task AC12_AC13_AC14_AC15_Jwt_Missing_And_Mismatch_Metadata(string testSuffix, string? issuer, string? audience, string? jwtExpiry, string expectedError, string becauseText)
         {
             try
@@ -282,12 +282,12 @@ namespace CDR.DataRecipient.E2ETests
                     {
                         audience = audience.Replace("USE_VALID_AUD", GetDataholderClientId(DATAHOLDER_IDENTITYSERVER_CONNECTIONSTRING, requestUri));
                     }
-                    if(issuer != null)
+                    if (issuer != null)
                     {
                         issuer = issuer.Replace("USE_VALID_ISS", GetInfosecBaseUriFromRegister(DH_BRANDID));
-                    }                  
+                    }
 
-                    string callbackUrl = $"{WEB_URL}/consent/callback?response={GetAuthenticationCodeJwt(state: dataHolderAuthState,issuer:issuer, aud:audience, expiryTimeInSeconds: jwtExpiry )}";
+                    string callbackUrl = $"{WEB_URL}/consent/callback?response={GetAuthenticationCodeJwt(state: dataHolderAuthState, issuer: issuer, aud: audience, expiryTimeInSeconds: jwtExpiry)}";
                     await page.GotoAsync(callbackUrl);
 
                     // Act/Assert - verify error message
@@ -311,7 +311,7 @@ namespace CDR.DataRecipient.E2ETests
             {
                 string testName = $"{nameof(US46352_MDR_E2ETests_AuthCodeFlowJarm)} - {nameof(AC18_Response_JWT_Signature_Fail)}";
                 string? dhClientId = null;
-               
+
                 await ArrangeAsync(testName, async (page) =>
                 {
                     dhClientId = await CreateBankingRegistration(page, "code");
@@ -347,7 +347,7 @@ namespace CDR.DataRecipient.E2ETests
             }
         }
 
-        private static async Task<string> CreateBankingRegistration(IPage page, string responseType = "code id_token")
+        private static async Task<string> CreateBankingRegistration(IPage page, string responseType = "code")
         {
             return await ClientRegistration_Create(page, DH_BRANDID, responseTypes: responseType);
         }
@@ -369,7 +369,7 @@ namespace CDR.DataRecipient.E2ETests
                 ExpiryTimeInSeconds = expiryTimeInSeconds,
                 Iss = issuer,
                 Aud = aud,
-                Kid = DEFAULT_KID,  
+                Kid = DEFAULT_KID,
                 State = state,
                 Code = authCode,
             }.Get();
@@ -419,7 +419,7 @@ namespace CDR.DataRecipient.E2ETests
             registerDbServerConnection.Open();
 
             using var selectCommand = new SqlCommand($"SELECT InfosecBaseUri FROM Endpoint WHERE BrandId = '{brandId}'", registerDbServerConnection);
-            string ? infosecBaseUri = Convert.ToString(selectCommand.ExecuteScalar());
+            string? infosecBaseUri = Convert.ToString(selectCommand.ExecuteScalar());
 
             if (String.IsNullOrEmpty(infosecBaseUri))
                 throw new Exception($"Could not find InfosecBaseUri for '{brandId}' in Register Endpoint Table.");
