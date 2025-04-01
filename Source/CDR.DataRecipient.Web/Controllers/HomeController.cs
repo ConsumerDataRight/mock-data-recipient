@@ -30,21 +30,25 @@ namespace CDR.DataRecipient.Web.Controllers
                 var homePageContentUrl = _config.GetValue<string>(Constants.Content.HomepageContentUrl);
                 var footerContentUrl = _config.GetValue<string>(Constants.Content.FooterContentUrl);
 
-                ViewBag.HomepageContent = "";
-                ViewBag.FooterContent = "";
+                ViewBag.HomepageContent = string.Empty;
+                ViewBag.FooterContent = string.Empty;
 
                 if (!string.IsNullOrEmpty(homePageContentUrl))
                 {
                     var result = await client.GetAsync(homePageContentUrl);
                     if (result.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
                         ViewBag.HomepageContent = result.Content.ReadAsStringAsync().Result;
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(footerContentUrl))
                 {
                     var result = await client.GetAsync(footerContentUrl);
                     if (result.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
                         ViewBag.FooterContent = result.Content.ReadAsStringAsync().Result;
+                    }
                 }
 
                 return View();

@@ -7,10 +7,15 @@ namespace CDR.DataRecipient.Repository
     public interface IDataHoldersRepository
     {
         Task<IEnumerable<DataHolderBrand>> GetDataHolderBrands();
+
         Task<DataHolderBrand> GetDataHolderBrand(string brandId);
+
         Task<DataHolderBrand> GetDHBrandById(string brandId);
+
         Task DataHolderBrandsDelete();
-        Task<(int, int)> AggregateDataHolderBrands(IList<DataHolderBrand> dataHolderBrands);
+
+        Task<(int DhBrandsInserted, int DhBrandsUpdated)> AggregateDataHolderBrands(IList<DataHolderBrand> dataHolderBrands);
+
         Task PersistDataHolderBrands(IEnumerable<DataHolderBrand> dataHolderBrands);
     }
 }

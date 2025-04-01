@@ -11,19 +11,20 @@ using CDR.DataRecipient.SDK.Services.Tokens;
 using Jose;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using static CDR.DataRecipient.SDK.Constants;
 
 namespace CDR.DataRecipient.SDK.Services.DataHolder
 {
     public class InfosecService : BaseService, IInfosecService
     {
-
         private readonly IAccessTokenService _accessTokenService;
 
         public InfosecService(
             IConfiguration config,
             ILogger<InfosecService> logger,
             IAccessTokenService accessTokenService,
-            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
+            IServiceConfiguration serviceConfiguration)
+            : base(config, logger, serviceConfiguration)
         {
             _accessTokenService = accessTokenService;
         }
@@ -95,16 +96,18 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             // Build the list of claims to include in the authorisation request jwt.
             var authorisationRequestClaims = new Dictionary<string, object>
-            {                
+            {
                 { "response_type", authorisationRequestJwt.ResponseType },
                 { "client_id", authorisationRequestJwt.ClientId },
                 { "redirect_uri", authorisationRequestJwt.RedirectUri },
-                { "response_mode", authorisationRequestJwt.ResponseMode},
+                { "response_mode", authorisationRequestJwt.ResponseMode },
                 { "scope", authorisationRequestJwt.Scope },
                 { "state", authorisationRequestJwt.State },
                 { "nonce", authorisationRequestJwt.Nonce },
-                { "claims", JsonSerializer.SerializeToElement(new AuthorisationRequestClaims(authorisationRequestJwt.AcrValueSupported)
-                                { sharing_duration = authorisationRequestJwt.SharingDuration, cdr_arrangement_id = authorisationRequestJwt.CdrArrangementId } )}
+                {
+                    "claims", JsonSerializer.SerializeToElement(new AuthorisationRequestClaims(authorisationRequestJwt.AcrValueSupported)
+                                { sharing_duration = authorisationRequestJwt.SharingDuration, cdr_arrangement_id = authorisationRequestJwt.CdrArrangementId })
+                },
             };
 
             if (authorisationRequestJwt.Pkce != null)
@@ -115,15 +118,14 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             return authorisationRequestClaims.GenerateJwt(authorisationRequestJwt.ClientId, authorisationRequestJwt.InfosecBaseUri, authorisationRequestJwt.SigningCertificate);
         }
-        
 
         public async Task<string> BuildAuthorisationRequestUri(
             string infosecBaseUri,
             string clientId,
             X509Certificate2 signingCertificate,
             string requestUri,
-            string scope, 
-            string responseType = "code id_token")
+            string scope,
+            string responseType = "code")
         {
             _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestUri)}.");
 
@@ -171,7 +173,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 issuer: clientId,
                 clientId: clientId,
                 scope: scope,
-                grantType: "refresh_token",
+                grantType: TokenTypes.REFRESH_TOKEN,
                 additionalFormFields: formFields,
                 enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
@@ -214,7 +216,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 signingCertificate,
                 issuer: clientId,
                 clientId: clientId,
-                scope: "",
+                scope: string.Empty,
                 additionalFormFields: formFields,
                 enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
@@ -246,14 +248,14 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("token", refreshToken);
-            formFields.Add("token_type_hint", "refresh_token");
+            formFields.Add("token_type_hint", TokenTypes.REFRESH_TOKEN);
 
             var response = await client.SendPrivateKeyJwtRequest(
                 introspectionEndpoint,
                 signingCertificate,
                 issuer: clientId,
                 clientId: clientId,
-                scope: "",
+                scope: string.Empty,
                 additionalFormFields: formFields,
                 enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
@@ -274,8 +276,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         }
 
         public async Task<Response<Models.UserInfo>> UserInfo(
-            string userInfoEndpoint, 
-            X509Certificate2 clientCertificate, 
+            string userInfoEndpoint,
+            X509Certificate2 clientCertificate,
             string accessToken)
         {
             var userInfoResponse = new Response<Models.UserInfo>();
@@ -324,7 +326,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 signingCertificate,
                 issuer: clientId,
                 clientId: clientId,
-                scope: "",
+                scope: string.Empty,
                 additionalFormFields: formFields,
                 enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
 
@@ -341,8 +343,8 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         }
 
         public async Task<Response<Models.UserInfo>> PushedAuthorizationRequest(
-            string parEndpoint, 
-            X509Certificate2 clientCertificate, 
+            string parEndpoint,
+            X509Certificate2 clientCertificate,
             string accessToken)
         {
             var parResponse = new Response<Models.UserInfo>();
@@ -373,7 +375,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var pkce = new Pkce
             {
-                CodeVerifier = string.Concat(System.Guid.NewGuid().ToString(), '-', System.Guid.NewGuid().ToString())
+                CodeVerifier = string.Concat(System.Guid.NewGuid().ToString(), '-', System.Guid.NewGuid().ToString()),
             };
 
             var challengeBytes = SHA256.HashData(Encoding.UTF8.GetBytes(pkce.CodeVerifier));

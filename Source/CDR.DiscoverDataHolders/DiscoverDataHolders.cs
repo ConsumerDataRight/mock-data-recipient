@@ -1,4 +1,4 @@
-using Azure.Storage.Queues;
+﻿using Azure.Storage.Queues;
 using Azure.Storage.Queues.Models;
 using CDR.DataRecipient.Repository.SQL;
 using CDR.DataRecipient.SDK;
@@ -42,7 +42,7 @@ namespace CDR.DiscoverDataHolders
             byte[] signCertBytes = Convert.FromBase64String(_options.Signing_Certificate);
             _signCertificate = new(signCertBytes, _options.Signing_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
             _logger.LogInformation("Signing certificate loaded: {thumbprint}", _signCertificate.Thumbprint);
-            _httpClientFactory=httpClientFactory;
+            _httpClientFactory = httpClientFactory;
         }
 
         /// <summary>
@@ -58,11 +58,10 @@ namespace CDR.DiscoverDataHolders
                 int qCount = await GetQueueCountAsync(_options.StorageConnectionString, _options.QueueName);
                 _logger.LogInformation("qCount = {qCount}", qCount);
                 _logger.LogInformation("Loading the client certificate...");
-                
+
 
                 string msg = $"DHBRANDS";
                 int inserted = 0;
-                int updated = 0;
                 int pendingReg = 0;
 
                 Response<Token> tokenRes = await GetAccessToken();
@@ -74,7 +73,7 @@ namespace CDR.DiscoverDataHolders
                         Response<IList<DataHolderBrand>> dhResponse = JsonConvert.DeserializeObject<Response<IList<DataHolderBrand>>>(dataHolderBrandsResult.body);
                         if (dhResponse.Data.Count == 0)
                         {
-                            await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, Unable to get the DHBrands from: {_options.Register_Get_DH_Brands}, Ver: {_options.Register_Get_DH_Brands_XV}", "Error", "DHBRANDS");                            
+                            await InsertLog(_options.DataRecipient_DB_ConnectionString, $"{msg}, Unable to get the DHBrands from: {_options.Register_Get_DH_Brands}, Ver: {_options.Register_Get_DH_Brands_XV}", "Error", "DHBRANDS");
                             return;
                         }
 
@@ -84,23 +83,8 @@ namespace CDR.DiscoverDataHolders
                         await SynchroniseDataHolderBrandsMetadata(dhResponse.Data, _options.DataRecipient_DB_ConnectionString, _logger);
 
                         // RETURN a list of ALL DataHolderBrands that are NOT REGISTERED
-                        (IList<DataHolderBrand> dhBrandsInsert, IList<DataHolderBrand> dhBrandsUpd) = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckRegistrationsExist(dhResponse.Data);
-                        _logger.LogInformation("{ins} data holder brands inserted. {upd} data holder brands updated.", dhBrandsInsert.Count, dhBrandsUpd.Count);
-
-                        // UPDATE DataHolderBrands
-                        if (dhBrandsUpd.Count > 0)
-                        {
-                            foreach (var dh in dhBrandsUpd)
-                            {
-                                bool result = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckRegistrationExist(dh.DataHolderBrandId);
-                                if (!result)
-                                {
-                                    var qMsgId = await AddQueueMessageAsync(_logger, _options.StorageConnectionString, _options.QueueName, dh.DataHolderBrandId, "UPDATE QUEUED");
-                                    await AddDcrMessage(dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "UPDATE DcrMessage");
-                                    updated++;
-                                }
-                            }
-                        }
+                        IList<DataHolderBrand> dhBrandsInsert = await new SqlDataAccess(_options.DataRecipient_DB_ConnectionString).CheckRegistrationsExist(dhResponse.Data);
+                        _logger.LogInformation("{ins} data holder brands inserted.", dhBrandsInsert.Count);
 
                         // ALL DataHolderBrands that are TO REGISTER
                         if (dhBrandsInsert.Count > 0)
@@ -117,7 +101,7 @@ namespace CDR.DiscoverDataHolders
                                     var proc = (qCount == 0) ? "NO REG (ADD to EMPTY QUEUE)" : "NO REG (ADD to QUEUE)";
 
                                     // ADD to QUEUE and DcrMessage table
-                                    var qMsgId = await AddQueueMessageAsync(_logger, _options.StorageConnectionString, _options.QueueName, dh.DataHolderBrandId, proc);                                    
+                                    var qMsgId = await AddQueueMessageAsync(_logger, _options.StorageConnectionString, _options.QueueName, dh.DataHolderBrandId, proc);
                                     await AddDcrMessage(dh.DataHolderBrandId, dh.BrandName, dh.EndpointDetail.InfoSecBaseUri, qMsgId, "ADD to DcrMessage table");
                                     pendingReg++;
                                 }
@@ -143,7 +127,7 @@ namespace CDR.DiscoverDataHolders
                             }
                         }
 
-                        if (inserted == 0 && updated == 0 && pendingReg == 0)
+                        if (inserted == 0 && pendingReg == 0)
                         {
                             msg += $" - no additional data holder brands added.";
                         }
@@ -151,9 +135,6 @@ namespace CDR.DiscoverDataHolders
                         {
                             if (inserted > 0)
                                 msg += $" - {inserted} new data holder brands loaded.";
-
-                            if (updated > 0)
-                                msg += $" - {updated} existing data holder brands updated.";
 
                             if (pendingReg > 0)
                                 msg += $" - {pendingReg} existing data holder brands queued to be registered.";
@@ -401,7 +382,7 @@ namespace CDR.DiscoverDataHolders
         private async Task InsertLog(string dataRecipient_DB_ConnectionString, string msg, string lvl, string methodName, Exception ex = null)
         {
             string exMessage = "";
-           
+
 
             if (ex != null)
             {

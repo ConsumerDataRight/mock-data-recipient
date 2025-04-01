@@ -1,3 +1,9 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using CDR.DataRecipient.API.Logger;
 using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.Repository;
@@ -28,22 +34,16 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.FeatureManagement;
 using Newtonsoft.Json;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web
 {
     public class Startup
     {
+        private readonly IConfiguration _configuration;
+        private readonly string _allowSpecificOrigins = "_allowSpecificOrigins";
+
         private bool healthCheckMigration = false;
         private string healthCheckMigrationMessage = null;
-
-        private readonly IConfiguration _configuration;
-        private readonly string AllowSpecificOrigins = "_allowSpecificOrigins";
 
         public Startup(IConfiguration configuration)
         {
@@ -53,6 +53,8 @@ namespace CDR.DataRecipient.Web
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddScoped<IOidcSettingsProvider, OidcSettingsProvider>();
+
             services.AddDbContext<RecipientDatabaseContext>(options => options.UseSqlServer(_configuration.GetConnectionString(DbConstants.ConnectionStringNames.Default)));
             var dbContext = services.BuildServiceProvider().GetService<RecipientDatabaseContext>();
 
@@ -62,9 +64,10 @@ namespace CDR.DataRecipient.Web
                     options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
                 });
 
-            services.AddSingleton<IServiceConfiguration>(x => new ServiceConfiguration() { 
+            services.AddSingleton<IServiceConfiguration>(x => new ServiceConfiguration()
+            {
                 AcceptAnyServerCertificate = _configuration.IsAcceptingAnyServerCertificate(),
-                EnforceHttpsEndpoints = _configuration.IsEnforcingHttpsEndpoints()
+                EnforceHttpsEndpoints = _configuration.IsEnforcingHttpsEndpoints(),
             });
             services.AddTransient<SDK.Services.Register.IInfosecService, SDK.Services.Register.InfosecService>();
             services.AddTransient<IAccessTokenService, AccessTokenService>();
@@ -105,15 +108,16 @@ namespace CDR.DataRecipient.Web
             string specificOrigin = _configuration.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificOrigins);
             services.AddCors(options =>
             {
-                options.AddPolicy(AllowSpecificOrigins,
-                builder =>
-                {
-                    builder.WithOrigins(specificOrigin)
-                            .SetPreflightMaxAge(TimeSpan.FromSeconds(600))
-                            .WithMethods("GET")
-                            .AllowAnyHeader()
-                            .AllowAnyMethod();
-                });
+                options.AddPolicy(
+                    _allowSpecificOrigins,
+                    builder =>
+                    {
+                        builder.WithOrigins(specificOrigin)
+                                .SetPreflightMaxAge(TimeSpan.FromSeconds(600))
+                                .WithMethods("GET")
+                                .AllowAnyHeader()
+                                .AllowAnyMethod();
+                    });
             });
 
             string connStr = _configuration.GetConnectionString(DbConstants.ConnectionStringNames.Logging);
@@ -132,6 +136,7 @@ namespace CDR.DataRecipient.Web
                                 return HealthCheckResult.Unhealthy();
                             }
                         }
+
                         return HealthCheckResult.Healthy();
                     });
 
@@ -160,9 +165,18 @@ namespace CDR.DataRecipient.Web
                     o.ResponseMode = responseMode;
                     o.CallbackPath = callbackPath;
                     o.GetClaimsFromUserInfoEndpoint = false;
+                    o.Events.OnRedirectToIdentityProvider = context =>
+                    {
+                        context.Response.Headers.CacheControl = "no-cache,no-store";
+
+                        // Set the client secret dynamically here
+                        var clientSecretProvider = context.HttpContext.RequestServices.GetRequiredService<IOidcSettingsProvider>();
+                        context.Options.ClientSecret = clientSecretProvider.GetSecret();
+                        return Task.CompletedTask;
+                    };
                     o.Events.OnRemoteFailure = context =>
                     {
-                        string errMessage = context.Failure == null ? "" : context.Failure.Message;
+                        string errMessage = context.Failure == null ? string.Empty : context.Failure.Message;
                         string innerErrorMessage = string.Empty;
                         string redirectError = string.Format("?error_message={0}", errMessage);
                         if (context.Failure.InnerException != null)
@@ -170,6 +184,7 @@ namespace CDR.DataRecipient.Web
                             innerErrorMessage = context.Failure.InnerException.Message;
                             redirectError = string.Format("{0}&inner_error={1}", redirectError, innerErrorMessage);
                         }
+
                         redirectError = redirectError.Replace("\r\n", "|");
 
                         string rtnMessage = "oidc/remoteerror";
@@ -188,6 +203,7 @@ namespace CDR.DataRecipient.Web
                             innerErrorMessage = context.Exception.InnerException.Message;
                             redirectError = string.Format("{0}&inner_error={1}", redirectError, innerErrorMessage);
                         }
+
                         redirectError = redirectError.Replace("\r\n", "|");
 
                         string rtnMessage = "oidc/autherror";
@@ -196,8 +212,9 @@ namespace CDR.DataRecipient.Web
                         context.HandleResponse();
                         return Task.CompletedTask;
                     };
-                    o.Events.OnAccessDenied = context => {
-                        string errMessage = context.Result == null ? "" : context.Result.Failure.Message;
+                    o.Events.OnAccessDenied = context =>
+                    {
+                        string errMessage = context.Result == null ? string.Empty : context.Result.Failure.Message;
                         string redirectError = string.Format("?error_message={0}", errMessage);
                         redirectError = redirectError.Replace("\r\n", "|");
 
@@ -230,6 +247,8 @@ namespace CDR.DataRecipient.Web
                 Log.Logger.Information("Adding request response logging middleware");
                 services.AddRequestResponseLogging();
             }
+
+            services.AddHttpClient();
         }
 
         private bool UseDistributedCache()
@@ -256,11 +275,12 @@ namespace CDR.DataRecipient.Web
             {
                 app.Use(async (ctx, next) =>
                 {
-                    var claims = new List<Claim>() {
+                    var claims = new List<Claim>()
+                    {
                         new Claim(Constants.Claims.UserId, Constants.LocalAuthentication.UserId),
                         new Claim(ClaimTypes.GivenName, Constants.LocalAuthentication.GivenName),
                         new Claim(ClaimTypes.Surname, Constants.LocalAuthentication.Surname),
-                        new Claim(Constants.Claims.Name, string.Concat(Constants.LocalAuthentication.GivenName, " ", Constants.LocalAuthentication.Surname))
+                        new Claim(Constants.Claims.Name, string.Concat(Constants.LocalAuthentication.GivenName, " ", Constants.LocalAuthentication.Surname)),
                     };
                     ctx.User = new ClaimsPrincipal(new ClaimsIdentity(claims, Constants.LocalAuthentication.AuthenticationType));
                     await next();
@@ -271,7 +291,7 @@ namespace CDR.DataRecipient.Web
             app.Use(async (context, next) =>
             {
                 context.Response.Headers.Append(
-                    "Content-Security-Policy", 
+                    "Content-Security-Policy",
                     _configuration.GetValue(Constants.ConfigurationKeys.ContentSecurityPolicy, "default-src 'self', 'https://cdn.jsdelivr.net/';"));
                 await next();
             });
@@ -292,12 +312,12 @@ namespace CDR.DataRecipient.Web
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
-            app.UseCors(AllowSpecificOrigins);
+            app.UseCors(_allowSpecificOrigins);
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseSession();
 
-            // Custom Client autorise middleware           
+            // Custom Client autorise middleware
             app.UseMiddleware<ClientAuthorizationMiddleware>();
 
             // Common swagger.
@@ -336,10 +356,10 @@ namespace CDR.DataRecipient.Web
                     name: "default",
                     pattern: "{controller=Home}/{action=Index}/{id?}");
             });
-            
+
             app.UseHealthChecks("/health", new HealthCheckOptions()
             {
-                ResponseWriter = CustomResponseWriter
+                ResponseWriter = CustomResponseWriter,
             });
 
             // Migrate the database to the latest version during application startup.
@@ -353,15 +373,19 @@ namespace CDR.DataRecipient.Web
 
                     // Use DBO connection string since it has DBO rights needed to update db schema
                     optionsBuilder.UseSqlServer(_configuration.GetConnectionString(DbConstants.ConnectionStringNames.Migrations)
-                        ?? throw new Exception($"Connection string '{DbConstants.ConnectionStringNames.Migrations}' not found"));
+                        ?? throw new InvalidOperationException($"Connection string '{DbConstants.ConnectionStringNames.Migrations}' not found"));
 
                     using var dbContext = new RecipientDatabaseContext(optionsBuilder.Options);
                     dbContext.Database.Migrate();
 
                     healthCheckMigrationMessage = "Migration completed";
                 }
-                healthCheckMigration = true;                                    
-            }          
+
+                healthCheckMigration = true;
+
+                // Reconfigure Serilog with DB
+                Program.ConfigureSerilog(_configuration, true);
+            }
         }
 
         /// <summary>
@@ -383,8 +407,8 @@ namespace CDR.DataRecipient.Web
                 errors = healthReport.Entries.Select(e => new
                 {
                     key = e.Key,
-                    value = e.Value.Status.ToString()
-                })
+                    value = e.Value.Status.ToString(),
+                }),
             });
             return context.Response.WriteAsync(result);
         }

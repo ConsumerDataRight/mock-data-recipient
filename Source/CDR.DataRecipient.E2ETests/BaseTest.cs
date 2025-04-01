@@ -1,4 +1,4 @@
-#define TEST_DEBUG_MODE // Run Playwright in non-headless mode for debugging purposes (ie show a browser)
+﻿#define TEST_DEBUG_MODE // Run Playwright in non-headless mode for debugging purposes (ie show a browser)
 
 // In docker (Ubuntu container) Playwright will fail if running in non-headless mode, so we ensure TEST_DEBUG_MODE is undef'ed
 #if !DEBUG
@@ -31,7 +31,7 @@ namespace CDR.DataRecipient.E2ETests
     public class BaseTest
     {
         static public bool RUNNING_IN_CONTAINER => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")?.ToUpper() == "TRUE";
-                
+
         // Customers
         public const string CUSTOMERID_BANKING = "jwilson";
         //public const string CUSTOMERACCOUNTS_BANKING = "Personal Loan xxx-xxx xxxxx987,Transactions and Savings Account xxx-xxx xxxxx988";
@@ -172,7 +172,7 @@ namespace CDR.DataRecipient.E2ETests
                 // Setup browser context
                 var context = await browser.NewContextAsync(new BrowserNewContextOptions
                 {
-                    IgnoreHTTPSErrors = true,                    
+                    IgnoreHTTPSErrors = true,
                     RecordVideoDir = CreateMedia == true ? $"{MEDIAFOLDER}" : null,
                     ViewportSize = new ViewportSize
                     {
@@ -185,7 +185,7 @@ namespace CDR.DataRecipient.E2ETests
                 var page = await context.NewPageAsync();
                 try
                 {
-                    
+
                     page.Close += async (_, page) =>
                     {
                         // Page is closed, so save videoPath
@@ -639,10 +639,10 @@ namespace CDR.DataRecipient.E2ETests
 
         // Create Client Registration returning DH client ID of client that was registered
         static protected async Task<string> ClientRegistration_Create(IPage page,
-            string dhBrandId, 
+            string dhBrandId,
             string? jarmSigningAlgo = null,
-            string responseTypes = "code,code id_token", 
-            string? jarmEncrypAlg = null, 
+            string responseTypes = "code",
+            string? jarmEncrypAlg = null,
             string? jarmEncryptEnc = null)
         {
 
@@ -666,16 +666,10 @@ namespace CDR.DataRecipient.E2ETests
                 await dcrPage.EnterAuthorisedEncryptedResponseEnc(jarmEncryptEnc);
             }
 
-            if (responseTypes.Contains("id_token"))
-            {
-                await dcrPage.EnterIdTokenEncryptedResponseAlgo("RSA-OAEP");
-                await dcrPage.EnterIdTokenEncryptedResponseEnc("A128CBC-HS256");
-            }
-
             await dcrPage.ClickRegister();
 
             var registrationResponseJson = await dcrPage.GetRegistrationResponse();
-            return GetClientIdFromRegistrationResponse(registrationResponseJson);           
+            return GetClientIdFromRegistrationResponse(registrationResponseJson);
 
         }
 
@@ -690,7 +684,7 @@ namespace CDR.DataRecipient.E2ETests
         {
 
             ConsentAndAuthorisationPages consentAndAuthorisationPages = new ConsentAndAuthorisationPages(page);
-            
+
             await consentAndAuthorisationPages.EnterCustomerId(customerId);
             await consentAndAuthorisationPages.ClickContinue();
 

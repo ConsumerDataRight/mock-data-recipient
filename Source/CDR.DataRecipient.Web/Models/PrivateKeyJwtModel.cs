@@ -30,7 +30,7 @@ namespace CDR.DataRecipient.Web.Models
         public string Jti { get; set; }
 
         public string ClientAssertion { get; set; }
-        public IEnumerable<Claim> ClientAssertionClaims { get; set; }
 
+        public IEnumerable<Claim> ClientAssertionClaims { get; set; }
     }
 }

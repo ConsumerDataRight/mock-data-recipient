@@ -24,6 +24,7 @@ namespace CDR.DataRecipient.Web.Controllers
         }
 
         [Route("generate-client-assertion")]
+        [HttpPost]
         public async Task<string> GenerateClientAssertion(
             [FromQuery] string iss = null,
             [FromQuery] string aud = null,
@@ -37,12 +38,11 @@ namespace CDR.DataRecipient.Web.Controllers
             var privateKeyJwt = new PrivateKeyJwt(privateKeyFormatted);
 
             return privateKeyJwt.Generate(
-                iss ?? sp.SoftwareProductId, 
-                aud ?? await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri), 
+                iss ?? sp.SoftwareProductId,
+                aud ?? await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri),
                 jti ?? System.Guid.NewGuid().ToString(),
-                exp ?? 10, 
+                exp ?? 10,
                 kid ?? Constants.DEFAULT_KEY_ID);
         }
-
     }
 }

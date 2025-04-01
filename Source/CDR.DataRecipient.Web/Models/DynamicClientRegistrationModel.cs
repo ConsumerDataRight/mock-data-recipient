@@ -10,6 +10,8 @@ namespace CDR.DataRecipient.Web.Models
     {
         public IEnumerable<Registration> Registrations { get; set; }
 
+        public IEnumerable<Registration> FailedDCRMessages { get; set; }
+
         [Display(Name = "SSA Version")]
         public string SsaVersion { get; set; }
 
@@ -52,28 +54,27 @@ namespace CDR.DataRecipient.Web.Models
         [Display(Name = "Id Token Signed Response Alg")]
         public string IdTokenSignedResponseAlg { get; set; }
 
-        [Display(Name = "Id Token Encrypted Response Alg")]
-        public string IdTokenEncryptedResponseAlg { get; set; }
-
-        [Display(Name = "Id Token Encrypted Response Enc")]
-        public string IdTokenEncryptedResponseEnc { get; set; }
-
         [Display(Name = "Request Object Signing Alg")]
         public string RequestObjectSigningAlg { get; set; }
 
         [Display(Name = "Authorization Signed Response Alg")]
         public string AuthorizationSignedResponseAlg { get; set; }
+
         [Display(Name = "Authorization Encrypted Response Alg")]
         public string AuthorizationEncryptedResponseAlg { get; set; }
+
         [Display(Name = "Authorization Encrypted Response Enc")]
         public string AuthorizationEncryptedResponseEnc { get; set; }
 
         public List<SelectListItem> DataHolderBrands { get; set; }
+
         public List<SelectListItem> DataRecipients { get; set; }
+
         public string TransactionType { get; set; }
+
         public DynamicClientRegistrationModel()
         {
-            this.Registrations = new List<Registration>();            
+            this.Registrations = new List<Registration>();
             TransactionType = !string.IsNullOrEmpty(ClientId) ? "Update" : "Create";
         }
     }

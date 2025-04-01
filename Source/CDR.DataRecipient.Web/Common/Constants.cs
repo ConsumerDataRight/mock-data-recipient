@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Components;
-using System.Net.NetworkInformation;
-
-namespace CDR.DataRecipient.Web.Common
+﻿namespace CDR.DataRecipient.Web.Common
 {
     public static class Constants
     {
@@ -12,7 +9,6 @@ namespace CDR.DataRecipient.Web.Common
                 public const string Hostname = "MockDataRecipient:Hostname";
                 public const string DefaultPageSize = "MockDataRecipient:Paging:DefaultPageSize";
                 public const string AttemptValidateCdrArrangementJwtFromDate = "MockDataRecipient:Arrangement:AttemptValidateJwtFromDate";
-                
 
                 public static class SoftwareProduct
                 {
@@ -41,6 +37,8 @@ namespace CDR.DataRecipient.Web.Common
                 public const string ResponseType = "oidc:response_type";
                 public const string ResponseMode = "oidc:response_mode";
                 public const string Scope = "oidc:scope";
+                public const string SecretVolumePath = "oidc:secretVolumePath";
+                public const string MountedSecretName = "oidc:mountedSecretName";
             }
 
             public static class Register
@@ -109,10 +107,10 @@ namespace CDR.DataRecipient.Web.Common
             public const string CdrArrangementJwt = "cdr_arrangement_jwt";
         }
 
-        public static class ErrorDescription 
-        {            
+        public static class ErrorDescription
+        {
             public const string MissingAuthCode = "authCode is missing";
-            public const string MissingState= "state is missing";
+            public const string MissingState = "state is missing";
             public const string MissingAuthState = "authState is missing";
             public const string MissingDiscoveryDocument = "data holder document not found";
             public const string MissingResponse = "response is missing";
@@ -123,6 +121,7 @@ namespace CDR.DataRecipient.Web.Common
         {
             public const string DefaultUserName = "unknown";
         }
+
         public const string DEFAULT_KEY_ID = "7EFA85C18FDE857949BC2EAA21C25E49627D4865";
 
         public const string DEFAULT_PRIVATE_KEY =

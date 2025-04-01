@@ -721,7 +721,7 @@ namespace CDR.DataRecipient.IntegrationTests
                 response.StatusCode.Should().Be(HttpStatusCode.NoContent);
             }
         }
-      
+
         [Fact]
         public async Task AC12_Post_WithInvalidClaimsValuesInJWT_ShouldRespondWith_400BadRequest_ErrorResponse()
         {

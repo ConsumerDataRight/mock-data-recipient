@@ -7,9 +7,9 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure.API2
 {
     public class ClientAssertion
     {
-        public string? CertificateFilename { get; init; } 
-        public string? CertificatePassword { get; init; } 
-        public string? Iss { get; init; } 
+        public string? CertificateFilename { get; init; }
+        public string? CertificatePassword { get; init; }
+        public string? Iss { get; init; }
         public string? Aud { get; init; }
         public string? Kid { get; init; }
 
@@ -34,7 +34,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure.API2
                 subject.Add("iss", Iss);
                 subject.Add("sub", Iss);
             }
-            
+
             if (Aud != null)
             {
                 subject.Add("aud", Aud);

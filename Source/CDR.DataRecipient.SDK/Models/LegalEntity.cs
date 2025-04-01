@@ -9,6 +9,7 @@ namespace CDR.DataRecipient.SDK.Models
     public class LegalEntity
     {
         public string LegalEntityId { get; set; }
+
         public string LegalEntityName { get; set; }
     }
 }

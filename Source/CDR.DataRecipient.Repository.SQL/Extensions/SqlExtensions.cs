@@ -1,14 +1,14 @@
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using System;
 
 namespace CDR.DataRecipient.Repository.SQL.Extensions
 {
-    static public class SqLExtensions
+    public static class SqLExtensions
     {
         /// <summary>
-        /// Execute scalar command and return result as Int32. Throw error if no results or conversion error
+        /// Execute scalar command and return result as Int32. Throw error if no results or conversion error.
         /// </summary>
-        static public Int32 ExecuteScalarInt32(this SqlCommand command)
+        public static int ExecuteScalarInt32(this SqlCommand command)
         {
             var res = command.ExecuteScalar();
 
@@ -21,9 +21,9 @@ namespace CDR.DataRecipient.Repository.SQL.Extensions
         }
 
         /// <summary>
-        /// Execute scalar command and return result as string. Throw error if no results or conversion error
+        /// Execute scalar command and return result as string. Throw error if no results or conversion error.
         /// </summary>
-        static public string ExecuteScalarString(this SqlCommand command)
+        public static string ExecuteScalarString(this SqlCommand command)
         {
             var res = command.ExecuteScalar();
 

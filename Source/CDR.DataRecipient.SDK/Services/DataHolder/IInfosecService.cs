@@ -28,7 +28,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string token);
 
         Task<Response<Introspection>> Introspect(
-            string introspectionEndpoint, 
+            string introspectionEndpoint,
             X509Certificate2 clientCertificate,
             X509Certificate2 signingCertificate,
             string clientId,
@@ -52,7 +52,6 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             string clientId,
             string request);
-        
 
         Task<string> BuildAuthorisationRequestUri(
             string infosecBaseUri,
@@ -60,11 +59,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 signingCertificate,
             string requestUri,
             string scope,
-            string responseType = "code id_token");
+            string responseType = "code");
 
         string BuildAuthorisationRequestJwt(AuthorisationRequestJwt authorisationRequestJwt);
 
         Pkce CreatePkceData();
-
     }
 }

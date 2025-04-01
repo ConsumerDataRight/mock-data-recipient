@@ -16,20 +16,19 @@ namespace CDR.DataRecipient.Repository.SQL
 {
     public class SqlDataAccess : ISqlDataAccess
     {
-        public IConfiguration _config { get; }
-        public string _dbConn { get; set; }
-        protected readonly RecipientDatabaseContext _mdrDatabaseContext;
+        public IConfiguration Config { get; }
+
+        public string DbConn { get; set; }
 
         public SqlDataAccess(IConfiguration configuration, RecipientDatabaseContext recipientDatabaseContext)
         {
-            _config = configuration;
-            _dbConn = _config.GetConnectionString(DbConstants.ConnectionStringNames.Default);
-            _mdrDatabaseContext = recipientDatabaseContext;
+            Config = configuration;
+            DbConn = Config.GetConnectionString(DbConstants.ConnectionStringNames.Default);
         }
 
         public SqlDataAccess(string connString)
         {
-            _dbConn = connString;
+            DbConn = connString;
         }
 
         #region CdrArragements
@@ -37,9 +36,9 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using (SqlConnection db = new(_dbConn))
+                using (SqlConnection db = new(DbConn))
                 {
-                    db.Open();
+                    await db.OpenAsync();
 
                     using var sqlCommand = new SqlCommand("SELECT JsonDocument FROM dbo.CdrArrangement WHERE CdrArrangementId = @id", db);
                     sqlCommand.Parameters.AddWithValue("@id", cdrArrangementId);
@@ -50,7 +49,7 @@ namespace CDR.DataRecipient.Repository.SQL
                         var jsonDocument = Convert.ToString(res);
                         var consentArrangement = JsonConvert.DeserializeObject<ConsentArrangement>(jsonDocument, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
-                        db.Close();
+                        await db.CloseAsync();
 
                         return consentArrangement;
                     }
@@ -60,15 +59,16 @@ namespace CDR.DataRecipient.Repository.SQL
             {
                 return null;
             }
+
             return null;
         }
 
         public async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string dataHolderBrandId, string userId)
         {
             List<ConsentArrangement> cdrArrangements = new();
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var sqlQuery = new StringBuilder();
                 sqlQuery.Append("SELECT [CdrArrangementId], [ClientId], [JsonDocument], UserId FROM [CdrArrangement]");
@@ -88,7 +88,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 }
 
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-                while (reader.Read())
+                while (await reader.ReadAsync())
                 {
                     var cdrArrangement = new ConsentArrangement();
                     var jsonDocument = Convert.ToString(reader.GetString(2));
@@ -100,7 +100,8 @@ namespace CDR.DataRecipient.Repository.SQL
                         cdrArrangements.Add(cdrArrangement);
                     }
                 }
-                db.Close();
+
+                await db.CloseAsync();
 
                 if (cdrArrangements.Count > 0)
                 {
@@ -109,51 +110,57 @@ namespace CDR.DataRecipient.Repository.SQL
                         arr.BrandName = await GetDataHolderBrandName(arr.DataHolderBrandId);
                     }
                 }
+
                 return cdrArrangements;
             }
         }
 
         public async Task InsertCdrArrangement(ConsentArrangement consentArrangement)
         {
-            using (SqlConnection db = new(_dbConn))
+            using SqlConnection db = new(DbConn);
+            await db.OpenAsync();
+
+            var jsonDocument = JsonConvert.SerializeObject(consentArrangement);
+
+            // special case for CdrArrangements
+            jsonDocument = jsonDocument.Replace(@"""CreatedOn"":""0001-01-01T00:00:00""", @"""CreatedOn"": null");
+            jsonDocument = jsonDocument.Replace(@"""ExpiresIn"":0", @"""ExpiresIn"": null");
+
+            var sqlQuery = string.Empty;
+            if (string.IsNullOrEmpty(consentArrangement.UserId))
             {
-                db.Open();
-
-                var jsonDocument = JsonConvert.SerializeObject(consentArrangement);
-
-                //special case for CdrArrangements
-                jsonDocument = jsonDocument.Replace(@"""CreatedOn"":""0001-01-01T00:00:00""", @"""CreatedOn"": null");
-                jsonDocument = jsonDocument.Replace(@"""ExpiresIn"":0", @"""ExpiresIn"": null");
-
-                var sqlQuery = "";
-                if (string.IsNullOrEmpty(consentArrangement.UserId))                    
-                    sqlQuery = "INSERT INTO dbo.CdrArrangement(CdrArrangementId, ClientId, JsonDocument) VALUES(@arrangementId, @clientId, @jsonDocument)";
-                else                    
-                    sqlQuery = "INSERT INTO dbo.CdrArrangement(CdrArrangementId, ClientId, JsonDocument, UserId) VALUES(@arrangementId, @clientId, @jsonDocument, @userId)";
-                                
-                using var sqlCommand = new SqlCommand(sqlQuery, db);
-                sqlCommand.Parameters.AddWithValue("@arrangementId", consentArrangement.CdrArrangementId);
-                sqlCommand.Parameters.AddWithValue("@clientId", consentArrangement.ClientId);
-                sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);
-                    
-                if (!string.IsNullOrEmpty(consentArrangement.UserId))
-                    sqlCommand.Parameters.AddWithValue("@userId", consentArrangement.UserId);
-                    
-                await sqlCommand.ExecuteNonQueryAsync();
-                db.Close();                                
+                sqlQuery = "INSERT INTO dbo.CdrArrangement(CdrArrangementId, ClientId, JsonDocument) VALUES(@arrangementId, @clientId, @jsonDocument)";
             }
+            else
+            {
+                sqlQuery = "INSERT INTO dbo.CdrArrangement(CdrArrangementId, ClientId, JsonDocument, UserId) VALUES(@arrangementId, @clientId, @jsonDocument, @userId)";
+            }
+
+            using var sqlCommand = new SqlCommand(sqlQuery, db);
+            sqlCommand.Parameters.AddWithValue("@arrangementId", consentArrangement.CdrArrangementId);
+            sqlCommand.Parameters.AddWithValue("@clientId", consentArrangement.ClientId);
+            sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);
+
+            if (!string.IsNullOrEmpty(consentArrangement.UserId))
+            {
+                sqlCommand.Parameters.AddWithValue("@userId", consentArrangement.UserId);
+            }
+
+            await sqlCommand.ExecuteNonQueryAsync();
+            await db.CloseAsync();
         }
 
         public async Task UpdateCdrArrangement(ConsentArrangement consentArrangement)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var jsonDocument = JsonConvert.SerializeObject(consentArrangement, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Include });
-                //special case for CdrArrangements
+
+                // special case for CdrArrangements
                 jsonDocument = jsonDocument.Replace(@"""CreatedOn"":""0001-01-01T00:00:00""", @"""CreatedOn"": null");
-                jsonDocument = jsonDocument.Replace(@"""ExpiresIn"":0", @"""ExpiresIn"": null");                
+                jsonDocument = jsonDocument.Replace(@"""ExpiresIn"":0", @"""ExpiresIn"": null");
                 var sqlQuery = "UPDATE dbo.CdrArrangement SET JsonDocument=@jsonDocument WHERE CdrArrangementId=@id";
 
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
@@ -161,142 +168,120 @@ namespace CDR.DataRecipient.Repository.SQL
                 sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);
                 await sqlCommand.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         public async Task DeleteCdrArrangementData()
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.CdrArrangement";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 await sqlCommand.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         public async Task DeleteCdrArrangementData(string clientId)
         {
-            using (SqlConnection db = new SqlConnection(_dbConn))
+            using (SqlConnection db = new SqlConnection(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.CdrArrangement WHERE ClientId = @clientId";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("clientId", clientId);
                 await sqlCommand.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         public async Task DeleteRegistrationData()
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.Registration";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 await sqlCommand.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         public async Task DeleteConsent(string cdrArrangementId)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.CdrArrangement WHERE CdrArrangementId=@id";
 
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@id", cdrArrangementId);
                 await sqlCommand.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         #endregion
 
-        #region CrdRegistrations 
+        #region CrdRegistrations
 
         /// <summary>
-        /// Get the Registrations for this Data Holders
+        /// Get the Registrations for this Data Holders.
         /// </summary>
-        /// <param name="dhBrandId">The STRING DataHolderBrandId</param>
+        /// <param name="dhBrandId">The STRING DataHolderBrandId.</param>
         /// <remarks>
-        /// This is called from Azure DiscoverDataHolders Function, it is used to add the DCR message to the queue
+        /// This is called from Azure DiscoverDataHolders Function, it is used to add the DCR message to the queue.
         /// </remarks>
-        /// <returns>[true|false]</returns>
+        /// <returns>[true|false].</returns>
         public async Task<bool> CheckRegistrationExist(string dhBrandId)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 using var sqlCommand = new SqlCommand("SELECT [DataHolderBrandId] FROM [Registration] WHERE [DataHolderBrandId] = @id", db);
                 sqlCommand.Parameters.AddWithValue("@id", dhBrandId);
                 var res = await sqlCommand.ExecuteScalarAsync();
-                db.Close();
+                await db.CloseAsync();
 
                 if (!string.IsNullOrEmpty(Convert.ToString(res)))
+                {
                     return true;
+                }
                 else
+                {
                     return false;
+                }
             }
         }
 
         /// <summary>
-        /// Check if the Data Holder Brands are Registered - (Sandbox Mode)
+        /// Check if the Data Holder Brands are Registered - (Sandbox Mode).
         /// </summary>
-        /// <param name="newDhBrands">List of Discovered Data Holders</param>
+        /// <param name="newDhBrands">List of Discovered Data Holders.</param>
         /// <remarks>
-        /// This is called from Azure DiscoverDataHolders Function, it is used to process the Insert and Update list
+        /// This is called from Azure DiscoverDataHolders Function, it is used to process the Insert list
         /// of data holders for use in performing the DCR.
         /// </remarks>
-        /// <returns>Lists if data holders to be Registered</returns>
-        public async Task<(IList<DataHolderBrand>, IList<DataHolderBrand>)> CheckRegistrationsExist(IList<DataHolderBrand> newDhBrands)
+        /// <returns>Lists if data holders to be Registered.</returns>
+        public async Task<IList<DataHolderBrand>> CheckRegistrationsExist(IList<DataHolderBrand> newDhBrands)
         {
             List<DataHolderBrand> dhBrandsIns = new List<DataHolderBrand>();
-            List<DataHolderBrand> dhBrandsUpd = new List<DataHolderBrand>();
 
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
                 foreach (var dh in newDhBrands)
                 {
-                    db.Open();
+                    await db.OpenAsync();
                     using var sqlCommand = new SqlCommand("SELECT [JsonDocument] FROM [Registration] WHERE [DataHolderBrandId] = @id", db);
                     sqlCommand.Parameters.AddWithValue("@id", dh.DataHolderBrandId.ToString());
                     SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-                    if (reader.HasRows)
-                    {
-                        bool update = false;
-                        while (reader.Read() && !update)
-                        {
-                            var jsonDocument = Convert.ToString(reader.GetString(0));
-                            var reg = System.Text.Json.JsonSerializer.Deserialize<Registration>(jsonDocument);
-
-                            if (!string.Equals(dh.BrandName, reg.BrandName))
-                                update = true;
-                        }
-                        if (update)
-                        {
-                            dhBrandsUpd.Add(new DataHolderBrand
-                            {
-                                DataHolderBrandId = dh.DataHolderBrandId.ToString(),
-                                BrandName = dh.BrandName,
-                                LastUpdated = dh.LastUpdated,
-                                EndpointDetail = new EndpointDetail
-                                {
-                                    InfoSecBaseUri = dh.EndpointDetail.InfoSecBaseUri
-                                }
-                            });
-                        }
-                    }
-                    else
+                    if (!reader.HasRows)
                     {
                         dhBrandsIns.Add(new DataHolderBrand
                         {
@@ -305,22 +290,23 @@ namespace CDR.DataRecipient.Repository.SQL
                             LastUpdated = dh.LastUpdated,
                             EndpointDetail = new EndpointDetail
                             {
-                                InfoSecBaseUri = dh.EndpointDetail.InfoSecBaseUri
-                            }
+                                InfoSecBaseUri = dh.EndpointDetail.InfoSecBaseUri,
+                            },
                         });
                     }
 
-                    db.Close();
+                    await db.CloseAsync();
                 }
             }
-            return (dhBrandsIns, dhBrandsUpd);
+
+            return dhBrandsIns;
         }
 
         public async Task<Registration> GetRegistration(string clientId, string dataHolderBrandId)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 using var sqlCommand = new SqlCommand("SELECT [JsonDocument] FROM [Registration] WHERE [ClientId] = @clientId AND [DataHolderBrandId] = @dataHolderBrandId", db);
                 sqlCommand.Parameters.AddWithValue("@clientId", clientId);
@@ -332,62 +318,65 @@ namespace CDR.DataRecipient.Repository.SQL
                 {
                     var jsonDocument = Convert.ToString(res);
                     var registration = System.Text.Json.JsonSerializer.Deserialize<Registration>(jsonDocument);
-                    db.Close();
+                    await db.CloseAsync();
 
                     return registration;
                 }
             }
+
             return null;
         }
 
         /// <summary>
-        /// Return the Registration detail from the local repo
+        /// Return the Registration detail from the local repo.
         /// </summary>
-        /// <param name="dhBrandId">The registered DataHolderBrandId</param>
+        /// <param name="dhBrandId">The registered DataHolderBrandId.</param>
         /// <remarks>
         /// This is called from Azure DCR Function.
         /// </remarks>
-        /// <returns>[true|false]</returns>
+        /// <returns>[true|false].</returns>
         /// This needs to be string?
         public async Task<string> GetRegByDHBrandId(string dhBrandId)
         {
             var clientId = string.Empty;
 
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 using var sqlCommand = new SqlCommand("SELECT [ClientId], [DataHolderBrandId] FROM [Registration] WHERE [DataHolderBrandId] = @id", db);
                 sqlCommand.Parameters.AddWithValue("@id", dhBrandId);
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         clientId = reader.GetString(0);
                     }
                 }
 
-                db.Close();
+                await db.CloseAsync();
             }
+
             return clientId;
         }
 
         public async Task<IEnumerable<Registration>> GetRegistrations()
         {
             List<Registration> registrations = new();
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 using var sqlCommand = new SqlCommand("SELECT ClientId, JsonDocument FROM dbo.Registration", db);
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
-                while (reader.Read())
+                while (await reader.ReadAsync())
                 {
                     var jsonDocument = Convert.ToString(reader.GetString(1));
                     var registration = System.Text.Json.JsonSerializer.Deserialize<Registration>(jsonDocument);
                     registrations.Add(registration);
                 }
-                db.Close();
+
+                await db.CloseAsync();
 
                 if (registrations.Count > 0)
                 {
@@ -396,15 +385,16 @@ namespace CDR.DataRecipient.Repository.SQL
                         reg.BrandName = await GetDataHolderBrandName(reg.DataHolderBrandId);
                     }
                 }
+
                 return registrations;
             }
         }
 
         public async Task DeleteRegistration(string clientId, string dataHolderBrandId)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlCommand = "DELETE FROM dbo.Registration WHERE [ClientId] = @clientId AND [DataHolderBrandId] = @dataHolderBrandId";
 
                 using var command = new SqlCommand(sqlCommand, db);
@@ -412,7 +402,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 command.Parameters.AddWithValue("@dataHolderBrandId", dataHolderBrandId);
                 await command.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
@@ -420,9 +410,9 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using (SqlConnection db = new(_dbConn))
+                using (SqlConnection db = new(DbConn))
                 {
-                    db.Open();
+                    await db.OpenAsync();
                     var dhBrandId = new Guid(registration.DataHolderBrandId);
                     var jsonDocument = System.Text.Json.JsonSerializer.Serialize(registration);
                     var sqlCommand = "INSERT INTO [Registration] ([ClientId], [DataHolderBrandId], [JsonDocument]) VALUES(@clientId, @dhBrndId, @jsonDoc)";
@@ -431,8 +421,9 @@ namespace CDR.DataRecipient.Repository.SQL
                     cmd.Parameters.AddWithValue("@dhBrndId", dhBrandId);
                     cmd.Parameters.AddWithValue("@jsonDoc", jsonDocument);
                     await cmd.ExecuteNonQueryAsync();
-                    db.Close();
+                    await db.CloseAsync();
                 }
+
                 return true;
             }
             catch (Exception)
@@ -442,59 +433,60 @@ namespace CDR.DataRecipient.Repository.SQL
         }
 
         /// <summary>
-        /// Return a list of Registrations from the DcrMessage table in the local repo
+        /// Return a list of Registrations from the DcrMessage table in the local repo.
         /// </summary>
         /// <remarks>
         /// This is used in the DCR View using the table data populated from the Azure DCR Function.
         /// </remarks>
-        /// <returns>The list of registrations</returns>
+        /// <returns>The list of registrations.</returns>
         public async Task<IEnumerable<Registration>> GetDcrMessageRegistrations()
         {
             List<Registration> registrations = new();
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlQuery = "SELECT [ClientId],[DataHolderBrandId],[BrandName],[MessageState],[LastUpdated] FROM [dbo].[DcrMessage] WHERE [MessageState] != @msgState";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@msgState", Message.Pending.ToString());
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         var registration = new Registration
                         {
-                            ClientId = reader.IsDBNull(0) ? "" : reader.GetString(0),
+                            ClientId = reader.IsDBNull(0) ? string.Empty : reader.GetString(0),
                             DataHolderBrandId = Convert.ToString(reader.GetGuid(1)),
-                            BrandName = reader.IsDBNull(2) ? "" : reader.GetString(2),
+                            BrandName = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                             MessageState = reader.GetString(3),
-                            LastUpdated = reader.GetDateTime(4)
+                            LastUpdated = reader.GetDateTime(4),
                         };
                         registrations.Add(registration);
                     }
                 }
-                db.Close();
+
+                await db.CloseAsync();
                 return registrations;
             }
         }
 
         /// <summary>
-        /// Insert the Registration details into the local repo
+        /// Insert the Registration details into the local repo.
         /// </summary>
-        /// <param name="regClientId">ClientId as returned from the Register</param>
-        /// <param name="dcrDHBrandId">The DataHolderBrandId being registered</param>
-        /// <param name="jsonDocument">The response as a json string</param>
+        /// <param name="regClientId">ClientId as returned from the Register.</param>
+        /// <param name="dcrDHBrandId">The DataHolderBrandId being registered.</param>
+        /// <param name="jsonDocument">The response as a json string.</param>
         /// <remarks>
         /// This is called from Azure DCR Function, it updates the local repo after performing the DCR in the Register.
         /// </remarks>
-        /// <returns>[true|false]</returns>
+        /// <returns>[true|false].</returns>
         public async Task<bool> InsertDcrRegistration(string regClientId, string dcrDHBrandId, string jsonDocument)
         {
             try
             {
-                using (SqlConnection db = new(_dbConn))
+                using (SqlConnection db = new(DbConn))
                 {
-                    db.Open();
+                    await db.OpenAsync();
                     var dhBrandId = new Guid(dcrDHBrandId);
                     var sqlQuery = "INSERT INTO [Registration] ([ClientId], [DataHolderBrandId], [JsonDocument]) VALUES(@clientId, @dhBrndId, @jsonDoc)";
                     using var sqlCommand = new SqlCommand(sqlQuery, db);
@@ -502,8 +494,9 @@ namespace CDR.DataRecipient.Repository.SQL
                     sqlCommand.Parameters.AddWithValue("@dhBrndId", dhBrandId);
                     sqlCommand.Parameters.AddWithValue("@jsonDoc", jsonDocument);
                     await sqlCommand.ExecuteNonQueryAsync();
-                    db.Close();
+                    await db.CloseAsync();
                 }
+
                 return true;
             }
             catch (Exception)
@@ -514,20 +507,20 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task UpdateRegistration(Registration registration)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
-                var jsonDocument = System.Text.Json.JsonSerializer.Serialize(registration);                
+                var jsonDocument = System.Text.Json.JsonSerializer.Serialize(registration);
                 var sqlQuery = "UPDATE dbo.Registration SET JsonDocument=@jsonDocument WHERE [ClientId] = @clientId AND [DataHolderBrandId] = @dataHolderBrandId";
 
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@clientId", registration.ClientId);
                 sqlCommand.Parameters.AddWithValue("@dataHolderBrandId", registration.DataHolderBrandId);
-                sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);                
+                sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);
                 await sqlCommand.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
@@ -537,9 +530,9 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task<DataHolderBrand> GetDataHolderBrand(string brandId)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 using var sqlCommand = new SqlCommand("SELECT JsonDocument FROM dbo.DataHolderBrand WHERE DataHolderBrandId = @id", db);
                 sqlCommand.Parameters.AddWithValue("@id", brandId);
@@ -551,18 +544,19 @@ namespace CDR.DataRecipient.Repository.SQL
                     var jsonDocument = Convert.ToString(res);
                     var dataholderbrand = System.Text.Json.JsonSerializer.Deserialize<DataHolderBrand>(jsonDocument);
 
-                    db.Close();
+                    await db.CloseAsync();
                     return dataholderbrand;
                 }
             }
+
             return null;
         }
 
         public async Task<string> GetDataHolderBrandName(string brandId)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 using var sqlCommand = new SqlCommand("SELECT JsonDocument FROM dbo.DataHolderBrand WHERE DataHolderBrandId = @id", db);
                 sqlCommand.Parameters.AddWithValue("@id", brandId);
 
@@ -573,25 +567,26 @@ namespace CDR.DataRecipient.Repository.SQL
                     var jsonDocument = Convert.ToString(res);
                     var dataholderbrand = System.Text.Json.JsonSerializer.Deserialize<DataHolderBrand>(jsonDocument);
 
-                    db.Close();
+                    await db.CloseAsync();
                     return dataholderbrand.BrandName;
                 }
             }
+
             return null;
         }
 
         public async Task<IEnumerable<DataHolderBrand>> GetDataHolderBrands()
         {
             List<DataHolderBrand> dataHolderBrands = new();
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 using var sqlCommand = new SqlCommand("SELECT DataHolderBrandId, JsonDocument FROM dbo.DataHolderBrand", db);
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         var dataHolderBrandjson = reader.GetString(1);
                         var jsonDocument = Convert.ToString(dataHolderBrandjson);
@@ -599,7 +594,7 @@ namespace CDR.DataRecipient.Repository.SQL
                     }
                 }
 
-                db.Close();
+                await db.CloseAsync();
 
                 return dataHolderBrands
                     .OrderBy(x => x.LegalEntity.LegalEntityName)
@@ -610,38 +605,38 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task DataHolderBrandsDelete()
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var sqlQuery = "DELETE FROM dbo.DataHolderBrand";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 await sqlCommand.ExecuteNonQueryAsync();
 
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         /// <summary>
-        /// Aggregate the Data Holders - updates the repo (Mock Mode)
+        /// Aggregate the Data Holders - updates the repo (Mock Mode).
         /// </summary>
-        /// <param name="dhBrandsNew">List of Discovered Data Holders</param>
-        /// <returns>Count of data holders to be inserted and updated</returns>
-        public async Task<(int, int)> AggregateDataHolderBrands(IList<DataHolderBrand> dhBrandsNew)
+        /// <param name="dhBrandsNew">List of Discovered Data Holders.</param>
+        /// <returns>Count of data holders to be inserted and updated.</returns>
+        public async Task<(int DhBrandsInserted, int DhBrandsUpdated)> AggregateDataHolderBrands(IList<DataHolderBrand> dhBrandsNew)
         {
-            List<DataHolderBrand> dhBrandsIns = new List<DataHolderBrand>();
-            List<DataHolderBrand> dhBrandsUpd = new List<DataHolderBrand>();
+            List<DataHolderBrand> dhBrandsIns = [];
+            List<DataHolderBrand> dhBrandsUpd = [];
 
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 List<DataHolderBrand> dataHolderBrandsOrig = new List<DataHolderBrand>();
                 using var sqlCommand = new SqlCommand("SELECT [DataHolderBrandId], [JsonDocument], [LastUpdated] FROM [DataHolderBrand]", db);
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         // NB: LastUpdated populated from jsonDocument when deserialised through entity
                         //     this is used below to compare with received data to build updated list where LastUpdated is newer
@@ -650,7 +645,7 @@ namespace CDR.DataRecipient.Repository.SQL
                     }
                 }
 
-                db.Close();
+                await db.CloseAsync();
 
                 if (dataHolderBrandsOrig.Count > 0)
                 {
@@ -669,6 +664,7 @@ namespace CDR.DataRecipient.Repository.SQL
                     {
                         dhBrandsIns.ToList().ForEach(async dataholder => await InsertDataHolder(dataholder));
                     }
+
                     if (dhBrandsUpd.Count > 0)
                     {
                         dhBrandsUpd.ToList().ForEach(async dataholder => await UpdateDataHolder(dataholder));
@@ -684,33 +680,35 @@ namespace CDR.DataRecipient.Repository.SQL
                     }
                 }
             }
+
             return (dhBrandsIns.Count, dhBrandsUpd.Count);
         }
 
         /// <summary>
-        /// Insert the Data Holder into the repo
+        /// Insert the Data Holder into the repo.
         /// </summary>
-        /// <param name="dataholder">The Data Holder to be inserted</param>
+        /// <param name="dataholder">The Data Holder to be inserted.</param>
         /// <remarks>
         /// This is called from above to Insert the Data Holder into the repo.
         /// This is also called from Azure DiscoverDataHolders Function, it is used to Insert the data holder after performing the DCR.
         /// </remarks>
-        /// <returns>Boolean status only consumed in the Azure Functions DiscoverDataHolders</returns>
+        /// <returns>Boolean status only consumed in the Azure Functions DiscoverDataHolders.</returns>
         public async Task<bool> InsertDataHolder(DataHolderBrand dataholder)
         {
             try
             {
-                using (SqlConnection db = new(_dbConn))
+                using (SqlConnection db = new(DbConn))
                 {
-                    db.Open();
+                    await db.OpenAsync();
                     var jsonDocument = System.Text.Json.JsonSerializer.Serialize(dataholder);
                     var sqlQuery = "INSERT INTO [DataHolderBrand] ([DataHolderBrandId], [JsonDocument], [LastUpdated]) VALUES (@dhBrndId, @jsonDoc, GETUTCDATE())";
                     using var sqlCommand = new SqlCommand(sqlQuery, db);
                     sqlCommand.Parameters.AddWithValue("@dhBrndId", dataholder.DataHolderBrandId);
                     sqlCommand.Parameters.AddWithValue("@jsonDoc", jsonDocument);
                     await sqlCommand.ExecuteNonQueryAsync();
-                    db.Close();
+                    await db.CloseAsync();
                 }
+
                 return true;
             }
             catch (Exception)
@@ -720,31 +718,32 @@ namespace CDR.DataRecipient.Repository.SQL
         }
 
         /// <summary>
-        /// Update the Data Holder
+        /// Update the Data Holder.
         /// </summary>
-        /// <param name="dataholder">The Data Holder to be updated</param>
+        /// <param name="dataholder">The Data Holder to be updated.</param>
         /// <remarks>
         /// This is called from above to Update the Data Holder in the repo.
         /// This is also called from Azure DiscoverDataHolders Function, it is used to Upate the data holder after performing the DCR.
         /// </remarks>
-        /// <returns>Boolean status only consumed in the Azure Functions DiscoverDataHolders</returns>
+        /// <returns>Boolean status only consumed in the Azure Functions DiscoverDataHolders.</returns>
         public async Task<bool> UpdateDataHolder(DataHolderBrand dataholder)
         {
             try
             {
-                using (SqlConnection db = new(_dbConn))
+                using (SqlConnection db = new(DbConn))
                 {
-                    db.Open();
+                    await db.OpenAsync();
 
-                    var jsonDocument = System.Text.Json.JsonSerializer.Serialize(dataholder);                    
+                    var jsonDocument = System.Text.Json.JsonSerializer.Serialize(dataholder);
                     var sqlQuery = "UPDATE [DataHolderBrand] SET [JsonDocument] = @jsonDocument, [LastUpdated] = GETUTCDATE() WHERE [DataHolderBrandId] = @id";
                     using var sqlCommand = new SqlCommand(sqlQuery, db);
                     sqlCommand.Parameters.AddWithValue("@id", dataholder.DataHolderBrandId);
                     sqlCommand.Parameters.AddWithValue("@jsonDocument", jsonDocument);
                     await sqlCommand.ExecuteNonQueryAsync();
 
-                    db.Close();
+                    await db.CloseAsync();
                 }
+
                 return true;
             }
             catch (Exception)
@@ -754,56 +753,56 @@ namespace CDR.DataRecipient.Repository.SQL
         }
 
         /// <summary>
-        /// Delete the Data Holder into the repo
+        /// Delete the Data Holder into the repo.
         /// </summary>
-        /// <param name="dataholder">The Data Holder to be deleted</param>
+        /// <param name="dataholderBrndId">The Data Holder to be deleted.</param>
         /// <remarks>
         /// This is called from above to delete the Data Holder into the repo.
         /// This is also called from Azure DiscoverDataHolders Function, it is used to delete the data holder after performing the DCR.
         /// </remarks>
-        /// <returns>Boolean status only consumed in the Azure Functions DiscoverDataHolders</returns>
+        /// <returns>Boolean status only consumed in the Azure Functions DiscoverDataHolders.</returns>
         public async Task<bool> DeleteDataHolder(string dataholderBrndId)
         {
             try
             {
-                using (SqlConnection db = new(_dbConn))
+                using (SqlConnection db = new(DbConn))
                 {
-                    db.Open();
-                    
-                    var sqlQuery = "SELECT [ClientId] FROM [dbo].[DcrMessage] WHERE [DataHolderBrandId] = @dcrBrandId";                    
+                    await db.OpenAsync();
+
+                    var sqlQuery = "SELECT [ClientId] FROM [dbo].[DcrMessage] WHERE [DataHolderBrandId] = @dcrBrandId";
                     using var sqlCommand = new SqlCommand(sqlQuery, db);
                     sqlCommand.Parameters.AddWithValue("@dcrBrandId", dataholderBrndId);
-                    
+
                     var dcrClientId = await sqlCommand.ExecuteScalarAsync();
 
-                    if (!String.IsNullOrEmpty(dcrClientId.ToString()))
+                    if (!string.IsNullOrEmpty(dcrClientId.ToString()))
                     {
-                        //Remove cdrArrangements
+                        // Remove cdrArrangements
                         sqlQuery = "DELETE FROM [CdrArrangement] WHERE [ClientId] = @cdrClientId";
                         using var sqlCdrCommand = new SqlCommand(sqlQuery, db);
                         sqlCdrCommand.Parameters.AddWithValue("@cdrClientId", dcrClientId.ToString());
                         await sqlCdrCommand.ExecuteNonQueryAsync();
 
-                        //Remove Registrations
+                        // Remove Registrations
                         sqlQuery = "DELETE FROM [Registration] WHERE [ClientId] = @regClientId";
                         using var sqlRegCommand = new SqlCommand(sqlQuery, db);
                         sqlRegCommand.Parameters.AddWithValue("@regClientId", dcrClientId.ToString());
                         await sqlRegCommand.ExecuteNonQueryAsync();
                     }
 
-                    //Remove DcrMessage 
+                    // Remove DcrMessage
                     sqlQuery = "DELETE FROM [dbo].[DcrMessage] WHERE [DataHolderBrandId] = @dcrDataHolderBrandId";
                     using var sqldcrDhBrandQuery = new SqlCommand(sqlQuery, db);
                     sqldcrDhBrandQuery.Parameters.AddWithValue("@dcrDataHolderBrandId", dataholderBrndId);
                     await sqldcrDhBrandQuery.ExecuteNonQueryAsync();
 
-                    //Remove DataHolder brands
+                    // Remove DataHolder brands
                     sqlQuery = "DELETE FROM [DataHolderBrand] WHERE [DataHolderBrandId] = @dhBrandId";
                     using var sqldhBrandQuery = new SqlCommand(sqlQuery, db);
                     sqldhBrandQuery.Parameters.AddWithValue("@dhBrandId", dataholderBrndId);
                     await sqldhBrandQuery.ExecuteNonQueryAsync();
 
-                    db.Close();
+                    await db.CloseAsync();
                 }
 
                 return true;
@@ -816,17 +815,19 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task PersistDataHolderBrands(IEnumerable<DataHolderBrand> dataHolderBrands)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var sqlQuery = "DELETE FROM DataHolderBrand";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 await sqlCommand.ExecuteNonQueryAsync();
-                db.Close();
+                await db.CloseAsync();
 
                 if (dataHolderBrands.Any())
+                {
                     dataHolderBrands.ToList().ForEach(async dataholder => await InsertDataHolder(dataholder));
+                }
             }
         }
 
@@ -834,15 +835,15 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             List<DataRecipientViewModel> rtnList = new();
 
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 using var sqlCommand = new SqlCommand("SELECT SoftwareProductId, SoftwareProductName FROM SoftwareProduct", db);
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         var swProductId = reader.GetGuid(0);
                         var swProductName = reader.GetString(1);
@@ -850,12 +851,12 @@ namespace CDR.DataRecipient.Repository.SQL
                         rtnList.Add(new DataRecipientViewModel
                         {
                             SoftwareProductId = swProductId.ToString(),
-                            SoftwareProductName = swProductName
+                            SoftwareProductName = swProductName,
                         });
                     }
                 }
 
-                db.Close();
+                await db.CloseAsync();
                 return rtnList;
             }
         }
@@ -864,13 +865,13 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             if (dataRecipients.Any())
             {
-                using (SqlConnection db = new(_dbConn))
+                using (SqlConnection db = new(DbConn))
                 {
-                    db.Open();
+                    await db.OpenAsync();
                     var sqlQuery = "DELETE FROM SoftwareProduct";
                     using var sqlCommand = new SqlCommand(sqlQuery, db);
                     await sqlCommand.ExecuteNonQueryAsync();
-                    db.Close();
+                    await db.CloseAsync();
 
                     dataRecipients.ToList().ForEach(async dataRecipient => await InsertSoftwareProduct(dataRecipient.DataRecipientBrands));
                 }
@@ -885,15 +886,15 @@ namespace CDR.DataRecipient.Repository.SQL
                 return;
             }
 
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 foreach (var brand in drBrands)
                 {
                     if (brand.SoftwareProducts != null && brand.SoftwareProducts.Count > 0)
                     {
                         foreach (var swProduct in brand.SoftwareProducts)
-                        {                            
+                        {
                             var sqlQuery = "INSERT INTO SoftwareProduct (SoftwareProductId, BrandId, SoftwareProductName, SoftwareProductDescription, LogoUri, RecipientBaseUri, RedirectUri, Scope, Status) " +
                                 "VALUES (@softwareProductId, @dataRecipientBrandId, @softwareProductName, @softwareProductDescription, @logoUri, @recipientBaseUri, @redirectUri, @scope, @status)";
                             using var sqlCommand = new SqlCommand(sqlQuery, db);
@@ -910,24 +911,25 @@ namespace CDR.DataRecipient.Repository.SQL
                         }
                     }
                 }
-                db.Close();
+
+                await db.CloseAsync();
             }
         }
 
         /// <summary>
-        /// Check if the DataHolderBrandId exist
+        /// Check if the DataHolderBrandId exist.
         /// </summary>
-        /// <param name="dhBrandId">The DataHolderBrandId</param>
+        /// <param name="dhBrandId">The DataHolderBrandId.</param>
         /// <remarks>
-        /// This is called from Azure DiscoverDataHolders and DCR Functions, to prevent multiple queue entries for the same DataHolderBrandId
+        /// This is called from Azure DiscoverDataHolders and DCR Functions, to prevent multiple queue entries for the same DataHolderBrandId.
         /// </remarks>
-        /// <returns>The DataHolderBrandId and BrandName</returns>
+        /// <returns>The DataHolderBrandId and BrandName.</returns>
         public async Task<DataHolderBrand> GetDHBrandById(string dhBrandId)
         {
             DataHolderBrand dh = new DataHolderBrand();
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var sqlQuery = "SELECT [DataHolderBrandId], [BrandName], [InfosecBaseUri] FROM [DcrMessage] WHERE [DataHolderBrandId] = @id";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
@@ -935,37 +937,38 @@ namespace CDR.DataRecipient.Repository.SQL
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         dh.DataHolderBrandId = dhBrandId;
                         dh.BrandName = reader.GetString(1);
                         dh.EndpointDetail = new EndpointDetail
                         {
-                            InfoSecBaseUri = reader.GetString(2)
+                            InfoSecBaseUri = reader.GetString(2),
                         };
                     }
                 }
 
-                db.Close();
+                await db.CloseAsync();
             }
+
             return dh;
         }
 
         /// <summary>
-        /// Check if the queue message exists by DataHolderBrandId
+        /// Check if the queue message exists by DataHolderBrandId.
         /// </summary>
-        /// <param name="dhBrandId">The DataHolderBrandId</param>
+        /// <param name="dhBrandId">The DataHolderBrandId.</param>
         /// <remarks>
-        /// This is called from Azure DiscoverDataHolders and DCR Functions, to prevent multiple queue entries for the same DataHolderBrandId
+        /// This is called from Azure DiscoverDataHolders and DCR Functions, to prevent multiple queue entries for the same DataHolderBrandId.
         /// </remarks>
-        /// <returns>The MessageId and the MessageState</returns>
-        public async Task<(string msgId, string msgState)> CheckDcrMessageExistByDHBrandId(string dhBrandId)
+        /// <returns>The MessageId and the MessageState.</returns>
+        public async Task<(string MsgId, string MsgState)> CheckDcrMessageExistByDHBrandId(string dhBrandId)
         {
-            string msgId = "";
-            string msgState = "";
-            using (SqlConnection db = new(_dbConn))
+            string msgId = string.Empty;
+            string msgState = string.Empty;
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var sqlQuery = "SELECT [MessageId], [MessageState] FROM [DcrMessage] WHERE [DataHolderBrandId] = @id";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
@@ -973,33 +976,34 @@ namespace CDR.DataRecipient.Repository.SQL
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         msgId = reader.GetString(0);
                         msgState = reader.GetString(1);
                     }
                 }
 
-                db.Close();
+                await db.CloseAsync();
             }
+
             return (msgId, msgState);
         }
 
         /// <summary>
-        /// Check if the queue message exists by the Queue MessageId
+        /// Check if the queue message exists by the Queue MessageId.
         /// </summary>
-        /// <param name="dhMessageId">The message object to be inserted</param>
+        /// <param name="dhMessageId">The message object to be inserted.</param>
         /// <remarks>
-        /// This is called from Azure Functions DiscoverDataHolders, to prevent multiple queue entries for the same DataHolderBrandId
+        /// This is called from Azure Functions DiscoverDataHolders, to prevent multiple queue entries for the same DataHolderBrandId.
         /// </remarks>
-        /// <returns>The MessageId and the MessageState</returns>
-        public async Task<(string, string)> CheckDcrMessageExistByMessageId(string dhMessageId)
+        /// <returns>The MessageId and the MessageState.</returns>
+        public async Task<(string MessageId, string MessageState)> CheckDcrMessageExistByMessageId(string dhMessageId)
         {
-            string msgId = "";
-            string msgState = "";
-            using (SqlConnection db = new(_dbConn))
+            string msgId = string.Empty;
+            string msgState = string.Empty;
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var sqlQuery = "SELECT [MessageId], [MessageState] FROM [DcrMessage] WHERE [MessageId] = @id";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
@@ -1007,45 +1011,45 @@ namespace CDR.DataRecipient.Repository.SQL
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 if (reader.HasRows)
                 {
-                    while (reader.Read())
+                    while (await reader.ReadAsync())
                     {
                         msgId = reader.GetString(0);
                         msgState = reader.GetString(1);
                     }
                 }
 
-                db.Close();
+                await db.CloseAsync();
             }
+
             return (msgId, msgState);
         }
 
         /// <summary>
-        /// Insert the queue message status
+        /// Insert the queue message status.
         /// </summary>
-        /// <param name="dcrMessage">The message object to be inserted</param>
+        /// <param name="dcrMessage">The message object to be inserted.</param>
         /// <remarks>
-        /// This is called from Azure DiscoverDataHolders Function
+        /// This is called from Azure DiscoverDataHolders Function.
         /// </remarks>
-        /// <returns>[true|false]</returns>
+        /// <returns>[true|false].</returns>
         public async Task<bool> InsertDcrMessage(DcrMessage dcrMessage)
         {
             try
             {
-                using (SqlConnection db = new(_dbConn))
-                {
-                    db.Open();
-                    var sqlQuery = "INSERT INTO [DcrMessage] ([DataHolderBrandId], [MessageId], [MessageState], [MessageError], [LastUpdated], [ClientId], [BrandName], [Created], [InfosecBaseUri]) VALUES (@dhBrandId, @msgId, @msgState, @msgErr, GETUTCDATE(), @clientId, @brandName, GETUTCDATE(), @infosecBaseUri)";
-                    using var sqlCommand = new SqlCommand(sqlQuery, db);
-                    sqlCommand.Parameters.AddWithValue("@dhBrandId", dcrMessage.DataHolderBrandId);
-                    sqlCommand.Parameters.AddWithValue("@msgId", dcrMessage.MessageId);
-                    sqlCommand.Parameters.AddWithValue("@msgState", dcrMessage.MessageState);
-                    sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
-                    sqlCommand.Parameters.AddWithValue("@clientId", string.IsNullOrEmpty(dcrMessage.ClientId) ? DBNull.Value : dcrMessage.ClientId);
-                    sqlCommand.Parameters.AddWithValue("@brandName", string.IsNullOrEmpty(dcrMessage.BrandName) ? DBNull.Value : dcrMessage.BrandName);
-                    sqlCommand.Parameters.AddWithValue("@infosecBaseUri", dcrMessage.InfosecBaseUri);
-                    await sqlCommand.ExecuteNonQueryAsync();
-                    db.Close();
-                }
+                using SqlConnection db = new(DbConn);
+                await db.OpenAsync();
+                var sqlQuery = "INSERT INTO [DcrMessage] ([DataHolderBrandId], [MessageId], [MessageState], [MessageError], [LastUpdated], [ClientId], [BrandName], [Created], [InfosecBaseUri]) VALUES (@dhBrandId, @msgId, @msgState, @msgErr, GETUTCDATE(), @clientId, @brandName, GETUTCDATE(), @infosecBaseUri)";
+                using var sqlCommand = new SqlCommand(sqlQuery, db);
+                sqlCommand.Parameters.AddWithValue("@dhBrandId", dcrMessage.DataHolderBrandId);
+                sqlCommand.Parameters.AddWithValue("@msgId", dcrMessage.MessageId);
+                sqlCommand.Parameters.AddWithValue("@msgState", dcrMessage.MessageState);
+                sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
+                sqlCommand.Parameters.AddWithValue("@clientId", string.IsNullOrEmpty(dcrMessage.ClientId) ? DBNull.Value : dcrMessage.ClientId);
+                sqlCommand.Parameters.AddWithValue("@brandName", string.IsNullOrEmpty(dcrMessage.BrandName) ? DBNull.Value : dcrMessage.BrandName);
+                sqlCommand.Parameters.AddWithValue("@infosecBaseUri", dcrMessage.InfosecBaseUri);
+                await sqlCommand.ExecuteNonQueryAsync();
+                await db.CloseAsync();
+
                 return true;
             }
             catch (Exception)
@@ -1055,20 +1059,20 @@ namespace CDR.DataRecipient.Repository.SQL
         }
 
         /// <summary>
-        /// Update the DcrMessage MessageState and MessageError by DataHolderBrandId
+        /// Update the DcrMessage MessageState and MessageError by DataHolderBrandId.
         /// </summary>
-        /// <param name="dcrMessage">The message object to be updated</param>
+        /// <param name="dcrMessage">The message object to be updated.</param>
         /// <remarks>
-        /// This is called from Azure Functions DCR
+        /// This is called from Azure Functions DCR.
         /// </remarks>
         public async Task UpdateDcrMsgByDHBrandId(DcrMessage dcrMessage)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
 
                 var sqlQuery = "UPDATE [DcrMessage] SET [BrandName] = @brandName, [InfosecBaseUri] = @infosecBaseUri, [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE(), [ClientId] = @clientId WHERE [DataHolderBrandId] = @id";
-                                
+
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@id", dcrMessage.DataHolderBrandId);
                 sqlCommand.Parameters.AddWithValue("@msgState", dcrMessage.MessageState);
@@ -1077,45 +1081,46 @@ namespace CDR.DataRecipient.Repository.SQL
                 sqlCommand.Parameters.AddWithValue("@brandName", string.IsNullOrEmpty(dcrMessage.BrandName) ? DBNull.Value : dcrMessage.BrandName);
                 sqlCommand.Parameters.AddWithValue("@infosecBaseUri", string.IsNullOrEmpty(dcrMessage.InfosecBaseUri) ? DBNull.Value : dcrMessage.InfosecBaseUri);
                 await sqlCommand.ExecuteNonQueryAsync();
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         /// <summary>
-        /// Update the DcrMessage MessageState and MessageError by the Queue MessageId
+        /// Update the DcrMessage MessageState and MessageError by the Queue MessageId.
         /// </summary>
-        /// <param name="dcrMessage">The message object to be updated</param>
+        /// <param name="dcrMessage">The message object to be updated.</param>
         /// msgState Abandoned brand name not available and can be ignored
         /// <remarks>
-        /// This is called from Azure Functions DCR
+        /// This is called from Azure Functions DCR.
         /// </remarks>
         public async Task UpdateDcrMsgByMessageId(DcrMessage dcrMessage)
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();                
+                await db.OpenAsync();
                 var sqlQuery = "UPDATE [DcrMessage] SET [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE() WHERE [MessageId] = @id";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@id", dcrMessage.MessageId);
                 sqlCommand.Parameters.AddWithValue("@msgState", dcrMessage.MessageState);
                 sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
                 await sqlCommand.ExecuteNonQueryAsync();
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
         /// <summary>
-        /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId
+        /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId.
         /// </summary>
-        /// <param name="dcrMessage">The message object to be updated</param>        
+        /// <param name="dcrMessage">The message object to be updated.</param>
         /// This is called from Azure DCR Functions
-        /// BrandName not available when DCR        
+        /// <remarks>
+        /// BrandName not available when DCR.
         /// </remarks>
         public async Task UpdateDcrMsgReplaceMessageIdWithoutBrand(DcrMessage dcrMessage, string replacementMsgId = "")
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlQuery = "UPDATE [DcrMessage] SET [MessageId] = @replaceMsgId, [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE() WHERE [MessageId] = @id";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@replaceMsgId", replacementMsgId);
@@ -1123,24 +1128,23 @@ namespace CDR.DataRecipient.Repository.SQL
                 sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
                 sqlCommand.Parameters.AddWithValue("@id", dcrMessage.MessageId);
                 await sqlCommand.ExecuteNonQueryAsync();
-                db.Close();
+                await db.CloseAsync();
             }
         }
 
-
         /// <summary>
-        /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId
+        /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId.
         /// </summary>
-        /// <param name="dcrMessage">The message object to be updated</param>
+        /// <param name="dcrMessage">The message object to be updated.</param>
         /// Update BrandName for Discovery Data Holder
         /// <remarks>
-        /// This is called from Azure DiscoverDataHolders
+        /// This is called from Azure DiscoverDataHolders.
         /// </remarks>
         public async Task UpdateDcrMsgReplaceMessageId(DcrMessage dcrMessage, string replacementMsgId = "")
         {
-            using (SqlConnection db = new(_dbConn))
+            using (SqlConnection db = new(DbConn))
             {
-                db.Open();
+                await db.OpenAsync();
                 var sqlQuery = "UPDATE [DcrMessage] SET [MessageId] = @replaceMsgId, [BrandName] = @brandName, [InfosecBaseUri] = @infosecBaseUri, [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE() WHERE [MessageId] = @id";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
                 sqlCommand.Parameters.AddWithValue("@replaceMsgId", replacementMsgId);
@@ -1148,9 +1152,9 @@ namespace CDR.DataRecipient.Repository.SQL
                 sqlCommand.Parameters.AddWithValue("@msgErr", string.IsNullOrEmpty(dcrMessage.MessageError) ? DBNull.Value : dcrMessage.MessageError);
                 sqlCommand.Parameters.AddWithValue("@id", dcrMessage.MessageId);
                 sqlCommand.Parameters.AddWithValue("@brandName", string.IsNullOrEmpty(dcrMessage.BrandName) ? DBNull.Value : dcrMessage.BrandName);
-                sqlCommand.Parameters.AddWithValue("@infosecBaseUri", string.IsNullOrEmpty(dcrMessage.InfosecBaseUri) ? DBNull.Value : dcrMessage.InfosecBaseUri);                
+                sqlCommand.Parameters.AddWithValue("@infosecBaseUri", string.IsNullOrEmpty(dcrMessage.InfosecBaseUri) ? DBNull.Value : dcrMessage.InfosecBaseUri);
                 await sqlCommand.ExecuteNonQueryAsync();
-                db.Close();
+                await db.CloseAsync();
             }
         }
 

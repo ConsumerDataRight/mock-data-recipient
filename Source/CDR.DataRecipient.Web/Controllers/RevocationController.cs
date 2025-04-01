@@ -26,6 +26,7 @@ namespace CDR.DataRecipient.Web.Controllers
         private readonly ILogger<RevocationController> _logger;
 
         private ClaimsPrincipal Client => (ClaimsPrincipal)this.HttpContext.Items[ClientAuthorizeAttribute.ClaimsPrincipalKey];
+
         private string ClientBrandId => Client.Claims.FirstOrDefault(c => c.Type == "iss")?.Value;
 
         public RevocationController(
@@ -99,7 +100,7 @@ namespace CDR.DataRecipient.Web.Controllers
             if (arrangement == null
                 || !arrangement.DataHolderBrandId.Equals(ClientBrandId, System.StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogDebug("The arrangement could not be found or was not owned by the calling data holder brand. Arrangement: {cdrArrangementId}, Data Holder Brand: {clientBrandId}", cdrArrangementIdClaim.Value, ClientBrandId);
+                _logger.LogDebug("The arrangement could not be found or was not owned by the calling data holder brand. Arrangement: {CdrArrangementId}, Data Holder Brand: {ClientBrandId}", cdrArrangementIdClaim.Value, ClientBrandId);
                 return UnprocessableEntity(new ErrorListModel(ErrorCodes.InvalidConsent, ErrorTitles.InvalidArrangement, cdrArrangementIdClaim.Value));
             }
 
@@ -114,12 +115,12 @@ namespace CDR.DataRecipient.Web.Controllers
             string validIssuer = null;
             string validAudience = null;
             bool validateLifetime = false;
-            bool fullValidationRequired = 
+            bool fullValidationRequired =
                 DateTime.UtcNow > _config.AttemptValidateCdrArrangementJwtFromDate()
-                && HasValue(issClaim) 
-                && HasValue(subClaim) 
-                && HasValue(audClaim) 
-                && HasValue(jtiClaim) 
+                && HasValue(issClaim)
+                && HasValue(subClaim)
+                && HasValue(audClaim)
+                && HasValue(jtiClaim)
                 && HasValue(expClaim);
 
             if (fullValidationRequired)
@@ -141,7 +142,6 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Validate the cdr_arrangement_jwt either using "full" or "minimal" validation.
             var jwksUri = await GetJwksUri();
-
 
             var validated = await revocationModel.CdrArrangementJwt.ValidateToken(
             jwksUri,

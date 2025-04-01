@@ -9,6 +9,9 @@ namespace CDR.DataRecipient.SDK.Exceptions
 {
     public class NoHttpsException : SecurityException
     {
-        public NoHttpsException() : base("A non-https endpoint has been encountered and blocked") { }
+        public NoHttpsException()
+            : base("A non-https endpoint has been encountered and blocked")
+        {
+        }
     }
 }

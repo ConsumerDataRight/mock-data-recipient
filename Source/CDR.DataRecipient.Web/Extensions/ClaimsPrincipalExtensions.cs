@@ -15,6 +15,7 @@ namespace CDR.DataRecipient.Web.Extensions
             {
                 throw new MissingClaimException(Constants.Claims.UserId);
             }
+
             return userIdClaim.Value;
         }
 
@@ -25,6 +26,7 @@ namespace CDR.DataRecipient.Web.Extensions
             {
                 throw new MissingClaimException(Constants.Claims.Name);
             }
+
             return userNameClaim.Value;
         }
 

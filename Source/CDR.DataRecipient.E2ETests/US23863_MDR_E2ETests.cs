@@ -1,4 +1,4 @@
-using CDR.DataRecipient.E2ETests.Pages;
+﻿using CDR.DataRecipient.E2ETests.Pages;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Data.SqlClient;
@@ -16,27 +16,6 @@ namespace CDR.DataRecipient.E2ETests
         private const string SWAGGER_BANKING_IFRAME = "cds-banking/index.html";
         private const string SWAGGER_ENERGY_IFRAME = "cds-energy/index.html";
         private const string SWAGGER_COMMON_IFRAME = "cds-common/index.html";
-
-        // Pre-generated ID Token used in IDTokenhelper test
-        const string IDTOKEN = @"eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00iLCJraWQiOiJkYTNiYzA3OTlhMjlkODM2NWU2OWVkZjJiZmQxMzVh" +
-            "MDhjNGRkYmE3ZWM3ZTFiNmVhYjkzNWY5NjcyNWExZTNhIn0.afEh0qVHeHSYqu-Q-leao8EQe-cGR8m2-fszGZQOq0dBBQNGRaFwSTKn3u4KqGTXXI-w" +
-            "1p20YHe_JMH4k1B7_NG93YXpYsx1pfEc_qa5x7_9gYvN_X6NLESuxVQW3TJBgsmE-LMu6TjSZzXtt_HkKk0V-q5epsrWgYX-WWR4Jk-yAUEYxrqA-bGm" +
-            "EKLbY9rLbZaituis0E4fYP4SF9keL2H6iJ4h99F4MrEKz8K7HgsQ1SkrlFw9ApR3Wnl3NaLXsEcJJZqZcpXkHUaIA76UChG5tvZTV436Jyz_ehxbcQeK" +
-            "9Yx5ZhXWY2Ud9K0LZ3hQ3A0SdEGkhExGbUpiNecAGA.YtIsaDgqhifPIsRj.MHSYKFpgyc0opB0LqAQWxMaikTTc7dviOd4tSLInpQ8KwnrCHnVKJFJq" +
-            "2P6rFz26xorAFHtZZeeqG2RmAehMFWBxbWuSTLgmXqF1SmhVgAT6XHgPNBZE_KM4OE4FrYd2eMxbLSYVbGs1zcu8rxV_Fal74w_2qgVqiuR-8DgKLqkb" +
-            "dLrW0F7XXl_PtIZj4vWdwbon7SQldvk0usg5ZxqC5PeyrV2AYhu_0_VNRnwAxcbzvYdh9HxckrdYACUtcjcKi_VSPd9gw4urq58NnCSKghBD6rJvHqW1" +
-            "qdL32UTf-V58Ma9bRaItlUr_DOCFRp-vT7nBJwn3EDJWL_GE2QjOu6Zy-GNwv4p220Ct5GmqRVfgMXjZYOzZieBBHIU0AyXIohlF2PPC4NAXlgpFacna" +
-            "RKNZb3et6B9WsqEMlDhMajMeY1DWgQb0eSXrAtX4QidFucEirIhV2XwMFi60uoycuPbk2ziKCRQCdS-TiTCkrKH72GoR_8v27ddkPKF8cspqPNTmJdJi" +
-            "d84jyoWTgo7fMa3xf-Sa7OO9jNPuAChtpX3t9amyq-NQfoAlSRu5fUZcWgzxKcJbnHlWG71QH6ALF-4HyMML3brHlV1HoIybMyUKpCkz_qJ6uK0JQC90" +
-            "PMJ4f7hkFc5wZ_V4E6BOrX635SPVxk0ts4G2AVpi1nDfjajd_Ljg8ni1mE9PDuWdYap2hxRDJnmJ5XssR0FlMcWRPO3IJCjrdSmtMKxdePq3T_UEXK8C" +
-            "3sWs17k0URmlxnkjp6Qe6YSzAkALwgHyPCD9IqqnpFAXG88669fFWgCH7uMu9dyJI-Agwc3ufU1NAQRnknowj3DKp5DuhYL1AL-P4c8d7mlI5bpwee2c" +
-            "WxLQMDog4hp-FQMuir7IacY2lJ9Ocvoirf6yM-R5-lQka74poe2PGOu2QlrywvdHvJ-ExSNkT5mNAZPCPYT-eHVqdeV_aQCBu8bRD8nUeq5o6ZJMzOlr" +
-            "V3LDS9jyGKRVvQf7YyXHODPnTMeL78mgD_V4WSdme54-J_tnOQh-j9a58CH_7E6AlD6ahc27K1sA8hG-vZ_jRUG1QXhJfER5pQjCoPfEtWzGbJF58LYC" +
-            "piwR0KE15LtpJgKPBwbBFQwpBRcZDEtouBZLFyMjfNGg1cnTfdlblEtnZcE50_ZVjTfk3n1nNjRlYHceaGnd7GYINBNl87JZCd2Dn_-JmRJfKK2vnF17" +
-            "HA3dUOHz_rUJa6hQd77WwWDxwU7oG1bpmoRDjgjl1AxXmJVSuhkgyK6JEDgeF6SDPDsU1yym_9ACitE1FjS8VAqU3e8cgoaDD5BzASt9OmApsHQHRQur" +
-            "HOh05w_b63JHd3Cg_-ASojF78GjKQ2TWV-jZn65nacY5NSIU3Qxt87UbR7Cr64UZMJAhRQ0VoXmdHpG6dSjtYEP20HTgvTI7uQD8Ibw9C7jILUi76HO_" +
-            "-n3R2errngQrYNunYmW9q45eDdngOiA_N5HB3rS3y3-V3kYnkW8Wio-gSzuGYBoAM4OT5QFGbs7QYw0PR4wYDk7iVIkfCf5vDlVb2ehcfNQx2m5gYYuW" +
-            "ppVENCqtjrsUmAxmyPZ5v_Fvh8N36J-4IaKNcv9J3ic4mm0yUdCLVCRxBjpsfw.xPc7ZQDVN11iHX41af-wvg";
 
         static string GetClientId()
         {
@@ -107,7 +86,6 @@ namespace CDR.DataRecipient.E2ETests
                 await page.Locator("span:text(\"Consumer Data Sharing\") + ul >> a:text(\"Energy\")").TextContentAsync();
                 await page.Locator("a >> text=PAR").TextContentAsync();
                 await page.Locator("span >> text=Utilities").TextContentAsync();
-                await page.Locator("a >> text=ID Token Helper").TextContentAsync();
                 await page.Locator("a >> text=Private Key JWT Generator").TextContentAsync();
                 Assert.True(true);
             });
@@ -166,7 +144,7 @@ namespace CDR.DataRecipient.E2ETests
             });
         }
 
-        [Theory]        
+        [Theory]
         [InlineData("BANKING", "1", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
         [InlineData("BANKING", "2", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
         [InlineData("BANKING", "3", DR_BRANDID, DR_SOFTWAREPRODUCTID, "OK - SSA Generated")]
@@ -197,7 +175,7 @@ namespace CDR.DataRecipient.E2ETests
                 {
 
                     // Create a default Banking Dataholder Registration using defaults
-                    DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);                    
+                    DynamicClientRegistrationPage dcrPage = new DynamicClientRegistrationPage(page, WEB_URL);
                     await dcrPage.GotoDynamicClientRegistrationPage();
                     await dcrPage.SelectDataHolderBrandId(DH_BRANDID);
                     await dcrPage.ClickRegister();
@@ -252,8 +230,6 @@ namespace CDR.DataRecipient.E2ETests
                     dcrPage.GetResponseTypes().Result.Should().Be("code");
                     dcrPage.GetApplicationType().Result.Should().Be("web");
                     dcrPage.GetIdTokenSignedResponseAlgo().Result.Should().Be("PS256");
-                    dcrPage.GetIdTokenEncryptedResponseAlgo().Result.Should().Be(String.Empty);
-                    dcrPage.GetIdTokenEncryptedResponseEnc().Result.Should().Be(String.Empty);
                     dcrPage.GetRequestSigningAlgo().Result.Should().Be("PS256");
                     dcrPage.GetAuthorisedSignedResponsegAlgo().Result.Should().Be("PS256");
                     dcrPage.GetAuthorisedEncryptedResponseAlgo().Result.Should().Be(String.Empty);
@@ -261,7 +237,7 @@ namespace CDR.DataRecipient.E2ETests
                 }
 
             });
-            
+
         }
 
         [Fact]
@@ -287,7 +263,7 @@ namespace CDR.DataRecipient.E2ETests
                     // Assert
                     using (new AssertionScope())
                     {
-                        string viewRegistrationResponse =  await dcrPage.GetViewRegistrationResponse();
+                        string viewRegistrationResponse = await dcrPage.GetViewRegistrationResponse();
                         viewRegistrationResponse.Should().Contain("Registration retrieved successfully.");
                         viewRegistrationResponse.Should().Contain($"\"client_id\": \"{dhClientId}\"");
                     }
@@ -328,8 +304,8 @@ namespace CDR.DataRecipient.E2ETests
                     discoveryDocumentDetails.Should().Contain($"\"issuer\": \"https://{HOSTNAME_DATAHOLDER}:8001\"");
                 }
 
-            });            
-   
+            });
+
         }
 
         [Fact]
@@ -393,19 +369,17 @@ namespace CDR.DataRecipient.E2ETests
                     // Assert Client Correctly Loaded
                     dcrPage.GetClientId().Result.Should().Be(clientId);
 
-                    // Modify to valid hybrid mode values
-                    await dcrPage.EnterResponseTypes("code,code id_token");
-                    await dcrPage.EnterIdTokenEncryptedResponseAlgo("RSA-OAEP");
-                    await dcrPage.EnterIdTokenEncryptedResponseEnc("A128CBC-HS256");
+                    // Modify authorization encrypted response enc and alg values
+                    await dcrPage.EnterAuthorisedEncryptedResponseEnc("A128CBC-HS256");
+                    await dcrPage.EnterAuthorisedEncryptedResponseAlgo("RSA-OAEP-256");
 
                     await dcrPage.ClickUpdate();
 
                     // Assert Software Product Registration Updated
                     var registrationResponse = await dcrPage.GetRegistrationResponse(includeHeading: true);
                     registrationResponse.Should().Contain("Registration update successful.");
-                    registrationResponse.Should().Contain("code id_token");
-                    registrationResponse.Should().Contain("\"id_token_encrypted_response_alg\": \"RSA-OAEP\"");
-                    registrationResponse.Should().Contain("\"id_token_encrypted_response_enc\": \"A128CBC-HS256\"");
+                    registrationResponse.Should().Contain("\"authorization_encrypted_response_alg\": \"RSA-OAEP-256\"");
+                    registrationResponse.Should().Contain("\"authorization_encrypted_response_enc\": \"A128CBC-HS256\"");
 
                 });
             }
@@ -723,7 +697,7 @@ namespace CDR.DataRecipient.E2ETests
                     );
 
                     // Arrange - Click GET​/banking​/accountsGet Accounts
-                    await iFrame.ClickAsync("text=Banking GET/banking/accountsGet AccountsGET/banking/accounts/balancesGet Bulk Ba >> [aria-label=\"get ​\\/banking​\\/accounts\"]");
+                    await iFrame.ClickAsync("//div[@id='operations-Banking_Accounts-listBankingAccounts']//button[1]");
 
                     // Arrange - Click Try it out
                     await iFrame.ClickAsync("text=Try it out");
@@ -827,7 +801,7 @@ namespace CDR.DataRecipient.E2ETests
                     );
 
                     // Arrange - Click GET​/energy​/accountsGet Energy Accounts
-                    await iFrame.ClickAsync("text=Energy GET/energy/plansGet Generic PlansGET/energy/plans/{planId}Get Generic Pla >> [aria-label=\"get ​\\/energy​\\/accounts\"]");
+                    await iFrame.ClickAsync("//div[@id='operations-Energy_Accounts-listEnergyAccounts']//button[1]");
 
                     // Arrange - Click Try it out
                     await iFrame.ClickAsync("text=Try it out");
@@ -894,7 +868,7 @@ namespace CDR.DataRecipient.E2ETests
                     );
 
                     // Arrange - Click GET/discovery/statu
-                    await iFrame.ClickAsync("text=Discovery GET/discovery/statusGet StatusGET/discovery/outagesGet Outages >> [aria-label=\"get ​\\/discovery​\\/status\"]");
+                    await iFrame.ClickAsync("//div[@id='operations-Data_Holder_Operations-getOutages']//button[1]");
 
                     // Arrange - Click Try it out
                     await iFrame.ClickAsync("text=Try it out");
@@ -917,44 +891,6 @@ namespace CDR.DataRecipient.E2ETests
                     try { await ClientRegistration_Delete(page); } catch { };
                 });
             }
-        }
-
-        [Theory]
-        [InlineData(IDTOKEN)]
-        public async Task AC09_IDTokenHelper(string encryptedToken)
-        {
-            await TestAsync($"{nameof(US23863_MDR_E2ETests)} - {nameof(AC09_IDTokenHelper)}", async (page) =>
-            {
-                // Arrange - Goto home page, click menu button, check page loaded
-                await page.GotoAsync(WEB_URL);
-                await page.Locator("a >> text=ID Token Helper").ClickAsync();
-                await page.Locator("h2 >> text=ID Token Helper").TextContentAsync();
-
-                // Arrange - Enter id token to decrypt
-                await page.Locator("textarea[name=\"IdTokenEncrypted\"]").FillAsync(encryptedToken);
-
-                // Act
-                await page.Locator("text=Decrypt ID Token").ClickAsync();
-
-                // Assert - Check results
-                await TestResults(page, "nbf", "1687210290");
-                await TestResults(page, "exp", "1687210590");
-                await TestResults(page, "iss", $"https://mock-data-holder:8001"); 
-                await TestResults(page, "aud", "549076d1-785e-46c8-b1f4-8074e859c004");
-                await TestResults(page, "nonce", "998c7257-8e42-4ef9-81cc-09d08eff413f");
-                await TestResults(page, "iat", "1687210290");
-                await TestResults(page, "at_hash", "wvmLTnV0mNAEeqVrmgvnuw");
-                await TestResults(page, "c_hash", "fRr6y32yxRN257qQ9Rzlvw");
-                await TestResults(page, "auth_time", "1687210289");
-                await TestResults(page, "sub", "GYFWjFhkegCHsQe0KVvFhg==");
-                await TestResults(page, "name", "jwilson");
-                await TestResults(page, "family_name", "Wilson");
-                await TestResults(page, "given_name", "Jane");
-                await TestResults(page, "updated_at", "1687210290");
-                await TestResults(page, "acr", "urn:cds.au:cdr:2");
-
-                Assert.True(true);
-            });
         }
 
         [Fact]

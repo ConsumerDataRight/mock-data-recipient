@@ -20,5 +20,5 @@ namespace CDR.DataRecipient.Repository.SQL.Infrastructure
 
             return new RecipientDatabaseContext(options);
         }
-	}
+    }
 }

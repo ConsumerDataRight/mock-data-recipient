@@ -1,4 +1,4 @@
-using CDR.DataRecipient.E2ETests.Pages;
+﻿using CDR.DataRecipient.E2ETests.Pages;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using System;
@@ -15,13 +15,12 @@ namespace CDR.DataRecipient.E2ETests
         public const string DH_DEFAULT_PAR_SCOPE = "openid profile common:customer.basic:read bank:accounts.basic:read bank:transactions:read cdr:registration";
 
         [Theory]
-        [InlineData("Missing Response Type", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, true, "", "fragment", "ERR-GEN-008: response_type is missing")]
-        [InlineData("Invalid Response Type", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, true, "foo", "fragment", "response_type is not supported")]
-        [InlineData("Missing Response Mode for Code Flow", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, null, "code", "", "ERR-GEN-013: response_mode is not supported")]
-        [InlineData("Invalid Response Mode for Code Flow", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, null, "code", "fragment", "Invalid response_mode for response_type")]
-        [InlineData("Invalid Response Mode for Hybrid Flow", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, null, "code id_token", "jwt", "Invalid response_mode for response_type")]
-        [InlineData("Missing Scope", DH_BRANDID, "", null, "code id_token", "fragment", "scope is missing")]
-        [InlineData("Invalid Scope", DH_BRANDID, "foo", null, "code id_token", "fragment", "openid scope is missing")]
+        [InlineData("Missing Response Type", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, true, "", "jwt", "ERR-GEN-008: response_type is missing")]
+        [InlineData("Invalid Response Type", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, true, "foo", "jwt", "response_type is not supported")]
+        [InlineData("Missing Response Mode for Code Flow", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, null, "code", "", "ERR-PAR-009: response_mode is missing or not set to 'jwt' for response_type of 'code'")]
+        [InlineData("Invalid Response Mode for Code Flow", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, null, "code", "fragment", "ERR-GEN-013: response_mode is not supported")]
+        [InlineData("Missing Scope", DH_BRANDID, "", null, "code", "jwt", "scope is missing")]
+        [InlineData("Invalid Scope", DH_BRANDID, "foo", null, "code", "jwt", "openid scope is missing")]
         [InlineData("Valid Response Mode for Code Flow", DH_BRANDID, DH_DEFAULT_PAR_SCOPE, null, "code", "jwt", "")]
         public async Task AC04_AC0_AC06_AC07_InvalidParRequests(string scenarioName, string dhBrandId, string dhScope, bool? useDefaultResponseTypeForDCR, string responseType, string responseMode, string expectedError)
         {
@@ -32,7 +31,7 @@ namespace CDR.DataRecipient.E2ETests
                 await ArrangeAsync(testName, async (page) =>
                 {
 
-                    var responseTypeForRegCreation =useDefaultResponseTypeForDCR !=null && useDefaultResponseTypeForDCR == true ? "code id_token" : responseType;
+                    var responseTypeForRegCreation = useDefaultResponseTypeForDCR != null && useDefaultResponseTypeForDCR == true ? "code" : responseType;
 
                     dhClientId = await ClientRegistration_Create(page, dhBrandId, responseTypes: responseTypeForRegCreation)
                         ?? throw new NullReferenceException(nameof(dhClientId));

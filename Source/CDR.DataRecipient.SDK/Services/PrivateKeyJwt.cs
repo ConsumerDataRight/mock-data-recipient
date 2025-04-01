@@ -21,7 +21,8 @@ namespace CDR.DataRecipient.SDK.Register
         /// </summary>
         /// <param name="certFilePath">The path to the certificate.</param>
         /// <param name="pwd">The password of the certificate.</param>
-        public PrivateKeyJwt(string certFilePath, string pwd) : this(new X509Certificate2(certFilePath, pwd, X509KeyStorageFlags.Exportable))
+        public PrivateKeyJwt(string certFilePath, string pwd)
+            : this(new X509Certificate2(certFilePath, pwd, X509KeyStorageFlags.Exportable))
         {
         }
 
@@ -55,7 +56,7 @@ namespace CDR.DataRecipient.SDK.Register
         /// <param name="audience">The audience of the JWT, usually set to the target token endpoint</param>
         /// <returns>A base64 encoded JWT</returns>
         public string Generate(
-            string issuer, 
+            string issuer,
             string audience,
             string jti = null,
             int expiryMinutes = 10,
@@ -77,11 +78,11 @@ namespace CDR.DataRecipient.SDK.Register
             }
 
             var expiry = DateTime.UtcNow.AddMinutes(expiryMinutes);
-            var claims = new List<Claim> 
-            { 
-                new Claim("sub", issuer), 
-                new Claim("jti", jti ?? Guid.NewGuid().ToString()), 
-                new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer) 
+            var claims = new List<Claim>
+            {
+                new Claim("sub", issuer),
+                new Claim("jti", jti ?? Guid.NewGuid().ToString()),
+                new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer),
             };
             var jwt = new JwtSecurityToken(issuer, audience, claims, expires: expiry, signingCredentials: this.SigningCredentials);
             var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
