@@ -104,31 +104,31 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
             //using (var key = CngKey.Import(privateKeyBytes, CngKeyBlobFormat.Pkcs8PrivateBlob))
             //using (var rsa = new RSACng(key))
             //{
-                var kid = GenerateKeyId(rsa);
-                var privateSecurityKey = new RsaSecurityKey(rsa)
+            var kid = GenerateKeyId(rsa);
+            var privateSecurityKey = new RsaSecurityKey(rsa)
+            {
+                KeyId = kid,
+                CryptoProviderFactory = new CryptoProviderFactory()
                 {
-                    KeyId = kid,
-                    CryptoProviderFactory = new CryptoProviderFactory()
-                    {
-                        CacheSignatureProviders = false
-                    }
-                };
+                    CacheSignatureProviders = false
+                }
+            };
 
-                var descriptor = new SecurityTokenDescriptor
-                {
-                    Issuer = issuer,
-                    Audience = audience,
-                    Expires = DateTime.UtcNow.AddMinutes(10),
-                    Subject = new ClaimsIdentity(new List<Claim> { new Claim("sub", issuer) }),
-                    SigningCredentials = new SigningCredentials(privateSecurityKey, SecurityAlgorithms.RsaSsaPssSha256),
-                    NotBefore = null,
-                    IssuedAt = null,
-                    Claims = new Dictionary<string, object>()
-                };
-                descriptor.Claims.Add("jti", Guid.NewGuid().ToString());
+            var descriptor = new SecurityTokenDescriptor
+            {
+                Issuer = issuer,
+                Audience = audience,
+                Expires = DateTime.UtcNow.AddMinutes(10),
+                Subject = new ClaimsIdentity(new List<Claim> { new Claim("sub", issuer) }),
+                SigningCredentials = new SigningCredentials(privateSecurityKey, SecurityAlgorithms.RsaSsaPssSha256),
+                NotBefore = null,
+                IssuedAt = null,
+                Claims = new Dictionary<string, object>()
+            };
+            descriptor.Claims.Add("jti", Guid.NewGuid().ToString());
 
-                var tokenHandler = new JsonWebTokenHandler();
-                return tokenHandler.CreateToken(descriptor);
+            var tokenHandler = new JsonWebTokenHandler();
+            return tokenHandler.CreateToken(descriptor);
             //}
         }
 

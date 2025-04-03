@@ -92,8 +92,8 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         /// Get a security token descriptor
         /// </summary>
         static private SecurityTokenDescriptor GetSecurityTokenDescriptor(
-            byte[] keyBytes, 
-            string? issuer, string? audience, 
+            byte[] keyBytes,
+            string? issuer, string? audience,
             bool expired,
             Dictionary<string, object> claims,
             SecurityAlgorithm securityAlgorithm)

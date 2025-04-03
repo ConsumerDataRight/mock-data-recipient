@@ -26,8 +26,6 @@ namespace CDR.DataRecipient.E2ETests.Pages
         private readonly ILocator _txtApplicationType;
 
         private readonly ILocator _txtIdTokenSignedResponseAlgo;
-        private readonly ILocator _txtIdTokenEncryptedResponseAlgo;
-        private readonly ILocator _txtIdTokenEncryptedResponseEnc;
 
         private readonly ILocator _txtRequestSigningAlgo;
         private readonly ILocator _txtAuthorisedSignedResponsegAlgo;
@@ -47,7 +45,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
         {
             _page = page;
             _dataRecipientBaseUrl = dataRecipientBaseUrl;
-            
+
             _lnkDcrMenuItem = _page.Locator("a >> text=Dynamic Client Registration");
             _hedPageHeading = _page.Locator("h2 >> text=Dynamic Client Registration");
 
@@ -67,8 +65,6 @@ namespace CDR.DataRecipient.E2ETests.Pages
             _txtApplicationType = _page.Locator("id=ApplicationType");
 
             _txtIdTokenSignedResponseAlgo = _page.Locator("id=IdTokenSignedResponseAlg");
-            _txtIdTokenEncryptedResponseAlgo = _page.Locator("id=IdTokenEncryptedResponseAlg");
-            _txtIdTokenEncryptedResponseEnc = _page.Locator("id=IdTokenEncryptedResponseEnc");
 
             _txtRequestSigningAlgo = _page.Locator("id=RequestObjectSigningAlg");
             _txtAuthorisedSignedResponsegAlgo = _page.Locator("id=AuthorizationSignedResponseAlg");
@@ -135,15 +131,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
         public async Task EnterIdTokenIdTokenSignedResponseAlgo(string idTokenIdTokenSignedResponseAlgo)
         {
             await _txtIdTokenSignedResponseAlgo.FillAsync(idTokenIdTokenSignedResponseAlgo);
-        }
-        public async Task EnterIdTokenEncryptedResponseAlgo(string idTokenEncryptedResponseAlgo)
-        {
-            await _txtIdTokenEncryptedResponseAlgo.FillAsync(idTokenEncryptedResponseAlgo);
-        }
-        public async Task EnterIdTokenEncryptedResponseEnc(string idTokenEncryptedResponseEnc)
-        {
-            await _txtIdTokenEncryptedResponseEnc.FillAsync(idTokenEncryptedResponseEnc);
-        }
+        }       
         public async Task EnterRequestSigningAlgo(string requestSigningAlgo)
         {
             await _txtRequestSigningAlgo.FillAsync(requestSigningAlgo);
@@ -183,7 +171,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
         }
         public async Task<string> GetSsaVersion()
         {
-            return await _txtSsaVersion.InputValueAsync();            
+            return await _txtSsaVersion.InputValueAsync();
         }
         public async Task<string> GetIndustry()
         {
@@ -225,14 +213,6 @@ namespace CDR.DataRecipient.E2ETests.Pages
         {
             return await _txtIdTokenSignedResponseAlgo.InputValueAsync();
         }
-        public async Task<string> GetIdTokenEncryptedResponseAlgo()
-        {
-            return await _txtIdTokenEncryptedResponseAlgo.InputValueAsync();
-        }
-        public async Task<string> GetIdTokenEncryptedResponseEnc()
-        {
-            return await _txtIdTokenEncryptedResponseEnc.InputValueAsync();
-        }
         public async Task<string> GetRequestSigningAlgo()
         {
             return await _txtRequestSigningAlgo.InputValueAsync();
@@ -251,7 +231,7 @@ namespace CDR.DataRecipient.E2ETests.Pages
         }
         public async Task<string> GetRegistrationResponse(bool includeHeading = false)
         {
-            if(includeHeading)
+            if (includeHeading)
             {
                 return await _divRegistrationResponseWithHeading.TextContentAsync();
             }
@@ -259,14 +239,14 @@ namespace CDR.DataRecipient.E2ETests.Pages
             {
                 return await _divRegistrationResponseJson.TextContentAsync();
             }
-            
+
         }
         public async Task<string> GetViewRegistrationResponse()
         {
             return await _divViewRegistrationResponse.TextContentAsync();
         }
         public async Task<string> GetDiscoveryDocumentDetails(string textToSynchroniseWith = null)
-        { 
+        {
             // Workaround to wait for text to synchonise with.
             // Without synchronisation, current text content is returned instead of waiting for text (page to reload)
             if (textToSynchroniseWith == null)

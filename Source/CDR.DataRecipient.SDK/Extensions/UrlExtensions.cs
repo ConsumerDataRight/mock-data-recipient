@@ -42,7 +42,7 @@ namespace CDR.DataRecipient.SDK.Extensions
 
             var uri = new Uri(endpoint);
             uri.ValidateEndpoint(enforceHttpsEndpoint);
-                return endpoint;
+            return endpoint;
         }
 
         public static Uri ValidateEndpoint(this Uri uri, bool enforceHttpsEndpoint)

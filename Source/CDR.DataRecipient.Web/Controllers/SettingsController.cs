@@ -12,7 +12,6 @@ namespace CDR.DataRecipient.Web.Controllers
     [Authorize]
     public class SettingsController : Controller
     {
-
         private readonly IConfiguration _config;
 
         public SettingsController(IConfiguration config)
@@ -35,7 +34,7 @@ namespace CDR.DataRecipient.Web.Controllers
             var configSettings = _config.AsEnumerable().Where(c => c.Key.StartsWith(pattern) && c.Value != null).OrderBy(c => c.Key);
             foreach (var setting in configSettings)
             {
-                model.ConfigurationSettings.Add(setting.Key.Replace(pattern, ""), setting.Value.StartsWith("https://") ? $"<a href=\"{setting.Value}\" target=\"_blank\">{setting.Value}</a>" :  setting.Value);
+                model.ConfigurationSettings.Add(setting.Key.Replace(pattern, string.Empty), setting.Value.StartsWith("https://") ? $"<a href=\"{setting.Value}\" target=\"_blank\">{setting.Value}</a>" : setting.Value);
             }
         }
     }

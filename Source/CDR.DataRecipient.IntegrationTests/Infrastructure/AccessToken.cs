@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.IntegrationTests.Infrastructure
 {
-public class AccessToken
+    public class AccessToken
     {
         private static readonly string IDENTITYSERVER_URL = BaseTest.REGISTER_MTLS_TOKEN_URL;
         private static readonly string AUDIENCE = IDENTITYSERVER_URL;
@@ -128,8 +128,8 @@ public class AccessToken
             var response = await client.SendAsync(request);
 
             if (response.StatusCode != HttpStatusCode.OK)
-            {   
-                throw new Exception($"{nameof(AccessToken)}.{nameof(GetAsync)} - Error getting access token - {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");                
+            {
+                throw new Exception($"{nameof(AccessToken)}.{nameof(GetAsync)} - Error getting access token - {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
             }
 
             // Deserialize the access token from the response

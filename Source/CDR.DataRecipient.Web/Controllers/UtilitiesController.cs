@@ -1,6 +1,6 @@
-﻿using CDR.DataRecipient.SDK.Extensions;
+﻿using System.Threading.Tasks;
+using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Register;
-using CDR.DataRecipient.SDK.Services.Register;
 using CDR.DataRecipient.Web.Caching;
 using CDR.DataRecipient.Web.Common;
 using CDR.DataRecipient.Web.Extensions;
@@ -9,8 +9,6 @@ using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
@@ -27,40 +25,6 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             _config = config;
             _cacheManager = cacheManager;
-        }
-
-        [HttpGet]
-        [Route("id-token")]
-        [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public IActionResult IdToken()
-        {
-            var model = new IdTokenModel();
-            return View(model);
-        }
-
-        [HttpPost]
-        [Route("id-token")]
-        [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public IActionResult IdToken(IdTokenModel model)
-        {
-            var sp = _config.GetSoftwareProductConfig();
-
-            if (string.IsNullOrEmpty(model.IdTokenEncrypted))
-            {
-                return View(model);
-            }
-
-            try
-            {
-                model.IdTokenDecrypted = model.IdTokenEncrypted.DecryptToken(sp.SigningCertificate.X509Certificate);
-                model.IdTokenClaims = model.IdTokenDecrypted.GetTokenClaims();
-            }
-            catch (Exception)
-            {
-                model.Messages = "Invalid ID Token";
-            }
-
-            return View(model);
         }
 
         [HttpGet]

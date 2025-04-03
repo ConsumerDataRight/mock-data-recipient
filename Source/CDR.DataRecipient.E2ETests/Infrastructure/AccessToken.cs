@@ -125,7 +125,7 @@ namespace CDR.DataRecipient.E2ETests.Infrastructure
             // Request the access token
             var response = await client.SendAsync(request);
 
-            if (response.StatusCode != HttpStatusCode.OK) 
+            if (response.StatusCode != HttpStatusCode.OK)
             {
                 throw new Exception($"{nameof(AccessToken)}.{nameof(GetAsync)} - Error getting access token");
             }

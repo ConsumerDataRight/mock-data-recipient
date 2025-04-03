@@ -11,11 +11,11 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 {
     public class DynamicClientRegistrationService : BaseService, IDynamicClientRegistrationService
     {
-
         public DynamicClientRegistrationService(
             IConfiguration config,
             ILogger<DynamicClientRegistrationService> logger,
-            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
+            IServiceConfiguration serviceConfiguration)
+            : base(config, logger, serviceConfiguration)
         {
         }
 
@@ -30,20 +30,20 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             // Setup the http client.
             var client = GetHttpClient(clientCertificate, accessToken);
 
-            _logger.LogDebug("Deleting registration from Data Holder: {registrationEndpoint}.  Client ID: {clientId}.  Client Certificate: {thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
+            _logger.LogDebug("Deleting registration from Data Holder: {RegistrationEndpoint}.  Client ID: {ClientId}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
 
             // Make the request to the data holder's registration endpoint.
             var uri = string.Concat(registrationEndpoint.TrimEnd('/'), "/", clientId);
             var response = await client.DeleteAsync(EnsureValidEndpoint(uri));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {statusCode}.  Body: {body}", response.StatusCode, body);
+            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse
             {
                 StatusCode = response.StatusCode,
                 Payload = body,
-                Message = response.IsSuccessStatusCode ? "Registration deleted." : $"Failed to delete registration: {body}"
+                Message = response.IsSuccessStatusCode ? "Registration deleted." : $"Failed to delete registration: {body}",
             };
         }
 
@@ -63,19 +63,19 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             var response = await client.GetAsync(EnsureValidEndpoint(uri));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {statusCode}.  Body: {body}", response.StatusCode, body);
+            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse()
             {
                 StatusCode = response.StatusCode,
                 Payload = body,
-                Message = response.IsSuccessStatusCode ? "Registration retrieved successfully." : $"Failed to retrieve registration: {body}"
+                Message = response.IsSuccessStatusCode ? "Registration retrieved successfully." : $"Failed to retrieve registration: {body}",
             };
         }
 
         public async Task<DcrResponse> Register(
-            string registrationEndpoint, 
-            X509Certificate2 clientCertificate, 
+            string registrationEndpoint,
+            X509Certificate2 clientCertificate,
             string payload)
         {
             _logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(Register)}.");
@@ -83,7 +83,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             // Setup the http client.
             var client = GetHttpClient(clientCertificate);
 
-            _logger.LogDebug("Registering with Data Holder: {registrationEndpoint}.  Client Certificate: {thumbprint}", registrationEndpoint, clientCertificate.Thumbprint);
+            _logger.LogDebug("Registering with Data Holder: {RegistrationEndpoint}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientCertificate.Thumbprint);
 
             // Create the post content.
             var content = new StringContent(payload);
@@ -93,14 +93,14 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             var response = await client.PostAsync(EnsureValidEndpoint(registrationEndpoint), content);
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {statusCode}.  Body: {body}", response.StatusCode, body);
+            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse()
             {
                 Data = JsonConvert.DeserializeObject<Registration>(body),
                 StatusCode = response.StatusCode,
                 Message = response.IsSuccessStatusCode ? "Registration successful." : $"Failed to register: {body}",
-                Payload = body
+                Payload = body,
             };
         }
 
@@ -116,7 +116,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             // Setup the http client.
             var client = GetHttpClient(clientCertificate, accessToken);
 
-            _logger.LogDebug("Updating registration with Data Holder: {registrationEndpoint}.  Client ID: {clientId}.  Client Certificate: {thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
+            _logger.LogDebug("Updating registration with Data Holder: {RegistrationEndpoint}.  Client ID: {ClientId}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
 
             // Create the put content.
             var content = new StringContent(payload);
@@ -127,7 +127,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             var response = await client.PutAsync(EnsureValidEndpoint(uri), content);
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {statusCode}.  Body: {body}", response.StatusCode, body);
+            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse()
             {

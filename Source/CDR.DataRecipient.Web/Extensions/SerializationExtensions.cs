@@ -8,14 +8,15 @@ namespace CDR.DataRecipient.Web.Extensions
         {
             if (obj == null)
             {
-                return null;
+                return [];
             }
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
             return Encoding.UTF8.GetBytes(json);
         }
 
-        public static T FromByteArray<T>(this byte[] byteArray) where T : class
+        public static T FromByteArray<T>(this byte[] byteArray)
+            where T : class
         {
             if (byteArray == null)
             {
@@ -25,6 +26,5 @@ namespace CDR.DataRecipient.Web.Extensions
             var json = Encoding.UTF8.GetString(byteArray, 0, byteArray.Length);
             return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
         }
-
     }
 }

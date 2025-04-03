@@ -5,6 +5,9 @@ EXPOSE 9001
 # Default ASPNETCORE_ENVIRONMENT to Release
 ENV ASPNETCORE_ENVIRONMENT=Release 
 
+# https://liupeirong.github.io/dynamicReloadConfigK8s/
+ENV DOTNET_USE_POLLING_FILE_WATCHER true
+
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
@@ -13,6 +16,7 @@ COPY . ./
 FROM build AS publish
 
 COPY ./Directory.Build.props /app/Directory.Build.props
+COPY ./.editorconfig /app/.editorconfig
 
 COPY ./CDR.DataRecipient.Web/. /app/CDR.DataRecipient.Web
 COPY ./CDR.DataRecipient.Repository.SQL/. /app/CDR.DataRecipient.Repository.SQL

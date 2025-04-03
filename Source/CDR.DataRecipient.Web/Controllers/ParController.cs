@@ -1,6 +1,7 @@
 ﻿using CDR.DataRecipient.Models;
 using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.SDK.Models;
+using CDR.DataRecipient.SDK.Models.AuthorisationRequest;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.Web.Common;
 using CDR.DataRecipient.Web.Extensions;
@@ -50,7 +51,7 @@ namespace CDR.DataRecipient.Web.Controllers
             _consentsRepository = consentsRepository;
             _dhRepository = dhRepository;
             _registrationsRepository = registrationsRepository;
-            _logger=logger;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -67,16 +68,18 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Index(ParModel model)
         {
             if (!string.IsNullOrEmpty(model.ClientId))
-            {                
+            {
                 try
-                {                   
+                {
                     var reg = await _registrationsRepository.GetRegistration(model.ClientId, model.DataHolderBrandId);
                     var dhConfig = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(reg.DataHolderBrandId);
                     var sp = _config.GetSoftwareProductConfig();
 
                     var infosecBaseUri = await GetInfoSecBaseUri(reg.DataHolderBrandId);
                     if (string.IsNullOrEmpty(infosecBaseUri))
+                    {
                         throw new CustomException();
+                    }
 
                     var stateKey = Guid.NewGuid().ToString();
                     var nonce = Guid.NewGuid().ToString();
@@ -94,13 +97,15 @@ namespace CDR.DataRecipient.Web.Controllers
                         DataHolderBrandId = reg.DataHolderBrandId,
                         DataHolderInfosecBaseUri = infosecBaseUri,
                         RedirectUri = redirectUri,
-                        UserId = this.HttpContext.User.GetUserId()
+                        UserId = this.HttpContext.User.GetUserId(),
                     };
 
                     if (model.UsePkce)
+                    {
                         authState.Pkce = _dhInfoSecService.CreatePkceData();
+                    }
 
-                    _logger.LogDebug("saving AuthorisationState of {@authState} to cache", authState);
+                    _logger.LogDebug("saving AuthorisationState of {@AuthState} to cache", authState);
 
                     await _cache.SetAsync(stateKey, authState, DateTimeOffset.UtcNow.AddMinutes(60));
 
@@ -119,7 +124,7 @@ namespace CDR.DataRecipient.Web.Controllers
                         ResponseMode = model.ResponseMode,
                         Pkce = authState.Pkce,
                         AcrValueSupported = acrValueSupported,
-                        ResponseType = model.ResponseType
+                        ResponseType = model.ResponseType,
                     };
 
                     var authRequest = _dhInfoSecService.BuildAuthorisationRequestJwt(authorisationRequestJwt);
@@ -136,16 +141,24 @@ namespace CDR.DataRecipient.Web.Controllers
 
                     if (parResponse.IsSuccessful)
                     {
-                        model.PushedAuthorisation = parResponse.Data;
+                        if (model.ResponseType != "code")
+                        {
+                            // Hybrid flow is no longer supported. MDR allows PAR calls to be redirected to DHs for Hybrid flow but no Authorization uri is displayed to the user.
+                            model.AcfOnlyErrorMessage = $"This Data Recipient cannot progress further using a response type of \"{model.ResponseType}\". Only Authorisation Code Flow (response type of \"code\") is supported.\r\n ";
+                        }
+                        else
+                        {
+                            model.PushedAuthorisation = parResponse.Data;
 
-                        // Build the Authorisation URL for the Data Holder passing in the request uri returned from the PAR response.
-                        model.AuthorisationUri = await _dhInfoSecService.BuildAuthorisationRequestUri(
-                            infosecBaseUri,
-                            model.ClientId,
-                            sp.SigningCertificate.X509Certificate,
-                            model.PushedAuthorisation.RequestUri,
-                            model.Scope,
-                            model.ResponseType);
+                            // Build the Authorisation URL for the Data Holder passing in the request uri returned from the PAR response.
+                            model.AuthorisationUri = await _dhInfoSecService.BuildAuthorisationRequestUri(
+                                infosecBaseUri,
+                                model.ClientId,
+                                sp.SigningCertificate.X509Certificate,
+                                model.PushedAuthorisation.RequestUri,
+                                model.Scope,
+                                model.ResponseType);
+                        }
                     }
                     else
                     {
@@ -172,7 +185,7 @@ namespace CDR.DataRecipient.Web.Controllers
         /// With multiple supported acr values
         /// Should use the the max. available Acr value spported only
         /// </summary>
-        /// <param name="acrValuesSupported"></param>
+        /// <param name="acrValuesSupported">Acr values to validate</param>
         /// <returns>max available ACR value supported</returns>
         private static int ValidateAcrValuesSpported(string[] acrValuesSupported)
         {
@@ -198,9 +211,9 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> RegistrationDetail(string registrationId)
         {
             // Return the software product detail.
-            string message = "";
-            string redirectUris = "";
-            string scope = "";
+            string message = string.Empty;
+            string redirectUris = string.Empty;
+            string scope = string.Empty;
             List<SelectListItem> arrangements = new();
 
             // Return the RedirectUris for the picked item
@@ -219,12 +232,12 @@ namespace CDR.DataRecipient.Web.Controllers
                 arrangements = cdrArrangements.Select(c => new SelectListItem(c.CdrArrangementId, c.CdrArrangementId)).ToList();
             }
 
-            return new JsonResult(new 
-            { 
-                message, 
-                arrangements, 
-                redirectUris = string.Join(' ', registration.RedirectUris), 
-                scope = registration.Scope
+            return new JsonResult(new
+            {
+                message,
+                arrangements,
+                redirectUris = string.Join(' ', registration.RedirectUris),
+                scope = registration.Scope,
             });
         }
 
@@ -248,7 +261,9 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             var dh = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
             if (dh == null)
+            {
                 return null;
+            }
 
             return dh.EndpointDetail.InfoSecBaseUri;
         }

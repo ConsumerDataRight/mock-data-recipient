@@ -12,16 +12,16 @@ namespace CDR.DataRecipient.SDK.Services.Register
 {
     public class SsaService : BaseService, ISsaService
     {
-
         public SsaService(
             IConfiguration config,
             ILogger<SsaService> logger,
-            IServiceConfiguration serviceConfiguration) : base(config, logger, serviceConfiguration)
+            IServiceConfiguration serviceConfiguration)
+            : base(config, logger, serviceConfiguration)
         {
         }
 
         public async Task<Response<string>> GetSoftwareStatementAssertion(
-            string mtlsBaseUri, 
+            string mtlsBaseUri,
             string version,
             string accessToken,
             X509Certificate2 clientCertificate,
@@ -39,13 +39,13 @@ namespace CDR.DataRecipient.SDK.Services.Register
             // Setup the http client.
             var client = GetHttpClient(clientCertificate, accessToken, version);
 
-            _logger.LogDebug("Requesting SSA from Register: {ssaEndpoint}.  Client Certificate: {thumbprint}", ssaEndpoint, clientCertificate.Thumbprint);
+            _logger.LogDebug("Requesting SSA from Register: {SsaEndpoint}.  Client Certificate: {Thumbprint}", ssaEndpoint, clientCertificate.Thumbprint);
 
             // Make the request to the get data holder brands endpoint.
             var response = await client.GetAsync(EnsureValidEndpoint(ssaEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Get SSA Response: {statusCode}.  Body: {body}", response.StatusCode, body);
+            _logger.LogDebug("Get SSA Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             ssaResponse.StatusCode = response.StatusCode;
 

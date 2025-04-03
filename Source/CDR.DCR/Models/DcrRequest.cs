@@ -4,7 +4,7 @@ using System.Security.Cryptography.X509Certificates;
 namespace CDR.DCR.Models
 {
     public class DcrRequest
-    {        
+    {
         public string SoftwareProductId { get; set; }
         public string RedirectUris { get; set; }
         public string Ssa { get; set; }

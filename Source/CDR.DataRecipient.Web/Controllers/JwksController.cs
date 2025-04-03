@@ -50,7 +50,7 @@ namespace CDR.DataRecipient.Web.Controllers
         /// </summary>
         /// <param name="id">ID to control the certificate to use to generate the JWKS.  Can be 1 or 2.</param>
         /// <param name="includePrivateKeyDetails">Whether private key details should be included in the JWKS.</param>
-        /// <returns>JsonWebKeySet</returns>
+        /// <returns>JsonWebKeySet.</returns>
         /// <remarks>
         /// In a production scenario the private key details would never be included in the output.
         /// However, for FAPI testing the private key is required to be included in the JWKS when configuring the test plan.
@@ -65,11 +65,12 @@ namespace CDR.DataRecipient.Web.Controllers
 
             if (item != null)
             {
-                _logger.LogInformation("Cache hit: {cacheKey}", cacheKey);
+                _logger.LogInformation("Cache hit: {CacheKey}", cacheKey);
                 return item;
             }
 
             var cert = GetCertificate(id.Value);
+
             // Get credentials from certificate
             var securityKey = new X509SecurityKey(cert);
             var signingCredentials = new X509SigningCredentials(cert, SecurityAlgorithms.RsaSsaPssSha256);
@@ -81,7 +82,6 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Create JWKs for sig and enc purposes.
             // Make sure the kid is different for each key. FAPI 1.0 - kid needs to be unique id within the keyset.
-
             var jwkSign = new SDK.Models.JsonWebKey()
             {
                 alg = signingCredentials.Algorithm,
@@ -89,7 +89,7 @@ namespace CDR.DataRecipient.Web.Controllers
                 kty = securityKey.PublicKey.KeyExchangeAlgorithm,
                 n = n,
                 e = e,
-                use = "sig"
+                use = "sig",
             };
             var jwkEncList = encryptionCredentials.Keys.Select(key =>
             {
@@ -101,7 +101,7 @@ namespace CDR.DataRecipient.Web.Controllers
                     kty = securityKey.PublicKey.KeyExchangeAlgorithm,
                     n = n,
                     e = e,
-                    use = "enc"
+                    use = "enc",
                 };
             });
 
@@ -132,7 +132,7 @@ namespace CDR.DataRecipient.Web.Controllers
         /// <summary>
         /// Retrieve the certificate to use to generate the jwks.
         /// </summary>
-        /// <param name="id">Provides the ability to switch to an alternative certificate</param>
+        /// <param name="id">Provides the ability to switch to an alternative certificate.</param>
         /// <returns>X509Certificate2</returns>
         /// <remarks>
         /// Providing the ability to switch to a different certificate allows 2 jwks to be generated from the one data recipient.

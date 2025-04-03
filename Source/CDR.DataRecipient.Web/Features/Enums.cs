@@ -6,6 +6,6 @@
         AllowDynamicClientRegistration,
         ShowSettings,
         LinkToExternalJwt,
-        EnforceHttpsEndpoints
+        EnforceHttpsEndpoints,
     }
 }
