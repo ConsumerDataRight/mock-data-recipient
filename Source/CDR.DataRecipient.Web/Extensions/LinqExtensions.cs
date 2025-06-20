@@ -1,6 +1,6 @@
-﻿using CDR.DataRecipient.SDK.Models;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using CDR.DataRecipient.SDK.Models;
 
 namespace CDR.DataRecipient.Web.Extensions
 {

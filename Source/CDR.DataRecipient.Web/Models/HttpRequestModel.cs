@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace CDR.DataRecipient.Web.Models
 {
@@ -21,10 +22,13 @@ namespace CDR.DataRecipient.Web.Models
 
         public IDictionary<string, string> FormParameters { get; set; }
 
+        [JsonProperty(Required = Required.Always)]
         public bool RequiresClientCertificate { get; set; }
 
+        [JsonProperty(Required = Required.Always)]
         public bool RequiresAccessToken { get; set; }
 
+        [JsonProperty(Required = Required.Always)]
         public bool SupportsVersion { get; set; }
     }
 }

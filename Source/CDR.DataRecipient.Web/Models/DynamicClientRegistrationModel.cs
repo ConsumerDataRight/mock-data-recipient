@@ -3,11 +3,18 @@ using System.ComponentModel.DataAnnotations;
 using CDR.DataRecipient.SDK.Enumerations;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
 
 namespace CDR.DataRecipient.Web.Models
 {
     public class DynamicClientRegistrationModel : BaseModel
     {
+        public DynamicClientRegistrationModel()
+        {
+            this.Registrations = new List<Registration>();
+            this.TransactionType = !string.IsNullOrEmpty(this.ClientId) ? "Update" : "Create";
+        }
+
         public IEnumerable<Registration> Registrations { get; set; }
 
         public IEnumerable<Registration> FailedDCRMessages { get; set; }
@@ -17,6 +24,7 @@ namespace CDR.DataRecipient.Web.Models
 
         public string ResponsePayload { get; set; }
 
+        [JsonProperty(Required = Required.Always)]
         public Industry Industry { get; set; }
 
         [Display(Name = "Client ID", Prompt = "Only populate for update operations")]
@@ -71,11 +79,5 @@ namespace CDR.DataRecipient.Web.Models
         public List<SelectListItem> DataRecipients { get; set; }
 
         public string TransactionType { get; set; }
-
-        public DynamicClientRegistrationModel()
-        {
-            this.Registrations = new List<Registration>();
-            TransactionType = !string.IsNullOrEmpty(ClientId) ? "Update" : "Create";
-        }
     }
 }

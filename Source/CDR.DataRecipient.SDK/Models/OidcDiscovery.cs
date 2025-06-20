@@ -4,132 +4,127 @@ namespace CDR.DataRecipient.SDK.Models
 {
     public class OidcDiscovery
     {
+        private string _tokenEndpoint;
+        private string _introspectionEndpoint;
+        private string _revocationEndpoint;
+        private string _userInfoEndpoint;
+        private string _registrationEndpoint;
+        private string _pushedAuthorizationRequestEndpoint;
+
         [JsonProperty("issuer")]
         public string Issuer { get; set; }
 
         [JsonProperty("authorization_endpoint")]
         public string AuthorizationEndpoint { get; set; }
 
-        private string _tokenEndpoint;
-
         [JsonProperty("token_endpoint")]
         public string TokenEndpoint
         {
             get
             {
-                if (!string.IsNullOrEmpty(MtlsEndpointAliases?.TokenEndpoint))
+                if (!string.IsNullOrEmpty(this.MtlsEndpointAliases?.TokenEndpoint))
                 {
-                    return MtlsEndpointAliases.TokenEndpoint;
+                    return this.MtlsEndpointAliases.TokenEndpoint;
                 }
 
-                return _tokenEndpoint;
+                return this._tokenEndpoint;
             }
 
             set
             {
-                _tokenEndpoint = value;
+                this._tokenEndpoint = value;
             }
         }
-
-        private string _introspectionEndpoint;
 
         [JsonProperty("introspection_endpoint")]
         public string IntrospectionEndpoint
         {
             get
             {
-                if (!string.IsNullOrEmpty(MtlsEndpointAliases?.IntrospectionEndpoint))
+                if (!string.IsNullOrEmpty(this.MtlsEndpointAliases?.IntrospectionEndpoint))
                 {
-                    return MtlsEndpointAliases.IntrospectionEndpoint;
+                    return this.MtlsEndpointAliases.IntrospectionEndpoint;
                 }
 
-                return _introspectionEndpoint;
+                return this._introspectionEndpoint;
             }
 
             set
             {
-                _introspectionEndpoint = value;
+                this._introspectionEndpoint = value;
             }
         }
-
-        private string _revocationEndpoint;
 
         [JsonProperty("revocation_endpoint")]
         public string RevocationEndpoint
         {
             get
             {
-                if (!string.IsNullOrEmpty(MtlsEndpointAliases?.RevocationEndpoint))
+                if (!string.IsNullOrEmpty(this.MtlsEndpointAliases?.RevocationEndpoint))
                 {
-                    return MtlsEndpointAliases.RevocationEndpoint;
+                    return this.MtlsEndpointAliases.RevocationEndpoint;
                 }
 
-                return _revocationEndpoint;
+                return this._revocationEndpoint;
             }
 
-            set => _revocationEndpoint = value;
+            set => this._revocationEndpoint = value;
         }
-
-        private string _userInfoEndpoint;
 
         [JsonProperty("userinfo_endpoint")]
         public string UserInfoEndpoint
         {
             get
             {
-                if (!string.IsNullOrEmpty(MtlsEndpointAliases?.UserInfoEndpoint))
+                if (!string.IsNullOrEmpty(this.MtlsEndpointAliases?.UserInfoEndpoint))
                 {
-                    return MtlsEndpointAliases.UserInfoEndpoint;
+                    return this.MtlsEndpointAliases.UserInfoEndpoint;
                 }
 
-                return _userInfoEndpoint;
+                return this._userInfoEndpoint;
             }
 
             set
             {
-                _userInfoEndpoint = value;
+                this._userInfoEndpoint = value;
             }
         }
-
-        private string _registrationEndpoint;
 
         [JsonProperty("registration_endpoint")]
         public string RegistrationEndpoint
         {
             get
             {
-                if (!string.IsNullOrEmpty(MtlsEndpointAliases?.RegistrationEndpoint))
+                if (!string.IsNullOrEmpty(this.MtlsEndpointAliases?.RegistrationEndpoint))
                 {
-                    return MtlsEndpointAliases.RegistrationEndpoint;
+                    return this.MtlsEndpointAliases.RegistrationEndpoint;
                 }
 
-                return _registrationEndpoint;
+                return this._registrationEndpoint;
             }
 
             set
             {
-                _registrationEndpoint = value;
+                this._registrationEndpoint = value;
             }
         }
-
-        private string _pushedAuthorizationRequestEndpoint;
 
         [JsonProperty("pushed_authorization_request_endpoint")]
         public string PushedAuthorizationRequestEndpoint
         {
             get
             {
-                if (!string.IsNullOrEmpty(MtlsEndpointAliases?.PushedAuthorizationRequestEndpoint))
+                if (!string.IsNullOrEmpty(this.MtlsEndpointAliases?.PushedAuthorizationRequestEndpoint))
                 {
-                    return MtlsEndpointAliases.PushedAuthorizationRequestEndpoint;
+                    return this.MtlsEndpointAliases.PushedAuthorizationRequestEndpoint;
                 }
 
-                return _pushedAuthorizationRequestEndpoint;
+                return this._pushedAuthorizationRequestEndpoint;
             }
 
             set
             {
-                _pushedAuthorizationRequestEndpoint = value;
+                this._pushedAuthorizationRequestEndpoint = value;
             }
         }
 
@@ -183,26 +178,5 @@ namespace CDR.DataRecipient.SDK.Models
 
         [JsonProperty("mtls_endpoint_aliases")]
         public MtlsAliases MtlsEndpointAliases { get; set; }
-    }
-
-    public class MtlsAliases
-    {
-        [JsonProperty("token_endpoint")]
-        public string TokenEndpoint { get; set; }
-
-        [JsonProperty("revocation_endpoint")]
-        public string RevocationEndpoint { get; set; }
-
-        [JsonProperty("introspection_endpoint")]
-        public string IntrospectionEndpoint { get; set; }
-
-        [JsonProperty("userinfo_endpoint")]
-        public string UserInfoEndpoint { get; set; }
-
-        [JsonProperty("registration_endpoint")]
-        public string RegistrationEndpoint { get; set; }
-
-        [JsonProperty("pushed_authorization_request_endpoint")]
-        public string PushedAuthorizationRequestEndpoint { get; set; }
     }
 }

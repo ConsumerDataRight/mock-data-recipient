@@ -29,7 +29,7 @@ namespace CDR.DataRecipient.Web.Models
 
         public bool HasErrors()
         {
-            return Errors != null && Errors.Count > 0;
+            return this.Errors != null && this.Errors.Count > 0;
         }
     }
 }

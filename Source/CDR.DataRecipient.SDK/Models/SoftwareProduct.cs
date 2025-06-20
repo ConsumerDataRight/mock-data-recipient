@@ -20,7 +20,7 @@
             }
         }
 
-        public string RevocationUri => $"{RecipientBaseUri}/{Constants.Urls.ClientArrangementRevokeUrl}";
+        public string RevocationUri => $"{this.RecipientBaseUri}/{Constants.Urls.ClientArrangementRevokeUrl}";
 
         public string Scope { get; set; }
 

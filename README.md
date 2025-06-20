@@ -1,6 +1,6 @@
 ![Consumer Data Right Logo](./cdr-logo.png?raw=true) 
 
-[![Consumer Data Standards v1.33.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.33.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.33.0/#introduction)
+[![Consumer Data Standards v1.34.0](https://img.shields.io/badge/Consumer%20Data%20Standards-v1.34.0-blue.svg)](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.34.0/#introduction)
 [![made-with-dotnet](https://img.shields.io/badge/Made%20with-.NET-1f425Ff.svg)](https://dotnet.microsoft.com/)
 [![made-with-csharp](https://img.shields.io/badge/Made%20with-C%23-1f425Ff.svg)](https://docs.microsoft.com/en-us/dotnet/csharp/)
 [![MIT License](https://img.shields.io/github/license/ConsumerDataRight/mock-data-recipient)](./LICENSE)
@@ -13,7 +13,7 @@ This repository contains a mock implementation of a Data Recipient and is offere
 
 ## Mock Data Recipient - Alignment
 The Mock Data Recipient in this release:
-* aligns to [v1.33.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.33.0/#introduction) of the [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.33.0/#introduction);
+* aligns to [v1.34.0](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.34.0/#introduction) of the [Consumer Data Standards](https://consumerdatastandardsaustralia.github.io/standards-archives/standards-1.34.0/#introduction);
 * can connect to and complete authentication against both [FAPI 1.0 Migration Phase 2 and Phase 3](https://consumerdatastandardsaustralia.github.io/standards/#authentication-flows) compliant data holders.
 
 ## Getting Started

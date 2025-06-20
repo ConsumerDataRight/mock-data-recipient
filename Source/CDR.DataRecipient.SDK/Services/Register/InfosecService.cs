@@ -18,7 +18,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             IServiceConfiguration serviceConfiguration)
             : base(config, logger, serviceConfiguration)
         {
-            _accessTokenService = accessTokenService;
+            this._accessTokenService = accessTokenService;
         }
 
         public async Task<Response<Token>> GetAccessToken(
@@ -28,7 +28,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
             X509Certificate2 signingCertificate,
             string scope = Constants.Scopes.CDR_REGISTER)
         {
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetAccessToken)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.GetAccessToken)}.");
 
             var accessToken = new AccessToken()
             {
@@ -39,17 +39,17 @@ namespace CDR.DataRecipient.SDK.Services.Register
                 Scope = scope,
             };
 
-            return await _accessTokenService.GetAccessToken(accessToken);
+            return await this._accessTokenService.GetAccessToken(accessToken);
         }
 
         public async Task<Response<OidcDiscovery>> GetOidcDiscovery(string registerOidcConfigEndpoint)
         {
             var oidcResponse = new Response<OidcDiscovery>();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetOidcDiscovery)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.GetOidcDiscovery)}.");
 
-            var client = GetHttpClient();
-            var configResponse = await client.GetAsync(EnsureValidEndpoint(registerOidcConfigEndpoint));
+            var client = this.GetHttpClient();
+            var configResponse = await client.GetAsync(this.EnsureValidEndpoint(registerOidcConfigEndpoint));
 
             oidcResponse.StatusCode = configResponse.StatusCode;
 
@@ -64,7 +64,7 @@ namespace CDR.DataRecipient.SDK.Services.Register
 
         public async Task<string> GetTokenEndpoint(string registerOidcConfigEndpoint)
         {
-            var oidd = await GetOidcDiscovery(registerOidcConfigEndpoint);
+            var oidd = await this.GetOidcDiscovery(registerOidcConfigEndpoint);
             return oidd.Data.TokenEndpoint;
         }
     }

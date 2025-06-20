@@ -1,7 +1,6 @@
 ﻿using CDR.DataRecipient.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
-using System;
 
 namespace CDR.DataRecipient.Repository.SQL.Infrastructure
 {

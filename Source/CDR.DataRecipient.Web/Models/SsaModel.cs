@@ -1,5 +1,6 @@
-﻿using CDR.DataRecipient.SDK.Enumerations;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using CDR.DataRecipient.SDK.Enumerations;
+using Newtonsoft.Json;
 
 namespace CDR.DataRecipient.Web.Models
 {
@@ -10,6 +11,7 @@ namespace CDR.DataRecipient.Web.Models
         public string SSA { get; set; }
 
         [Display(Name = "Industry")]
+        [JsonProperty(Required = Required.Always)]
         public Industry Industry { get; set; }
 
         [Display(Name = "Version")]

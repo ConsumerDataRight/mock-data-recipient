@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using CDR.DataRecipient.API.Logger;
 using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.Repository.SQL;
+using CDR.DataRecipient.SDK.Extensions;
 using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.SDK.Services.Register;
@@ -47,7 +49,7 @@ namespace CDR.DataRecipient.Web
 
         public Startup(IConfiguration configuration)
         {
-            _configuration = configuration;
+            this._configuration = configuration;
         }
 
         // This method gets called by the runtime. Use this method to add services to the container.
@@ -55,8 +57,7 @@ namespace CDR.DataRecipient.Web
         {
             services.AddScoped<IOidcSettingsProvider, OidcSettingsProvider>();
 
-            services.AddDbContext<RecipientDatabaseContext>(options => options.UseSqlServer(_configuration.GetConnectionString(DbConstants.ConnectionStringNames.Default)));
-            var dbContext = services.BuildServiceProvider().GetService<RecipientDatabaseContext>();
+            services.AddDbContext<RecipientDatabaseContext>(options => options.UseSqlServer(this._configuration.GetConnectionString(DbConstants.ConnectionStringNames.Default)));
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation()
                 .AddJsonOptions(options =>
@@ -66,18 +67,18 @@ namespace CDR.DataRecipient.Web
 
             services.AddSingleton<IServiceConfiguration>(x => new ServiceConfiguration()
             {
-                AcceptAnyServerCertificate = _configuration.IsAcceptingAnyServerCertificate(),
-                EnforceHttpsEndpoints = _configuration.IsEnforcingHttpsEndpoints(),
+                AcceptAnyServerCertificate = this._configuration.IsAcceptingAnyServerCertificate(),
+                EnforceHttpsEndpoints = this._configuration.IsEnforcingHttpsEndpoints(),
             });
             services.AddTransient<SDK.Services.Register.IInfosecService, SDK.Services.Register.InfosecService>();
             services.AddTransient<IAccessTokenService, AccessTokenService>();
             services.AddTransient<IMetadataService, MetadataService>();
             services.AddTransient<ISsaService, SsaService>();
             services.AddTransient<IDynamicClientRegistrationService, DynamicClientRegistrationService>();
-            services.AddSingleton<ISqlDataAccess>(x => new SqlDataAccess(_configuration, dbContext));
-            services.AddSingleton<IDataHoldersRepository>(x => new SqlDataHoldersRepository(_configuration, dbContext));
-            services.AddSingleton<IConsentsRepository>(x => new SqlConsentsRepository(_configuration, dbContext));
-            services.AddSingleton<IRegistrationsRepository>(x => new SqlRegistrationsRepository(_configuration, dbContext));
+            services.AddScoped<ISqlDataAccess, SqlDataAccess>();
+            services.AddScoped<IDataHoldersRepository, SqlDataHoldersRepository>();
+            services.AddScoped<IConsentsRepository, SqlConsentsRepository>();
+            services.AddScoped<IRegistrationsRepository, SqlRegistrationsRepository>();
             services.AddTransient<SDK.Services.DataHolder.IInfosecService, SDK.Services.DataHolder.InfosecService>();
             services.AddSingleton<ICacheManager, CacheManager>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
@@ -85,18 +86,18 @@ namespace CDR.DataRecipient.Web
             services.AddScoped<LogActionEntryAttribute>();
 
             // if the distributed cache connection string has been set then use it, otherwise fall back to in-memory caching.
-            if (UseDistributedCache())
+            if (this.UseDistributedCache())
             {
                 services.AddStackExchangeRedisCache(options =>
                 {
-                    options.Configuration = _configuration.GetConnectionString(DbConstants.ConnectionStringNames.Cache);
+                    options.Configuration = this._configuration.GetConnectionString(DbConstants.ConnectionStringNames.Cache);
                     options.InstanceName = "datarecipient-cache-";
                 });
 
                 services.AddDataProtection()
                     .SetApplicationName("mdh-idsvr")
                     .PersistKeysToStackExchangeRedis(
-                        StackExchange.Redis.ConnectionMultiplexer.Connect(_configuration.GetConnectionString(DbConstants.ConnectionStringNames.Cache)),
+                        StackExchange.Redis.ConnectionMultiplexer.Connect(this._configuration.GetConnectionString(DbConstants.ConnectionStringNames.Cache)),
                         "datarecipient-cache-dp-keys");
             }
             else
@@ -105,11 +106,11 @@ namespace CDR.DataRecipient.Web
                 services.AddDistributedMemoryCache();
             }
 
-            string specificOrigin = _configuration.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificOrigins);
+            string specificOrigin = this._configuration.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificOrigins);
             services.AddCors(options =>
             {
                 options.AddPolicy(
-                    _allowSpecificOrigins,
+                    this._allowSpecificOrigins,
                     builder =>
                     {
                         builder.WithOrigins(specificOrigin)
@@ -120,9 +121,9 @@ namespace CDR.DataRecipient.Web
                     });
             });
 
-            string connStr = _configuration.GetConnectionString(DbConstants.ConnectionStringNames.Logging);
+            string connStr = this._configuration.GetConnectionString(DbConstants.ConnectionStringNames.Logging);
             services.AddHealthChecks()
-                    .AddCheck("migration", () => healthCheckMigration ? HealthCheckResult.Healthy(healthCheckMigrationMessage) : HealthCheckResult.Unhealthy(healthCheckMigrationMessage))
+                    .AddCheck("migration", () => this.healthCheckMigration ? HealthCheckResult.Healthy(this.healthCheckMigrationMessage) : HealthCheckResult.Unhealthy(this.healthCheckMigrationMessage))
                     .AddCheck("sql-connection", () =>
                     {
                         using (var db = new SqlConnection(connStr))
@@ -140,15 +141,15 @@ namespace CDR.DataRecipient.Web
                         return HealthCheckResult.Healthy();
                     });
 
-            var issuer = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.Issuer);
+            var issuer = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.Issuer);
             if (!string.IsNullOrEmpty(issuer))
             {
-                var clientId = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ClientId);
-                var clientSecret = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ClientSecret);
-                var callbackPath = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.CallbackPath);
-                var responseType = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ResponseType);
-                var responseMode = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ResponseMode, "form_post");
-                var scopes = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.Scope);
+                var clientId = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ClientId);
+                var clientSecret = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ClientSecret);
+                var callbackPath = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.CallbackPath);
+                var responseType = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ResponseType);
+                var responseMode = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ResponseMode, "form_post");
+                var scopes = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.Scope);
 
                 services.AddAuthentication(options =>
                 {
@@ -242,19 +243,37 @@ namespace CDR.DataRecipient.Web
 
             services.AddFeatureManagement();
 
-            if (_configuration.GetSection("SerilogRequestResponseLogger") != null)
+            if (this._configuration.GetSection("SerilogRequestResponseLogger") != null)
             {
                 Log.Logger.Information("Adding request response logging middleware");
                 services.AddRequestResponseLogging();
             }
 
             services.AddHttpClient();
-        }
 
-        private bool UseDistributedCache()
-        {
-            var cacheConnectionString = _configuration.GetConnectionString(DbConstants.ConnectionStringNames.Cache);
-            return !string.IsNullOrEmpty(cacheConnectionString);
+            // Different HttpClient is used based on private or public endpoint
+            services.AddHttpClient("PublicDataHolderClient", client => { })
+                .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = this._configuration.IsAcceptingAnyServerCertificate()
+                        ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                        : null,
+                });
+
+            // Different HttpClient is used based on private or public endpoint
+            services.AddHttpClient("PrivateDataHolderClient", client => { })
+                .ConfigurePrimaryHttpMessageHandler(() =>
+                {
+                    var handler = new HttpClientHandler();
+                    if (this._configuration.IsAcceptingAnyServerCertificate())
+                    {
+                        handler.SetServerCertificateValidation(this._configuration.IsAcceptingAnyServerCertificate());
+                    }
+
+                    // Provide the data recipient's client certificate for a non-public endpoint.
+                    handler.ClientCertificates.Add(this._configuration.GetSoftwareProductConfig().ClientCertificate.X509Certificate);
+                    return handler;
+                });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -271,7 +290,7 @@ namespace CDR.DataRecipient.Web
             }
 
             // If an external IdP is not configured, then create a dummy mdr user.
-            if (!_configuration.IsOidcConfigured())
+            if (!this._configuration.IsOidcConfigured())
             {
                 app.Use(async (ctx, next) =>
                 {
@@ -292,12 +311,12 @@ namespace CDR.DataRecipient.Web
             {
                 context.Response.Headers.Append(
                     "Content-Security-Policy",
-                    _configuration.GetValue(Constants.ConfigurationKeys.ContentSecurityPolicy, "default-src 'self', 'https://cdn.jsdelivr.net/';"));
+                    this._configuration.GetValue(Constants.ConfigurationKeys.ContentSecurityPolicy, "default-src 'self', 'https://cdn.jsdelivr.net/';"));
                 await next();
             });
 
             // Set the request host name.
-            var hostname = _configuration.GetValue<string>(Constants.ConfigurationKeys.MockDataRecipient.Hostname);
+            var hostname = this._configuration.GetValue<string>(Constants.ConfigurationKeys.MockDataRecipient.Hostname);
             if (!string.IsNullOrEmpty(hostname))
             {
                 app.Use((context, next) =>
@@ -312,7 +331,7 @@ namespace CDR.DataRecipient.Web
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
-            app.UseCors(_allowSpecificOrigins);
+            app.UseCors(this._allowSpecificOrigins);
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseSession();
@@ -365,37 +384,27 @@ namespace CDR.DataRecipient.Web
             // Migrate the database to the latest version during application startup.
             using (var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
             {
-                if (RunMigrations())
+                if (this.RunMigrations())
                 {
-                    healthCheckMigrationMessage = "Migration in progress";
+                    this.healthCheckMigrationMessage = "Migration in progress";
 
                     var optionsBuilder = new DbContextOptionsBuilder<RecipientDatabaseContext>();
 
                     // Use DBO connection string since it has DBO rights needed to update db schema
-                    optionsBuilder.UseSqlServer(_configuration.GetConnectionString(DbConstants.ConnectionStringNames.Migrations)
+                    optionsBuilder.UseSqlServer(this._configuration.GetConnectionString(DbConstants.ConnectionStringNames.Migrations)
                         ?? throw new InvalidOperationException($"Connection string '{DbConstants.ConnectionStringNames.Migrations}' not found"));
 
                     using var dbContext = new RecipientDatabaseContext(optionsBuilder.Options);
                     dbContext.Database.Migrate();
 
-                    healthCheckMigrationMessage = "Migration completed";
+                    this.healthCheckMigrationMessage = "Migration completed";
                 }
 
-                healthCheckMigration = true;
+                this.healthCheckMigration = true;
 
                 // Reconfigure Serilog with DB
-                Program.ConfigureSerilog(_configuration, true);
+                Program.ConfigureSerilog(this._configuration, true);
             }
-        }
-
-        /// <summary>
-        /// Determine if EF Migrations should run.
-        /// </summary>
-        private bool RunMigrations()
-        {
-            // Run migrations if the DBO connection string is set.
-            var dbo = _configuration.GetConnectionString(DbConstants.ConnectionStringNames.Migrations);
-            return !string.IsNullOrEmpty(dbo);
         }
 
         private static Task CustomResponseWriter(HttpContext context, HealthReport healthReport)
@@ -411,6 +420,22 @@ namespace CDR.DataRecipient.Web
                 }),
             });
             return context.Response.WriteAsync(result);
+        }
+
+        private bool UseDistributedCache()
+        {
+            var cacheConnectionString = this._configuration.GetConnectionString(DbConstants.ConnectionStringNames.Cache);
+            return !string.IsNullOrEmpty(cacheConnectionString);
+        }
+
+        /// <summary>
+        /// Determine if EF Migrations should run.
+        /// </summary>
+        private bool RunMigrations()
+        {
+            // Run migrations if the DBO connection string is set.
+            var dbo = this._configuration.GetConnectionString(DbConstants.ConnectionStringNames.Migrations);
+            return !string.IsNullOrEmpty(dbo);
         }
     }
 }

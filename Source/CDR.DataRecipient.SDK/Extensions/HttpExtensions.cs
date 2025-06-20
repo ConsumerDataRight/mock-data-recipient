@@ -1,12 +1,10 @@
-﻿using CDR.DataRecipient.SDK.Models;
-using CDR.DataRecipient.SDK.Register;
-using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using CDR.DataRecipient.SDK.Models;
+using CDR.DataRecipient.SDK.Register;
 
 namespace CDR.DataRecipient.SDK.Extensions
 {

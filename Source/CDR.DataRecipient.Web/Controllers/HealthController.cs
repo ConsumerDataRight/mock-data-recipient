@@ -9,7 +9,7 @@ namespace CDR.DataRecipient.Web.Controllers
         [HttpGet("status")]
         public IActionResult Index()
         {
-            return Json(new Health() { Status = "OK" });
+            return this.Json(new Health() { Status = "OK" });
         }
     }
 }

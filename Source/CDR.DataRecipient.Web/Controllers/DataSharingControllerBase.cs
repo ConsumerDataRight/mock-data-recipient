@@ -28,15 +28,35 @@ namespace CDR.DataRecipient.Web.Controllers
     [Authorize]
     public abstract class DataSharingControllerBase : Controller
     {
-        private readonly IHttpClientFactory _clientFactory;
-
         protected const string HEADER_INJECT_CDR_ARRANGEMENT_ID = "x-inject-cdr-arrangement-id";
-        protected readonly IConfiguration _config;
-        protected readonly IDistributedCache _cache;
-        protected readonly IConsentsRepository _consentsRepository;
-        protected readonly IDataHoldersRepository _dhRepository;
-        protected readonly IInfosecService _infosecService;
-        protected readonly ILogger<DataSharingControllerBase> _logger;
+
+        private readonly IHttpClientFactory _clientFactory;
+        private readonly IConfiguration _config;
+        private readonly IDistributedCache _cache;
+        private readonly IConsentsRepository _consentsRepository;
+        private readonly IDataHoldersRepository _dhRepository;
+        private readonly IInfosecService _infosecService;
+        private readonly ILogger<DataSharingControllerBase> _logger;
+        private readonly List<string> _allowedHeaders;
+
+        protected DataSharingControllerBase(
+            IConfiguration config,
+            IDistributedCache cache,
+            IConsentsRepository consentsRepository,
+            IDataHoldersRepository dhRepository,
+            IInfosecService infosecService,
+            ILogger<DataSharingControllerBase> logger,
+            IHttpClientFactory clientFactory)
+        {
+            this._config = config;
+            this._cache = cache;
+            this._consentsRepository = consentsRepository;
+            this._dhRepository = dhRepository;
+            this._infosecService = infosecService;
+            this._logger = logger;
+            this._allowedHeaders = [.. this._config.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificHeaders).Split(',')];
+            this._clientFactory = clientFactory;
+        }
 
         protected abstract string BasePath { get; }
 
@@ -49,34 +69,21 @@ namespace CDR.DataRecipient.Web.Controllers
 
         protected abstract string CdsSwaggerLocation { get; }
 
-        protected List<string> _allowedHeaders;
+        protected IDistributedCache Cache => this._cache;
 
-        protected DataSharingControllerBase(
-            IConfiguration config,
-            IDistributedCache cache,
-            IConsentsRepository consentsRepository,
-            IDataHoldersRepository dhRepository,
-            IInfosecService infosecService,
-            ILogger<DataSharingControllerBase> logger,
-            IHttpClientFactory clientFactory)
-        {
-            _config = config;
-            _cache = cache;
-            _consentsRepository = consentsRepository;
-            _dhRepository = dhRepository;
-            _infosecService = infosecService;
-            _logger = logger;
-            _allowedHeaders = [.. _config.GetValue<string>(Constants.ConfigurationKeys.AllowSpecificHeaders).Split(',')];
-            _clientFactory = clientFactory;
-        }
+        protected IConfiguration Config => this._config;
+
+        protected IInfosecService InfosecService => this._infosecService;
+
+        protected List<string> AllowedHeaders => this._allowedHeaders;
 
         [HttpGet]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public IActionResult Index()
         {
             var model = new DataSharingModel();
-            PopulateModel(model);
-            return View("DataSharing", model);
+            this.PopulateModel(model);
+            return this.View("DataSharing", model);
         }
 
         /// <summary>
@@ -88,8 +95,8 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task Swagger()
         {
-            var sp = _config.GetSoftwareProductConfig();
-            var client = _clientFactory.CreateClient();
+            var sp = this._config.GetSoftwareProductConfig();
+            var client = this._clientFactory.CreateClient();
             Uri uri = new Uri(sp.RecipientBaseUri);
 
             // Get the CDS swagger file.
@@ -99,12 +106,12 @@ namespace CDR.DataRecipient.Web.Controllers
             // Replace the host and base path in the CDS Banking swagger file to point to the mock data recipient proxy endpoint
             // in order to proxy all swagger requests via the mock data recipient.
             var jsonObj = JObject.Parse(cdsSwaggerJson);
-            jsonObj = PrepareSwaggerJson(jsonObj, uri);
+            jsonObj = this.PrepareSwaggerJson(jsonObj, uri);
             byte[] jsonBytes = System.Text.Encoding.UTF8.GetBytes(jsonObj.ToString());
 
             // Return the updated swagger file.
-            Response.ContentType = "application/json";
-            await Response.BodyWriter.WriteAsync(jsonBytes);
+            this.Response.ContentType = "application/json";
+            await this.Response.BodyWriter.WriteAsync(jsonBytes);
         }
 
         /// <summary>
@@ -115,49 +122,34 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task Proxy()
         {
-            var sp = _config.GetSoftwareProductConfig();
-
-            var cdrArrangement = await GetCdrArrangement(this.Request);
+            var cdrArrangement = await this.GetCdrArrangement(this.Request);
             if (cdrArrangement == null)
             {
-                Response.ContentType = "application/json";
-                Response.StatusCode = StatusCodes.Status400BadRequest;
+                this.Response.ContentType = "application/json";
+                this.Response.StatusCode = StatusCodes.Status400BadRequest;
                 string rtnMsg = @"{""Error"":""Please select an Agreement""}";
-                await Response.BodyWriter.WriteAsync(System.Text.UTF8Encoding.UTF8.GetBytes(rtnMsg));
+                await this.Response.BodyWriter.WriteAsync(System.Text.UTF8Encoding.UTF8.GetBytes(rtnMsg));
                 return;
             }
 
             var requestPath = this.Request.Path.ToString().Replace($"/{this.BasePath}/proxy", string.Empty);
-            if (!IsValidRequestPath(requestPath))
+            if (!this.IsValidRequestPath(requestPath))
             {
-                Response.ContentType = "application/json";
-                Response.StatusCode = StatusCodes.Status400BadRequest;
+                this.Response.ContentType = "application/json";
+                this.Response.StatusCode = StatusCodes.Status400BadRequest;
                 string rtnMsg = @"{""Error"":""Invalid request path""}";
-                await Response.BodyWriter.WriteAsync(System.Text.UTF8Encoding.UTF8.GetBytes(rtnMsg));
+                await this.Response.BodyWriter.WriteAsync(System.Text.UTF8Encoding.UTF8.GetBytes(rtnMsg));
                 return;
             }
 
-            var dh = await GetDataHolder(cdrArrangement);
-            var isPublic = IsPublic(this.Request.Path);
+            var dh = await this.GetDataHolder(cdrArrangement);
+            var isPublic = this.IsPublic(this.Request.Path);
             var baseUri = isPublic ? dh.EndpointDetail.PublicBaseUri : dh.EndpointDetail.ResourceBaseUri;
 
-            _logger.LogDebug("Proxying call to Data Holder: {DataHolderBrandId}.  Is Public: {IsPublic}.  Base Uri: {BaseUri}.  Path: {Path}.", dh.DataHolderBrandId, isPublic, baseUri, this.Request.Path);
+            this._logger.LogDebug("Proxying call to Data Holder: {DataHolderBrandId}.  Is Public: {IsPublic}.  Base Uri: {BaseUri}.  Path: {Path}.", dh.DataHolderBrandId, isPublic, baseUri, this.Request.Path);
 
-            // Build the Http Request to the data holder.
-            var clientHandler = new HttpClientHandler();
-            var acceptAnyServerCertificate = _config.IsAcceptingAnyServerCertificate();
-            if (acceptAnyServerCertificate)
-            {
-                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            }
-
-            // Provide the data recipient's client certificate for a non-public endpoint.
-            if (!isPublic)
-            {
-                clientHandler.ClientCertificates.Add(sp.ClientCertificate.X509Certificate);
-            }
-
-            var client = new HttpClient(clientHandler);
+            // Build the Http Request to the data holder. Use HttpClientFactory to get the name client instead of re-creating the HttpClient everytime.
+            var client = isPublic ? this._clientFactory.CreateClient("PublicDataHolderClient") : this._clientFactory.CreateClient("PrivateDataHolderClient");
 
             var requestUri = string.Concat(baseUri, requestPath, this.Request.QueryString);
             var request = new HttpRequestMessage()
@@ -177,7 +169,7 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Don't add the host header or there will be CORS errors. This has to be added to the where.
-            foreach (var header in this.Request.Headers.Keys.Where(h => _allowedHeaders.Contains(h, StringComparer.OrdinalIgnoreCase)))
+            foreach (var header in this.Request.Headers.Keys.Where(h => this._allowedHeaders.Contains(h, StringComparer.OrdinalIgnoreCase)))
             {
                 request.Headers.Add(header, this.Request.Headers[header].ToString());
             }
@@ -188,31 +180,32 @@ namespace CDR.DataRecipient.Web.Controllers
                 client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", cdrArrangement.AccessToken);
             }
 
-            if (_config.IsEnforcingHttpsEndpoints() && !request.RequestUri.IsHttps())
+            if (this._config.IsEnforcingHttpsEndpoints() && !request.RequestUri.IsHttps())
             {
                 throw new NoHttpsException();
             }
 
-            _logger.LogDebug("Making request to: {RequestUri}.", request.RequestUri);
+            this._logger.LogDebug("Making request to: {RequestUri}.", request.RequestUri);
 
             var response = await client.SendAsync(request);
             var body = await response.Content.ReadAsStringAsync();
 
             // Return the raw JSON response.
-            Response.ContentType = "application/json";
-            Response.StatusCode = response.StatusCode.ToInt();
-            await Response.BodyWriter.WriteAsync(System.Text.UTF8Encoding.UTF8.GetBytes(body));
+            this.Response.ContentType = "application/json";
+            this.Response.StatusCode = response.StatusCode.ToInt();
+            await this.Response.BodyWriter.WriteAsync(System.Text.UTF8Encoding.UTF8.GetBytes(body));
         }
 
         /// <summary>
         /// Return the list of cdr arrangements so that a select element can be built.
         /// </summary>
+        /// <returns>A Task representing the asynchronous operation.</returns>
         [HttpGet]
         [Route("cdr-arrangements")]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IList<KeyValuePair<string, string>>> GetCdrArrangements()
         {
-            var consents = await GetConsents(HttpContext.User.GetUserId(), industry: this.IndustryName);
+            var consents = await this.GetConsents(this.HttpContext.User.GetUserId(), industry: this.IndustryName);
             return consents
                 .Select(c => new KeyValuePair<string, string>(c.CdrArrangementId, $"{c.CdrArrangementId} (DH Brand: {c.BrandName} {c.DataHolderBrandId})"))
                 .ToList();
@@ -220,7 +213,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
         protected virtual async Task<IEnumerable<ConsentArrangement>> GetConsents(string userId, string industry = null)
         {
-            return await _consentsRepository.GetConsents(string.Empty, string.Empty, userId, industry);
+            return await this._consentsRepository.GetConsents(string.Empty, string.Empty, userId, industry);
         }
 
         protected virtual void PopulateModel(DataSharingModel model)
@@ -232,23 +225,25 @@ namespace CDR.DataRecipient.Web.Controllers
 
         protected virtual async Task<DataHolderBrand> GetDataHolder(ConsentArrangement cdrArrangement)
         {
-            return await _dhRepository.GetDataHolderBrand(cdrArrangement.DataHolderBrandId);
+            return await this._dhRepository.GetDataHolderBrand(cdrArrangement.DataHolderBrandId);
         }
 
         protected virtual async Task<ConsentArrangement> GetCdrArrangement(HttpRequest request)
         {
             // Get the cdr arrangement id from the http header.
+#pragma warning disable S6932 // Use model binding instead of reading raw request data
             if (!request.Headers.TryGetValue(HEADER_INJECT_CDR_ARRANGEMENT_ID, out var cdrArrangementId))
             {
                 return null;
             }
+#pragma warning restore S6932 // Use model binding instead of reading raw request data
 
             if (string.IsNullOrEmpty(cdrArrangementId))
             {
                 return null;
             }
 
-            return await _consentsRepository.GetConsentByArrangement(cdrArrangementId);
+            return await this._consentsRepository.GetConsentByArrangement(cdrArrangementId);
         }
 
         protected abstract JObject PrepareSwaggerJson(JObject json, Uri uri);

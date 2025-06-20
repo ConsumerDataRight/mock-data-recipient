@@ -15,6 +15,18 @@ namespace CDR.DataRecipient.Web.Controllers
     {
         private const string PATH = "data-sharing-banking";
 
+        public DataSharingBankingController(
+            IConfiguration config,
+            IDistributedCache cache,
+            IConsentsRepository consentsRepository,
+            IDataHoldersRepository dhRepository,
+            IInfosecService infosecService,
+            ILogger<DataSharingBankingController> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(config, cache, consentsRepository, dhRepository, infosecService, logger, httpClientFactory)
+        {
+        }
+
         protected override string BasePath
         {
             get
@@ -37,20 +49,8 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             get
             {
-                return _config["ConsumerDataStandardsSwaggerBanking"];
+                return this.Config["ConsumerDataStandardsSwaggerBanking"];
             }
-        }
-
-        public DataSharingBankingController(
-            IConfiguration config,
-            IDistributedCache cache,
-            IConsentsRepository consentsRepository,
-            IDataHoldersRepository dhRepository,
-            IInfosecService infosecService,
-            ILogger<DataSharingBankingController> logger,
-            IHttpClientFactory httpClientFactory)
-            : base(config, cache, consentsRepository, dhRepository, infosecService, logger, httpClientFactory)
-        {
         }
 
         protected override JObject PrepareSwaggerJson(JObject json, Uri uri)

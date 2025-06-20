@@ -6,14 +6,19 @@ schedules:
     include:
     - develop
 
+parameters:
+    # https://github.com/microsoft/azure-pipelines-yaml/blob/master/design/runtime-parameters.md#syntax
+  - name: MockRegisterOverrideDependentImageTag
+    type: string
+    default: ' ' # default value; if no default, then the parameter MUST be given by the user at runtime
+  - name: MdhBankingOverrideDependentImageTag
+    type: string
+    default: ' ' # default value; if no default, then the parameter MUST be given by the user at runtime
+  - name: MdhEnergyOverrideDependentImageTag
+    type: string
+    default: ' ' # default value; if no default, then the parameter MUST be given by the user at runtime
 
 variables:  
-
-  ${{ if eq(variables['Build.SourceBranchName'], 'main') }}: 
-    containerTag: main
-  ${{ else }}:
-    containerTag: develop
-    
   baseSourceDirectory: $(Build.SourcesDirectory)/Source
   dockerComposeDirectory: $(baseSourceDirectory)/DockerCompose
 
@@ -30,6 +35,27 @@ jobs:
   timeoutInMinutes: 120
 
   steps:
+    # set the register tag to use based on the logic in the template file
+    - template: set-tag-name.yml
+      parameters:
+        name: RegisterTag
+        input: ${{ parameters.MockRegisterOverrideDependentImageTag }}
+        context: $[replace(variables['Build.SourceBranch'], 'refs/heads/', '')]
+
+    # set the DataHolderBankingTag to use
+    - template: set-tag-name.yml
+      parameters:
+        name: DataHolderBankingTag
+        input: ${{ parameters.MdhBankingOverrideDependentImageTag }}
+        context: $[replace(variables['Build.SourceBranch'], 'refs/heads/', '')]
+
+    # set the DataHolderEnergyTag to use
+    - template: set-tag-name.yml
+      parameters:
+        name: DataHolderEnergyTag
+        input: ${{ parameters.MdhEnergyOverrideDependentImageTag }}
+        context: $[replace(variables['Build.SourceBranch'], 'refs/heads/', '')]
+
     # Build mock-data-recipient
     - task: Docker@2
       displayName: Build mock-data-recipient image
@@ -40,13 +66,12 @@ jobs:
         repository: mock-data-recipient
         tags: latest
 
-    # Login to ACR
+    # Login to Shared ACR
     - task: Docker@2
-      displayName: Login to ACR
-      condition: always()
+      displayName: Login to Shared ACR
       inputs:
-        command: login
-        containerRegistry: $(AcrBaseUrl)
+        command: login    
+        containerRegistry: $(SpSharedAcr)
 
     # Pull and re-tag images from Azure ACR
     - task: Bash@3
@@ -54,12 +79,12 @@ jobs:
       inputs:
         targetType: inline
         script: |
-          docker pull $(AcrBaseUrl).azurecr.io/mock-register:$(containerTag)
-          docker pull $(AcrBaseUrl).azurecr.io/mock-data-holder:$(containerTag)
-          docker pull $(AcrBaseUrl).azurecr.io/mock-data-holder-energy:$(containerTag)
-          docker tag $(AcrBaseUrl).azurecr.io/mock-register:$(containerTag) mock-register:latest
-          docker tag $(AcrBaseUrl).azurecr.io/mock-data-holder:$(containerTag) mock-data-holder:latest
-          docker tag $(AcrBaseUrl).azurecr.io/mock-data-holder-energy:$(containerTag) mock-data-holder-energy:latest
+          docker pull $(SharedAcrBaseUrl).azurecr.io/mock-register:$(RegisterTag)
+          docker pull $(SharedAcrBaseUrl).azurecr.io/mock-data-holder:$(DataHolderBankingTag)
+          docker pull $(SharedAcrBaseUrl).azurecr.io/mock-data-holder-energy:$(DataHolderEnergyTag)
+          docker tag $(SharedAcrBaseUrl).azurecr.io/mock-register:$(RegisterTag) mock-register:latest
+          docker tag $(SharedAcrBaseUrl).azurecr.io/mock-data-holder:$(DataHolderBankingTag) mock-data-holder:latest
+          docker tag $(SharedAcrBaseUrl).azurecr.io/mock-data-holder-energy:$(DataHolderEnergyTag) mock-data-holder-energy:latest
 
     # List docker images
     - task: Docker@2
@@ -175,7 +200,7 @@ jobs:
         docker run \
           -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-integration-tests/testresults/results.trx:/app/results.trx:ro \
           -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-integration-tests/testresults/formatted/:/app/out/:rw \
-          $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR" --outputprefix "MDR" -o out/
+          $(SharedAcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR" --outputprefix "MDR" -o out/
       displayName: 'Run trx-formatter for integration tests'  
       condition: always()   
 
@@ -190,7 +215,7 @@ jobs:
         docker run \
           -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/results.trx:/app/results.trx:ro \
           -v=$(dockerComposeDirectory)/_temp/mock-data-recipient-e2e-tests/testresults/formatted/:/app/out/:rw \
-          $(AcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR-E2E" --outputprefix "MDR-E2E" -o out/
+          $(SharedAcrBaseUrl).azurecr.io/trx-formatter -i results.trx -t "MDR-E2E" --outputprefix "MDR-E2E" -o out/
       displayName: 'Run trx-formatter for E2E tests'  
       condition: always()   
 
@@ -230,32 +255,34 @@ jobs:
     - publish: $(baseSourceDirectory)/CDR.DataRecipient.Repository.SQL/efbundle
       displayName: Publish EF Migration bundle
       condition: always()
-      artifact: Database Migration Scripts
-      
-    - task: Docker@2
-      displayName: 'Re-Tag Mock Data Recipient image with :branch-name'
-      inputs:
-        containerRegistry: $(AcrBaseUrl)
-        repository: 'mock-data-recipient'
-        command: tag
-        arguments: 'mock-data-recipient $(AcrBaseUrl).azurecr.io/mock-data-recipient:$(Build.SourceBranchName)'
+      artifact: Database Migration Scripts      
 
-    - task: Docker@2
-      displayName: 'Re-Tag Mock Data Recipient image with :latest (for develop branch only)'
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    - task: Bash@3
+      displayName: 'Tag and push Mock Data Recipient image with Source Branch Name for any successful builds.'
+      condition: succeeded()
       inputs:
-        containerRegistry: $(AcrBaseUrl)
-        repository: 'mock-data-recipient'
-        command: tag
-        arguments: 'mock-data-recipient $(AcrBaseUrl).azurecr.io/mock-data-recipient:latest'
+        targetType: inline
+        script: |
+          echo Tagging mock-data-recipient with Source Branch Name: $(Build.SourceBranchName)
+          docker tag mock-data-recipient $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient:$(Build.SourceBranchName)
 
-    - task: CmdLine@2
-      displayName: 'Push Mock Data Recipient image with :branch-name tag to ACR'
-      inputs:
-        script: 'docker push $(AcrBaseUrl).azurecr.io/mock-data-recipient:$(Build.SourceBranchName)' 
+          echo Pushing all tags to $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient
+          docker image push --all-tags $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient
 
-    - task: CmdLine@2
-      displayName: 'Push Mock Data Recipient image with :latest tag to ACR (develop branch only)'
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    - task: Bash@3
+      displayName: 'Tag and Push Mock Data Recipient images for develop, main and release branches.'
+      condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/releases/')))
       inputs:
-        script: 'docker push $(AcrBaseUrl).azurecr.io/mock-data-recipient:latest'   
+        targetType: inline
+        script: |
+          echo Tagging mock-data-recipient with latest tag
+          docker tag mock-data-recipient $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient:latest
+
+          echo Tagging mock-data-recipient with Source Branch Name-latest: $(Build.SourceBranchName)-latest
+          docker tag mock-data-recipient $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient:$(Build.SourceBranchName)-latest
+
+          echo Tagging mock-data-recipient with build id: $(Build.BuildId)
+          docker tag mock-data-recipient $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient:$(Build.BuildId)
+
+          echo Pushing all tags to $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient
+          docker image push --all-tags $(SharedAcrBaseUrl).azurecr.io/mock-data-recipient

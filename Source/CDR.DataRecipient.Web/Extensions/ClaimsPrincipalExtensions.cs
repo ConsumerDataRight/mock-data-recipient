@@ -1,7 +1,7 @@
-﻿using CDR.DataRecipient.Exceptions;
-using CDR.DataRecipient.Web.Common;
-using System.Linq;
+﻿using System.Linq;
 using System.Security.Claims;
+using CDR.DataRecipient.Exceptions;
+using CDR.DataRecipient.Web.Common;
 using static CDR.DataRecipient.Web.Common.Constants;
 
 namespace CDR.DataRecipient.Web.Extensions

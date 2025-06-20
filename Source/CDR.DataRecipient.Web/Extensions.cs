@@ -1,7 +1,8 @@
-﻿using CDR.DataRecipient.SDK.Models;
+﻿using System;
+using System.Globalization;
+using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.Web.Common;
 using Microsoft.Extensions.Configuration;
-using System;
 
 namespace CDR.DataRecipient.Web.Extensions
 {
@@ -61,7 +62,7 @@ namespace CDR.DataRecipient.Web.Extensions
                 return new DateTime(2022, 11, 15, 0, 0, 0, DateTimeKind.Utc);
             }
 
-            return DateTime.Parse(obligationDate);
+            return DateTime.Parse(obligationDate, CultureInfo.InvariantCulture);
         }
     }
 }

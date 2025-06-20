@@ -19,23 +19,23 @@ namespace CDR.DataRecipient.SDK.Models
         {
             get
             {
-                if (_certificate != null)
+                if (this._certificate != null)
                 {
-                    return _certificate;
+                    return this._certificate;
                 }
 
-                if (!string.IsNullOrEmpty(Path) && !string.IsNullOrEmpty(Password))
+                if (!string.IsNullOrEmpty(this.Path) && !string.IsNullOrEmpty(this.Password))
                 {
-                    _certificate = new X509Certificate2(Path, Password, X509KeyStorageFlags.Exportable);
+                    this._certificate = new X509Certificate2(this.Path, this.Password, X509KeyStorageFlags.Exportable);
                 }
 
-                if (!string.IsNullOrEmpty(Url) && !string.IsNullOrEmpty(Password))
+                if (!string.IsNullOrEmpty(this.Url) && !string.IsNullOrEmpty(this.Password))
                 {
                     // Retrieve the raw bytes from the URL value.
-                    _certificate = new X509Certificate2(DownloadData(Url), Password, X509KeyStorageFlags.Exportable);
+                    this._certificate = new X509Certificate2(DownloadData(this.Url), this.Password, X509KeyStorageFlags.Exportable);
                 }
 
-                return _certificate;
+                return this._certificate;
             }
         }
 

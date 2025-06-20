@@ -1,8 +1,7 @@
-﻿using CDR.DataRecipient.SDK.Services.Register;
-using Microsoft.Extensions.Caching.Distributed;
+﻿using System.Threading.Tasks;
+using CDR.DataRecipient.SDK.Services.Register;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Caching
 {
@@ -17,25 +16,25 @@ namespace CDR.DataRecipient.Web.Caching
             ILogger<CacheManager> logger,
             IInfosecService infosecService)
         {
-            _memCache = memCache;
-            _logger = logger;
-            _infosecService = infosecService;
+            this._memCache = memCache;
+            this._logger = logger;
+            this._infosecService = infosecService;
         }
 
         public async Task<string> GetRegisterTokenEndpoint(string oidcDiscoveryUri)
         {
             var key = $"RegisterTokenEndpoint:{oidcDiscoveryUri}";
-            var item = _memCache.Get<string>(key);
+            var item = this._memCache.Get<string>(key);
             if (!string.IsNullOrEmpty(item))
             {
-                _logger.LogInformation("Cache hit: {Key}", key);
+                this._logger.LogInformation("Cache hit: {Key}", key);
                 return item;
             }
 
-            var tokenEndpoint = await _infosecService.GetTokenEndpoint(oidcDiscoveryUri);
+            var tokenEndpoint = await this._infosecService.GetTokenEndpoint(oidcDiscoveryUri);
 
-            _memCache.Set<string>(key, tokenEndpoint);
-            _logger.LogInformation("Adding item to cache: {Key}", key);
+            this._memCache.Set<string>(key, tokenEndpoint);
+            this._logger.LogInformation("Adding item to cache: {Key}", key);
 
             return tokenEndpoint;
         }

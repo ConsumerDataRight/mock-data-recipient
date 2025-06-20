@@ -1,8 +1,7 @@
-﻿using CDR.DataRecipient.SDK.Extensions;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.IdentityModel.Tokens;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
+using CDR.DataRecipient.SDK.Extensions;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CDR.DataRecipient.Web.Common
 {

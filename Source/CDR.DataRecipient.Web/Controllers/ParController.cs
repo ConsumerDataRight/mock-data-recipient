@@ -1,7 +1,10 @@
-﻿using CDR.DataRecipient.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using CDR.DataRecipient.Models;
 using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.SDK.Models;
-using CDR.DataRecipient.SDK.Models.AuthorisationRequest;
 using CDR.DataRecipient.SDK.Services.DataHolder;
 using CDR.DataRecipient.Web.Common;
 using CDR.DataRecipient.Web.Extensions;
@@ -14,10 +17,6 @@ using Microsoft.AspNetCore.Razor.Language.Extensions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
@@ -44,14 +43,14 @@ namespace CDR.DataRecipient.Web.Controllers
             IRegistrationsRepository registrationsRepository,
             ILogger<ParController> logger)
         {
-            _config = config;
-            _cache = cache;
-            _dhInfoSecService = dhInfoSecService;
-            _dataHolderDiscoveryCache = dataHolderDiscoveryCache;
-            _consentsRepository = consentsRepository;
-            _dhRepository = dhRepository;
-            _registrationsRepository = registrationsRepository;
-            _logger = logger;
+            this._config = config;
+            this._cache = cache;
+            this._dhInfoSecService = dhInfoSecService;
+            this._dataHolderDiscoveryCache = dataHolderDiscoveryCache;
+            this._consentsRepository = consentsRepository;
+            this._dhRepository = dhRepository;
+            this._registrationsRepository = registrationsRepository;
+            this._logger = logger;
         }
 
         [HttpGet]
@@ -59,8 +58,8 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var model = new ParModel() { UsePkce = true, ResponseType = "code", ResponseMode = "jwt" };
-            await PopulatePickers(model);
-            return View(model);
+            await this.PopulatePickers(model);
+            return this.View(model);
         }
 
         [HttpPost]
@@ -71,11 +70,11 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 try
                 {
-                    var reg = await _registrationsRepository.GetRegistration(model.ClientId, model.DataHolderBrandId);
-                    var dhConfig = await _dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(reg.DataHolderBrandId);
-                    var sp = _config.GetSoftwareProductConfig();
+                    var reg = await this._registrationsRepository.GetRegistration(model.ClientId, model.DataHolderBrandId);
+                    var dhConfig = await this._dataHolderDiscoveryCache.GetOidcDiscoveryByBrandId(reg.DataHolderBrandId);
+                    var sp = this._config.GetSoftwareProductConfig();
 
-                    var infosecBaseUri = await GetInfoSecBaseUri(reg.DataHolderBrandId);
+                    var infosecBaseUri = await this.GetInfoSecBaseUri(reg.DataHolderBrandId);
                     if (string.IsNullOrEmpty(infosecBaseUri))
                     {
                         throw new CustomException();
@@ -102,12 +101,12 @@ namespace CDR.DataRecipient.Web.Controllers
 
                     if (model.UsePkce)
                     {
-                        authState.Pkce = _dhInfoSecService.CreatePkceData();
+                        authState.Pkce = this._dhInfoSecService.CreatePkceData();
                     }
 
-                    _logger.LogDebug("saving AuthorisationState of {@AuthState} to cache", authState);
+                    this._logger.LogDebug("saving AuthorisationState of {@AuthState} to cache", authState);
 
-                    await _cache.SetAsync(stateKey, authState, DateTimeOffset.UtcNow.AddMinutes(60));
+                    await this._cache.SetAsync(stateKey, authState, DateTimeOffset.UtcNow.AddMinutes(60));
 
                     // Build the authentication request JWT.
                     var authorisationRequestJwt = new AuthorisationRequestJwt()
@@ -127,9 +126,9 @@ namespace CDR.DataRecipient.Web.Controllers
                         ResponseType = model.ResponseType,
                     };
 
-                    var authRequest = _dhInfoSecService.BuildAuthorisationRequestJwt(authorisationRequestJwt);
+                    var authRequest = this._dhInfoSecService.BuildAuthorisationRequestJwt(authorisationRequestJwt);
 
-                    var parResponse = await _dhInfoSecService.PushedAuthorisationRequest(
+                    var parResponse = await this._dhInfoSecService.PushedAuthorisationRequest(
                         dhConfig.PushedAuthorizationRequestEndpoint,
                         sp.ClientCertificate.X509Certificate,
                         sp.SigningCertificate.X509Certificate,
@@ -151,7 +150,7 @@ namespace CDR.DataRecipient.Web.Controllers
                             model.PushedAuthorisation = parResponse.Data;
 
                             // Build the Authorisation URL for the Data Holder passing in the request uri returned from the PAR response.
-                            model.AuthorisationUri = await _dhInfoSecService.BuildAuthorisationRequestUri(
+                            model.AuthorisationUri = await this._dhInfoSecService.BuildAuthorisationRequestUri(
                                 infosecBaseUri,
                                 model.ClientId,
                                 sp.SigningCertificate.X509Certificate,
@@ -168,25 +167,61 @@ namespace CDR.DataRecipient.Web.Controllers
                 catch (CustomException)
                 {
                     var msg = $"The Data Holder details do not exist in the repository for ClientId: {model.ClientId}";
-                    return View("Error", new ErrorViewModel { Message = msg });
+                    return this.View("Error", new ErrorViewModel { Message = msg });
                 }
                 catch (Exception ex)
                 {
                     var msg = $"Unable to create the Pushed Authorisation Request (PAR) with ClientId: {model.ClientId} - {ex.Message}";
-                    return View("Error", new ErrorViewModel { Message = msg });
+                    return this.View("Error", new ErrorViewModel { Message = msg });
                 }
             }
 
-            await PopulatePickers(model);
-            return View(model);
+            await this.PopulatePickers(model);
+            return this.View(model);
+        }
+
+        [HttpPost]
+        [Route("registration/detail")]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
+        public async Task<IActionResult> RegistrationDetail(string registrationId)
+        {
+            // Return the software product detail.
+            string message = string.Empty;
+            string redirectUris = string.Empty;
+            string scope = string.Empty;
+            List<SelectListItem> arrangements = new();
+
+            // Return the RedirectUris for the picked item
+            var registrationInfo = Registration.SplitRegistrationId(registrationId);
+            Registration registration = await this._registrationsRepository.GetRegistration(registrationInfo.ClientId, registrationInfo.DataHolderBrandId);
+            if (registration == null)
+            {
+                message = "Registration not found";
+                return new JsonResult(new { message, arrangements, redirectUris, scope });
+            }
+
+            // Return the Consents(CdrArrangements) for the picked item
+            IEnumerable<ConsentArrangement> cdrArrangements = await this._consentsRepository.GetConsents(registrationInfo.ClientId, registrationInfo.DataHolderBrandId, this.HttpContext.User.GetUserId());
+            if (cdrArrangements != null && cdrArrangements.Any())
+            {
+                arrangements = cdrArrangements.Select(c => new SelectListItem(c.CdrArrangementId, c.CdrArrangementId)).ToList();
+            }
+
+            return new JsonResult(new
+            {
+                message,
+                arrangements,
+                redirectUris = string.Join(' ', registration.RedirectUris),
+                scope = registration.Scope,
+            });
         }
 
         /// <summary>
         /// With multiple supported acr values
-        /// Should use the the max. available Acr value spported only
+        /// Should use the the max. available Acr value spported only.
         /// </summary>
-        /// <param name="acrValuesSupported">Acr values to validate</param>
-        /// <returns>max available ACR value supported</returns>
+        /// <param name="acrValuesSupported">Acr values to validate.</param>
+        /// <returns>max available ACR value supported.</returns>
         private static int ValidateAcrValuesSpported(string[] acrValuesSupported)
         {
             var maxAcrSupported = 0;
@@ -205,45 +240,9 @@ namespace CDR.DataRecipient.Web.Controllers
             return maxAcrSupported;
         }
 
-        [HttpPost]
-        [Route("registration/detail")]
-        [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> RegistrationDetail(string registrationId)
-        {
-            // Return the software product detail.
-            string message = string.Empty;
-            string redirectUris = string.Empty;
-            string scope = string.Empty;
-            List<SelectListItem> arrangements = new();
-
-            // Return the RedirectUris for the picked item
-            var registrationInfo = Registration.SplitRegistrationId(registrationId);
-            Registration registration = await _registrationsRepository.GetRegistration(registrationInfo.ClientId, registrationInfo.DataHolderBrandId);
-            if (registration == null)
-            {
-                message = "Registration not found";
-                return new JsonResult(new { message, arrangements, redirectUris, scope });
-            }
-
-            // Return the Consents(CdrArrangements) for the picked item
-            IEnumerable<ConsentArrangement> cdrArrangements = await _consentsRepository.GetConsents(registrationInfo.ClientId, registrationInfo.DataHolderBrandId, HttpContext.User.GetUserId());
-            if (cdrArrangements != null && cdrArrangements.Any())
-            {
-                arrangements = cdrArrangements.Select(c => new SelectListItem(c.CdrArrangementId, c.CdrArrangementId)).ToList();
-            }
-
-            return new JsonResult(new
-            {
-                message,
-                arrangements,
-                redirectUris = string.Join(' ', registration.RedirectUris),
-                scope = registration.Scope,
-            });
-        }
-
         private async Task PopulatePickers(ParModel model)
         {
-            model.Registrations = await _registrationsRepository.GetRegistrations();
+            model.Registrations = await this._registrationsRepository.GetRegistrations();
 
             model.RegistrationListItems = new List<SelectListItem>();
 
@@ -259,7 +258,7 @@ namespace CDR.DataRecipient.Web.Controllers
 
         private async Task<string> GetInfoSecBaseUri(string dataHolderBrandId)
         {
-            var dh = await _dhRepository.GetDataHolderBrand(dataHolderBrandId);
+            var dh = await this._dhRepository.GetDataHolderBrand(dataHolderBrandId);
             if (dh == null)
             {
                 return null;
