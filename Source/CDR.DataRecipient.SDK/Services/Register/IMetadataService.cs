@@ -1,6 +1,6 @@
-﻿using CDR.DataRecipient.SDK.Enumerations;
-using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using CDR.DataRecipient.SDK.Enumerations;
 
 namespace CDR.DataRecipient.SDK.Services.Register
 {

@@ -1,53 +1,53 @@
-﻿using CDR.DataRecipient.Infrastructure;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.Extensions.Configuration;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Repository.SQL
 {
     public class SqlDataHoldersRepository : IDataHoldersRepository
     {
-        public SqlDataAccess SqlDataAccess { get; }
-
         public SqlDataHoldersRepository(IConfiguration config, RecipientDatabaseContext recipientDatabaseContext)
         {
-            SqlDataAccess = new SqlDataAccess(config, recipientDatabaseContext);
+            this.SqlDataAccess = new SqlDataAccess(config, recipientDatabaseContext);
         }
+
+        public SqlDataAccess SqlDataAccess { get; }
 
         public async Task<DataHolderBrand> GetDataHolderBrand(string brandId)
         {
-            var dataHolderBrand = await SqlDataAccess.GetDataHolderBrand(brandId);
+            var dataHolderBrand = await this.SqlDataAccess.GetDataHolderBrand(brandId);
             return dataHolderBrand;
         }
 
         public async Task<DataHolderBrand> GetDHBrandById(string brandId)
         {
-            var dataHolderBrand = await SqlDataAccess.GetDHBrandById(brandId);
+            var dataHolderBrand = await this.SqlDataAccess.GetDHBrandById(brandId);
             return dataHolderBrand;
         }
 
         public async Task<IEnumerable<DataHolderBrand>> GetDataHolderBrands()
         {
-            return await SqlDataAccess.GetDataHolderBrands();
+            return await this.SqlDataAccess.GetDataHolderBrands();
         }
 
         public async Task DataHolderBrandsDelete()
         {
             // Delete existing data first then add all data
-            await SqlDataAccess.DataHolderBrandsDelete();
+            await this.SqlDataAccess.DataHolderBrandsDelete();
         }
 
         public async Task<(int, int)> AggregateDataHolderBrands(IList<DataHolderBrand> dataHolderBrands)
         {
             // Aggregate Old with New data
-            return await SqlDataAccess.AggregateDataHolderBrands(dataHolderBrands);
+            return await this.SqlDataAccess.AggregateDataHolderBrands(dataHolderBrands);
         }
 
         public async Task PersistDataHolderBrands(IEnumerable<DataHolderBrand> dataHolderBrands)
         {
             // Delete existing data first then add all data
-            await SqlDataAccess.PersistDataHolderBrands(dataHolderBrands);
+            await this.SqlDataAccess.PersistDataHolderBrands(dataHolderBrands);
         }
     }
 }

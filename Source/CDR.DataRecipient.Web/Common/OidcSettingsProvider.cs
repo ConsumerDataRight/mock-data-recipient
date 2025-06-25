@@ -10,21 +10,21 @@ namespace CDR.DataRecipient.Web.Common
 
         public OidcSettingsProvider(IConfiguration configuration, ILogger<OidcSettingsProvider> logger)
         {
-            _configuration = configuration;
-            _logger = logger;
+            this._configuration = configuration;
+            this._logger = logger;
         }
 
         public string GetSecret()
         {
-            var secretVolume = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.SecretVolumePath);
-            var secret = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ClientSecret);
-            var mountedSecretName = _configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.MountedSecretName);
+            var secretVolume = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.SecretVolumePath);
+            var secret = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.ClientSecret);
+            var mountedSecretName = this._configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.MountedSecretName);
 
             // if volume mount configured the mounted secret is used instead of one configured in the appsettings, enviroment variables etc.
             if (!string.IsNullOrEmpty(secretVolume))
             {
-                _logger.LogInformation("Picking the secret from the volume - {SecretVolume},{MountedSecretName}", secretVolume, mountedSecretName);
-                secret = _configuration[mountedSecretName];
+                this._logger.LogInformation("Picking the secret from the volume - {SecretVolume},{MountedSecretName}", secretVolume, mountedSecretName);
+                secret = this._configuration[mountedSecretName];
             }
 
             return secret;

@@ -1,77 +1,79 @@
-﻿using CDR.DataRecipient.Infrastructure;
-using CDR.DataRecipient.Models;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CDR.DataRecipient.Infrastructure;
+using CDR.DataRecipient.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace CDR.DataRecipient.Repository.SQL
 {
     public class SqlConsentsRepository : IConsentsRepository
     {
-        protected readonly IConfiguration _config;
-
-        public SqlDataAccess SqlDataAccess { get; }
+        private readonly IConfiguration _config;
 
         public SqlConsentsRepository(IConfiguration config, RecipientDatabaseContext recipientDatabaseContext)
         {
-            _config = config;
-            SqlDataAccess = new SqlDataAccess(_config, recipientDatabaseContext);
+            this._config = config;
+            this.SqlDataAccess = new SqlDataAccess(this._config, recipientDatabaseContext);
         }
+
+        public SqlDataAccess SqlDataAccess { get; }
+
+        protected IConfiguration Config => this._config;
 
         public async Task<ConsentArrangement> GetConsentByArrangement(string cdrArrangementId)
         {
-            return await SqlDataAccess.GetConsentByArrangement(cdrArrangementId);
+            return await this.SqlDataAccess.GetConsentByArrangement(cdrArrangementId);
         }
 
         public async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string dataHolderBrandId, string userId, string industry = null)
         {
             // filter consents by industry.
-            var cdrArrangements = await SqlDataAccess.GetConsents(clientId, dataHolderBrandId, userId);
+            var cdrArrangements = await this.SqlDataAccess.GetConsents(clientId, dataHolderBrandId, userId);
             return cdrArrangements.OrderByDescending(x => x.CreatedOn);
         }
 
         public async Task PersistConsent(ConsentArrangement consentArrangement)
         {
-            var existingArrangement = await GetConsentByArrangement(consentArrangement.CdrArrangementId);
+            var existingArrangement = await this.GetConsentByArrangement(consentArrangement.CdrArrangementId);
             if (existingArrangement == null)
             {
-                await SqlDataAccess.InsertCdrArrangement(consentArrangement);
+                await this.SqlDataAccess.InsertCdrArrangement(consentArrangement);
                 return;
             }
 
-            await SqlDataAccess.UpdateCdrArrangement(consentArrangement);
+            await this.SqlDataAccess.UpdateCdrArrangement(consentArrangement);
         }
 
         public async Task UpdateTokens(string cdrArrangementId, string idToken, string accessToken, string refreshToken)
         {
-            var consent = await GetConsentByArrangement(cdrArrangementId);
+            var consent = await this.GetConsentByArrangement(cdrArrangementId);
             consent.IdToken = idToken;
             consent.AccessToken = accessToken;
             consent.RefreshToken = refreshToken;
 
-            await SqlDataAccess.UpdateCdrArrangement(consent);
+            await this.SqlDataAccess.UpdateCdrArrangement(consent);
         }
 
         public async Task DeleteConsent(string cdrArrangementId)
         {
-            var consent = await GetConsentByArrangement(cdrArrangementId);
+            var consent = await this.GetConsentByArrangement(cdrArrangementId);
 
             if (!string.IsNullOrEmpty(consent?.CdrArrangementId))
             {
-                await SqlDataAccess.DeleteConsent(cdrArrangementId);
+                await this.SqlDataAccess.DeleteConsent(cdrArrangementId);
             }
         }
 
         public async Task<bool> RevokeConsent(string cdrArrangementId, string dataHolderBrandId)
         {
-            var consent = await GetConsentByArrangement(cdrArrangementId);
+            var consent = await this.GetConsentByArrangement(cdrArrangementId);
 
             if (!string.IsNullOrEmpty(consent?.CdrArrangementId) &&
                 string.Equals(consent.DataHolderBrandId, dataHolderBrandId, StringComparison.OrdinalIgnoreCase))
             {
-                await SqlDataAccess.DeleteConsent(cdrArrangementId);
+                await this.SqlDataAccess.DeleteConsent(cdrArrangementId);
                 return true;
             }
 

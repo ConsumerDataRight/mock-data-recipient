@@ -31,21 +31,21 @@ namespace CDR.DataRecipient.SDK.Services.Register
         {
             var ssaResponse = new Response<string>();
 
-            _logger.LogDebug($"Request received to {nameof(SsaService)}.{nameof(GetSoftwareStatementAssertion)}.");
+            this.Logger.LogDebug($"Request received to {nameof(SsaService)}.{nameof(this.GetSoftwareStatementAssertion)}.");
 
             // Setup the request to the get ssa endpoint.
             var ssaEndpoint = $"{mtlsBaseUri}/cdr-register/v1/{industry.ToPath()}/data-recipients/brands/{brandId}/software-products/{softwareProductId}/ssa";
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken, version);
+            var client = this.GetHttpClient(clientCertificate, accessToken, version);
 
-            _logger.LogDebug("Requesting SSA from Register: {SsaEndpoint}.  Client Certificate: {Thumbprint}", ssaEndpoint, clientCertificate.Thumbprint);
+            this.Logger.LogDebug("Requesting SSA from Register: {SsaEndpoint}.  Client Certificate: {Thumbprint}", ssaEndpoint, clientCertificate.Thumbprint);
 
             // Make the request to the get data holder brands endpoint.
-            var response = await client.GetAsync(EnsureValidEndpoint(ssaEndpoint));
+            var response = await client.GetAsync(this.EnsureValidEndpoint(ssaEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Get SSA Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
+            this.Logger.LogDebug("Get SSA Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             ssaResponse.StatusCode = response.StatusCode;
 

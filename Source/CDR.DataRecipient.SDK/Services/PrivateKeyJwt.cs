@@ -14,9 +14,8 @@ namespace CDR.DataRecipient.SDK.Register
     /// </summary>
     public class PrivateKeyJwt
     {
-        public SigningCredentials SigningCredentials { get; set; }
-
         /// <summary>
+        /// Initializes a new instance of the <see cref="PrivateKeyJwt"/> class.
         /// Provide the Pkcs8 private key from X509 certificate.
         /// </summary>
         /// <param name="certFilePath">The path to the certificate.</param>
@@ -27,6 +26,7 @@ namespace CDR.DataRecipient.SDK.Register
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PrivateKeyJwt"/> class.
         /// Provide the Pkcs8 private key from X509 certificate.
         /// </summary>
         /// <param name="signingCertificate">The certificate used to sign the private key jwt.</param>
@@ -36,6 +36,7 @@ namespace CDR.DataRecipient.SDK.Register
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="PrivateKeyJwt"/> class.
         /// Provide the private key directly.
         /// </summary>
         /// <param name="privateKey">The path to the certificate.</param>
@@ -49,12 +50,17 @@ namespace CDR.DataRecipient.SDK.Register
             this.SigningCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.RsaSsaPssSha256);
         }
 
+        public SigningCredentials SigningCredentials { get; set; }
+
         /// <summary>
         /// Generate the private_key_jwt using the provided private key.
         /// </summary>
-        /// <param name="issuer">The issuer of the JWT, usually set to the softwareProductId</param>
-        /// <param name="audience">The audience of the JWT, usually set to the target token endpoint</param>
-        /// <returns>A base64 encoded JWT</returns>
+        /// <param name="issuer">The issuer of the JWT, usually set to the softwareProductId.</param>
+        /// <param name="audience">The audience of the JWT, usually set to the target token endpoint.</param>
+        /// <param name="jti">jti.</param>
+        /// <param name="expiryMinutes">The expiry in Minutes.</param>
+        /// <param name="kid">Key Id.</param>
+        /// <returns>A base64 encoded JWT.</returns>
         public string Generate(
             string issuer,
             string audience,

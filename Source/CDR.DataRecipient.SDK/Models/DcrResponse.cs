@@ -21,13 +21,13 @@
         {
             get
             {
-                return _payload;
+                return this._payload;
             }
 
             set
             {
-                _payload = value;
-                this.Data = Newtonsoft.Json.JsonConvert.DeserializeObject<Registration>(_payload);
+                this._payload = value;
+                this.Data = Newtonsoft.Json.JsonConvert.DeserializeObject<Registration>(this._payload);
             }
         }
     }

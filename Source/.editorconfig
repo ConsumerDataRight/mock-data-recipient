@@ -145,122 +145,23 @@ csharp_style_prefer_primary_constructors = true:suggestion
 csharp_style_expression_bodied_lambdas = true:silent
 csharp_style_expression_bodied_local_functions = false:silent
 
-#Readability Rules
-
-#A call to an instance member of the local class or a base class is not prefixed with 'this.'
-dotnet_diagnostic.SA1101.severity = none
-
-#The parameter spans multiple lines
-dotnet_diagnostic.SA1118.severity = none
-
-#Spacing Rules
-dotnet_diagnostic.SA1010.severity = none
-
 #Documentation Rules
 
 # SA1600: Elements should be documented
 dotnet_diagnostic.SA1600.severity = none
-
 # partial elements should be documented
 dotnet_diagnostic.SA1601.severity = none
-
 #file header is missing
 dotnet_diagnostic.SA1633.severity = none
-
 #Enumeration items should be documented
 dotnet_diagnostic.SA1602.severity = none
-
 # SA1623: summary text should begin with: 'Gets or sets'
 dotnet_diagnostic.SA1623.severity = none
-
-# documentation for parameter 'cdrArrangementId' is missing
-dotnet_diagnostic.SA1611.severity = none
-
 # Parameter '' has no matching param tag in the XML comment
 dotnet_diagnostic.CS1591.severity = none
-
-# Element return value should be documented
-dotnet_diagnostic.SA1615.severity = none
-
 #parameter has no matching tag in xml
 dotnet_diagnostic.CS1573.severity = none
 
-
-#Ordering Rules
-
-#static members should appear before non-static members
-dotnet_diagnostic.SA1204.severity = none
-
-# public members should come before private
-dotnet_diagnostic.SA1202.severity = none
-
-# 'public' members should come before 'private' members
-dotnet_diagnostic.SA1200.severity = none
-
-# using directive ordering
-dotnet_diagnostic.SA1208.severity = none
-
-# field should not follow class
-dotnet_diagnostic.SA1201.severity = none
-
 #Maintainability
-
-# S2325: Methods and properties that don't access instance data should be static
-dotnet_diagnostic.S2325.severity = none
-
-# USE model binding intead of accessing the raw request data.
-dotnet_diagnostic.S6932.severity = none
-
-# calling BuildServiceProvider from application code results in additional copy
-dotnet_diagnostic.ASP0000.severity = none
-
-# File name should match first type
-dotnet_diagnostic.SA1649.severity = none
-
-# Constructor summary documentation should being with standard text
-dotnet_diagnostic.SA1642.severity = none
-
-# documentation text should end with a period
-dotnet_diagnostic.SA1629.severity = none
-
-# File may only contain a single type
-dotnet_diagnostic.SA1402.severity = none
-
-# Field should be private
-dotnet_diagnostic.SA1401.severity = none
-
-#Element should being with an uppercase letter
-dotnet_diagnostic.SA1300.severity = none
-
-# Do not use regions
-dotnet_diagnostic.SA1124.severity = none
-
 # ModelState.IsValid should be checked in controller actions
 dotnet_diagnostic.S6967.severity = none
-
-# Value type property used as input in a controller action should be nullable
-dotnet_diagnostic.S6964.severity = none
-
-# Await IsDBNullAsync instead
-dotnet_diagnostic.S6966.severity = none
-
-# Enable server certificate validation on this SSL/TLS connection
-dotnet_diagnostic.S4830.severity = none
-
-# Reuse the HttpClient instances rather than create new ones
-dotnet_diagnostic.S6962.severity = none
-
-# is null on at leat one execution path
-dotnet_diagnostic.S2259.severity = none
-
-[RevocationController.cs]
-# Specify the RouteAttribute when an HttpMethod or RouteAttribute is specified at an action level
-dotnet_diagnostic.S6934.severity = none
-
-[JwksController.cs]
-# Specify the RouteAttribute when an HttpMethod or RouteAttribute is specified at an action level
-dotnet_diagnostic.S6934.severity = none
-
-[Extensions.cs]
-# Use a format provider when parsing date and time
-dotnet_diagnostic.S6580.severity = none

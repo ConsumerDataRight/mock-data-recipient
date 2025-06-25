@@ -1,8 +1,8 @@
-﻿using CDR.DataRecipient.SDK;
+﻿using System;
+using CDR.DataRecipient.SDK;
 using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using System;
 
 namespace CDR.DataRecipient.Web.Filters
 {
@@ -13,12 +13,12 @@ namespace CDR.DataRecipient.Web.Filters
 
         public MustConsumeAttribute(string contentType)
         {
-            _contentType = contentType;
+            this._contentType = contentType;
         }
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            if (context.HttpContext.Request.ContentType != _contentType)
+            if (context.HttpContext.Request.ContentType != this._contentType)
             {
                 context.Result = new BadRequestObjectResult(new ErrorListModel(Constants.ErrorCodes.InvalidHeader, Constants.ErrorTitles.InvalidHeader, string.Empty));
             }

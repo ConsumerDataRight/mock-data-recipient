@@ -5,13 +5,13 @@ namespace CDR.DataRecipient.Web.Models
 {
     public class RegistrationsModel : BaseModel
     {
-        public IList<Registration> Registrations { get; set; }
-
-        public HttpRequestModel RegistrationRequest { get; set; }
-
         public RegistrationsModel()
         {
             this.Registrations = new List<Registration>();
         }
+
+        public IList<Registration> Registrations { get; set; }
+
+        public HttpRequestModel RegistrationRequest { get; set; }
     }
 }

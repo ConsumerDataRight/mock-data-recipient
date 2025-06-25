@@ -11,19 +11,26 @@ namespace CDR.DataRecipient.SDK.Services
 {
     public abstract class BaseService
     {
-        protected readonly IConfiguration _config;
-        protected readonly ILogger _logger;
-        protected readonly IServiceConfiguration _serviceConfiguration;
+        private readonly IConfiguration _config;
+        private readonly ILogger _logger;
+        private readonly IServiceConfiguration _serviceConfiguration;
 
         protected BaseService(
             IConfiguration config,
             ILogger logger,
             IServiceConfiguration serviceConfiguration)
         {
-            _config = config;
-            _logger = logger;
-            _serviceConfiguration = serviceConfiguration;
+            this._config = config;
+            this._logger = logger;
+            this._serviceConfiguration = serviceConfiguration;
         }
+
+        // Expose protected read-only properties for derived classes
+        protected IConfiguration Config => this._config;
+
+        protected ILogger Logger => this._logger;
+
+        protected IServiceConfiguration ServiceConfiguration => this._serviceConfiguration;
 
         protected virtual HttpClient GetHttpClient(
             X509Certificate2 clientCertificate = null,
@@ -33,9 +40,9 @@ namespace CDR.DataRecipient.SDK.Services
             var clientHandler = new HttpClientHandler();
 
             // If accepting any TLS server certificate, then ignore certificate validation.
-            if (_serviceConfiguration.AcceptAnyServerCertificate)
+            if (this._serviceConfiguration.AcceptAnyServerCertificate)
             {
-                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
+                clientHandler.SetServerCertificateValidation(this._serviceConfiguration.AcceptAnyServerCertificate);
             }
 
             // Set the client certificate for the connection if supplied.
@@ -63,17 +70,17 @@ namespace CDR.DataRecipient.SDK.Services
 
         protected virtual string EnsureValidEndpoint(string uri)
         {
-            return uri.ValidateEndpoint(_serviceConfiguration.EnforceHttpsEndpoints);
+            return uri.ValidateEndpoint(this._serviceConfiguration.EnforceHttpsEndpoints);
         }
 
         protected virtual Uri EnsureValidEndpoint(Uri uri)
         {
-            return uri.ValidateEndpoint(_serviceConfiguration.EnforceHttpsEndpoints);
+            return uri.ValidateEndpoint(this._serviceConfiguration.EnforceHttpsEndpoints);
         }
 
         protected virtual HttpRequestMessage EnsureValidEndpoint(HttpRequestMessage request)
         {
-            request.RequestUri.ValidateEndpoint(_serviceConfiguration.EnforceHttpsEndpoints);
+            request.RequestUri.ValidateEndpoint(this._serviceConfiguration.EnforceHttpsEndpoints);
             return request;
         }
     }

@@ -11,6 +11,9 @@ using Serilog.Events;
 
 namespace CDR.DataRecipient.API.Logger
 {
+    /// <summary>
+    /// Middleware that logs HTTP requests and responses.
+    /// </summary>
     public class RequestResponseLoggingMiddleware
     {
         private const string HttpSummaryMessageTemplate =
@@ -43,90 +46,31 @@ namespace CDR.DataRecipient.API.Logger
         private string? _fapiInteractionId;
         private string? _dataHolderBrandId;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RequestResponseLoggingMiddleware"/> class.
+        /// </summary>
+        /// <param name="next">The next middleware delegate in the HTTP request pipeline.</param>
+        /// <param name="requestResponseLogger">The logger used to log request and response information.</param>
+        /// <param name="configuration">The application configuration settings.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="next"/> is <c>null</c>.</exception>
         public RequestResponseLoggingMiddleware(RequestDelegate next, IRequestResponseLogger requestResponseLogger, IConfiguration configuration)
         {
-            _requestResponseLogger = requestResponseLogger.Log.ForContext<RequestResponseLoggingMiddleware>();
-            _next = next ?? throw new ArgumentNullException(nameof(next));
-            _recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
-            _configuration = configuration;
+            this._requestResponseLogger = requestResponseLogger.Log.ForContext<RequestResponseLoggingMiddleware>();
+            this._next = next ?? throw new ArgumentNullException(nameof(next));
+            this._recyclableMemoryStreamManager = new RecyclableMemoryStreamManager();
+            this._configuration = configuration;
         }
 
+        /// <summary>
+        /// Processes an HTTP request by initializing members and extracting request and response properties asynchronously.
+        /// </summary>
+        /// <param name="context">The <see cref="HttpContext"/> for the current HTTP request.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous operation.</returns>
         public async Task InvokeAsync(HttpContext context)
         {
-            InitMembers();
-            await ExtractRequestProperties(context);
-            await ExtractResponseProperties(context);
-        }
-
-        private void InitMembers()
-        {
-            _requestMethod = _requestBody = _requestHeaders = _requestPath = _requestQueryString =
-            _statusCode = _elapsedTime = _responseHeaders = _responseBody = _requestHost = _requestScheme =
-            _exceptionMessage = _requestPathBase = _clientId = _softwareId = _fapiInteractionId = _dataHolderBrandId = _requestIpAddress = string.Empty;
-        }
-
-        private void LogWithContext()
-        {
-            var logger = _requestResponseLogger
-                .ForContext("SourceContext", "SB-DR-RES")
-                .ForContext("RequestMethod", _requestMethod)
-                .ForContext("RequestHost", _requestHost)
-                .ForContext("RequestIpAddress", _requestIpAddress)
-                .ForContext("RequestBody", _requestBody)
-                .ForContext("RequestHeaders", _requestHeaders)
-                .ForContext("RequestPath", _requestPath)
-                .ForContext("RequestQueryString", _requestQueryString)
-                .ForContext("StatusCode", _statusCode)
-                .ForContext("ResponseHeaders", _responseHeaders)
-                .ForContext("ResponseBody", _responseBody)
-                .ForContext("ClientId", _clientId)
-                .ForContext("SoftwareId", _softwareId)
-                .ForContext("FapiInteractionId", _fapiInteractionId)
-                .ForContext("DataHolderBrandId", _dataHolderBrandId);
-
-            if (!string.IsNullOrEmpty(_exceptionMessage))
-            {
-                logger.Error(HttpSummaryExceptionMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _exceptionMessage);
-            }
-            else
-            {
-                logger.Write(LogEventLevel.Information, HttpSummaryMessageTemplate, _requestMethod, _requestScheme, _requestHost, _requestPathBase, _requestPath, _statusCode, _elapsedTime);
-            }
-        }
-
-        private async Task ExtractRequestProperties(HttpContext context)
-        {
-            try
-            {
-                context.Request.EnableBuffering();
-                await using var requestStream = _recyclableMemoryStreamManager.GetStream();
-                await context.Request.Body.CopyToAsync(requestStream);
-
-                _requestBody = ReadStreamInChunks(requestStream);
-                context.Request.Body.Position = 0;
-
-                _requestHost = GetHost(context.Request);
-                _requestIpAddress = GetIpAddress(context);
-                _requestMethod = context.Request.Method;
-                _requestScheme = context.Request.Scheme;
-                _requestPath = context.Request.Path;
-                _requestQueryString = context.Request.QueryString.ToString();
-                _requestPathBase = context.Request.PathBase.ToString();
-
-                IEnumerable<string> keyValues = context.Request.Headers.Keys.Select(key => key + ": " + string.Join(",", context.Request.Headers[key].ToArray()));
-                _requestHeaders = string.Join(Environment.NewLine, keyValues);
-
-                ExtractIdFromRequest(context.Request);
-            }
-            catch (Exception ex)
-            {
-                _exceptionMessage = ex.Message;
-            }
-        }
-
-        public static class ClaimIdentifiers
-        {
-            public const string Iss = "iss";
+            this.InitMembers();
+            await this.ExtractRequestProperties(context);
+            await this.ExtractResponseProperties(context);
         }
 
         private static void SetIdFromJwt(string jwt, string identifierType, ref string idToSet)
@@ -138,6 +82,75 @@ namespace CDR.DataRecipient.API.Logger
                 var id = decodedJwt.Claims.FirstOrDefault(x => x.Type == identifierType)?.Value ?? string.Empty;
 
                 idToSet = id;
+            }
+        }
+
+        /// <summary>
+        /// Initializes or resets all member variables related to the HTTP request and response data to empty strings.
+        /// </summary>
+        private void InitMembers()
+        {
+            this._requestMethod = this._requestBody = this._requestHeaders = this._requestPath = this._requestQueryString =
+            this._statusCode = this._elapsedTime = this._responseHeaders = this._responseBody = this._requestHost = this._requestScheme =
+            this._exceptionMessage = this._requestPathBase = this._clientId = this._softwareId = this._fapiInteractionId = this._dataHolderBrandId = this._requestIpAddress = string.Empty;
+        }
+
+        private void LogWithContext()
+        {
+            var logger = this._requestResponseLogger
+                .ForContext("SourceContext", "SB-DR-RES")
+                .ForContext("RequestMethod", this._requestMethod)
+                .ForContext("RequestHost", this._requestHost)
+                .ForContext("RequestIpAddress", this._requestIpAddress)
+                .ForContext("RequestBody", this._requestBody)
+                .ForContext("RequestHeaders", this._requestHeaders)
+                .ForContext("RequestPath", this._requestPath)
+                .ForContext("RequestQueryString", this._requestQueryString)
+                .ForContext("StatusCode", this._statusCode)
+                .ForContext("ResponseHeaders", this._responseHeaders)
+                .ForContext("ResponseBody", this._responseBody)
+                .ForContext("ClientId", this._clientId)
+                .ForContext("SoftwareId", this._softwareId)
+                .ForContext("FapiInteractionId", this._fapiInteractionId)
+                .ForContext("DataHolderBrandId", this._dataHolderBrandId);
+
+            if (!string.IsNullOrEmpty(this._exceptionMessage))
+            {
+                logger.Error(HttpSummaryExceptionMessageTemplate, this._requestMethod, this._requestScheme, this._requestHost, this._requestPathBase, this._requestPath, this._exceptionMessage);
+            }
+            else
+            {
+                logger.Write(LogEventLevel.Information, HttpSummaryMessageTemplate, this._requestMethod, this._requestScheme, this._requestHost, this._requestPathBase, this._requestPath, this._statusCode, this._elapsedTime);
+            }
+        }
+
+        private async Task ExtractRequestProperties(HttpContext context)
+        {
+            try
+            {
+                context.Request.EnableBuffering();
+                await using var requestStream = this._recyclableMemoryStreamManager.GetStream();
+                await context.Request.Body.CopyToAsync(requestStream);
+
+                this._requestBody = this.ReadStreamInChunks(requestStream);
+                context.Request.Body.Position = 0;
+
+                this._requestHost = this.GetHost(context.Request);
+                this._requestIpAddress = this.GetIpAddress(context);
+                this._requestMethod = context.Request.Method;
+                this._requestScheme = context.Request.Scheme;
+                this._requestPath = context.Request.Path;
+                this._requestQueryString = context.Request.QueryString.ToString();
+                this._requestPathBase = context.Request.PathBase.ToString();
+
+                IEnumerable<string> keyValues = context.Request.Headers.Keys.Select(key => key + ": " + string.Join(",", context.Request.Headers[key].ToArray()));
+                this._requestHeaders = string.Join(Environment.NewLine, keyValues);
+
+                this.ExtractIdFromRequest(context.Request);
+            }
+            catch (Exception ex)
+            {
+                this._exceptionMessage = ex.Message;
             }
         }
 
@@ -154,14 +167,14 @@ namespace CDR.DataRecipient.API.Logger
 
                     if (scheme == JwtBearerDefaults.AuthenticationScheme && parameter != null)
                     {
-                        _dataHolderBrandId = string.Empty;
-                        SetIdFromJwt(parameter, ClaimIdentifiers.Iss, ref _dataHolderBrandId);
+                        this._dataHolderBrandId = string.Empty;
+                        SetIdFromJwt(parameter, ClaimIdentifiers.Iss, ref this._dataHolderBrandId);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _exceptionMessage = ex.Message;
+                this._exceptionMessage = ex.Message;
             }
         }
 
@@ -185,7 +198,7 @@ namespace CDR.DataRecipient.API.Logger
             }
             catch (Exception ex)
             {
-                _exceptionMessage = ex.Message;
+                this._exceptionMessage = ex.Message;
             }
 
             return string.Empty;
@@ -194,35 +207,35 @@ namespace CDR.DataRecipient.API.Logger
         private async Task ExtractResponseProperties(HttpContext httpContext)
         {
             var originalBodyStream = httpContext.Response.Body;
-            await using var responseBody = _recyclableMemoryStreamManager.GetStream();
+            await using var responseBody = this._recyclableMemoryStreamManager.GetStream();
             httpContext.Response.Body = responseBody;
 
             var sw = Stopwatch.StartNew();
 
             try
             {
-                await _next(httpContext);
+                await this._next(httpContext);
             }
             catch (Exception ex)
             {
-                _exceptionMessage = ex.Message;
+                this._exceptionMessage = ex.Message;
                 throw;
             }
             finally
             {
                 sw.Stop();
-                _elapsedTime = sw.ElapsedMilliseconds.ToString();
+                this._elapsedTime = sw.ElapsedMilliseconds.ToString();
 
                 responseBody.Seek(0, SeekOrigin.Begin);
-                _responseBody = await new StreamReader(responseBody).ReadToEndAsync();
+                this._responseBody = await new StreamReader(responseBody).ReadToEndAsync();
                 responseBody.Seek(0, SeekOrigin.Begin);
 
                 IEnumerable<string> keyValues = httpContext.Response.Headers.Keys.Select(key => key + ": " + string.Join(",", httpContext.Response.Headers[key].ToArray()));
-                _responseHeaders = string.Join(System.Environment.NewLine, keyValues);
+                this._responseHeaders = string.Join(System.Environment.NewLine, keyValues);
 
-                _statusCode = httpContext.Response.StatusCode.ToString();
+                this._statusCode = httpContext.Response.StatusCode.ToString();
 
-                LogWithContext();
+                this.LogWithContext();
 
                 // This is for middleware hooked before us to see our changes.
                 // Otherwise the original stream would be seen which cannot be read again.
@@ -235,7 +248,7 @@ namespace CDR.DataRecipient.API.Logger
         {
             // 1. check if the X-Forwarded-Host header has been provided -> use that
             // 2. If not, use the request.Host
-            string hostHeaderKey = _configuration.GetValue<string>("SerilogRequestResponseLogger:HostNameHeaderKey") ?? "X-Forwarded-Host";
+            string hostHeaderKey = this._configuration.GetValue<string>("SerilogRequestResponseLogger:HostNameHeaderKey") ?? "X-Forwarded-Host";
 
             if (!request.Headers.TryGetValue(hostHeaderKey, out var keys))
             {
@@ -247,7 +260,7 @@ namespace CDR.DataRecipient.API.Logger
 
         private string? GetIpAddress(HttpContext context)
         {
-            string ipHeaderKey = _configuration.GetValue<string>("SerilogRequestResponseLogger:IPAddressHeaderKey") ?? "X-Forwarded-For";
+            string ipHeaderKey = this._configuration.GetValue<string>("SerilogRequestResponseLogger:IPAddressHeaderKey") ?? "X-Forwarded-For";
 
             if (!context.Request.Headers.TryGetValue(ipHeaderKey, out var keys))
             {
@@ -260,6 +273,11 @@ namespace CDR.DataRecipient.API.Logger
             return keys[0]?
                 .Split(',')[0] // Get the first IP address in the list, in case there are multiple.
                 .Split(':')[0]; // Strip off the port number, in case it is attached to the IP address.
+        }
+
+        public static class ClaimIdentifiers
+        {
+            public const string Iss = "iss";
         }
     }
 }

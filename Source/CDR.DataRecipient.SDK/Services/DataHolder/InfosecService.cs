@@ -26,7 +26,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             IServiceConfiguration serviceConfiguration)
             : base(config, logger, serviceConfiguration)
         {
-            _accessTokenService = accessTokenService;
+            this._accessTokenService = accessTokenService;
         }
 
         public async Task<Response<OidcDiscovery>> GetOidcDiscovery(
@@ -34,11 +34,11 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var oidcResponse = new Response<OidcDiscovery>();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetOidcDiscovery)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.GetOidcDiscovery)}.");
 
-            var client = GetHttpClient();
+            var client = this.GetHttpClient();
             var configUrl = string.Concat(infosecBaseUri.TrimEnd('/'), "/.well-known/openid-configuration");
-            var configResponse = await client.GetAsync(EnsureValidEndpoint(configUrl));
+            var configResponse = await client.GetAsync(this.EnsureValidEndpoint(configUrl));
 
             oidcResponse.StatusCode = configResponse.StatusCode;
 
@@ -60,10 +60,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var parResponse = new Response<PushedAuthorisation>();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(PushedAuthorisationRequest)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.PushedAuthorisationRequest)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = this.GetHttpClient(clientCertificate);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("request", request);
@@ -73,7 +73,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 signingCertificate,
                 issuer: clientId,
                 additionalFormFields: formFields,
-                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
+                enforceHttpsEndpoint: this.ServiceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -92,7 +92,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
         public string BuildAuthorisationRequestJwt(AuthorisationRequestJwt authorisationRequestJwt)
         {
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestJwt)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.BuildAuthorisationRequestJwt)}.");
 
             // Build the list of claims to include in the authorisation request jwt.
             var authorisationRequestClaims = new Dictionary<string, object>
@@ -106,7 +106,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 { "nonce", authorisationRequestJwt.Nonce },
                 {
                     "claims", JsonSerializer.SerializeToElement(new AuthorisationRequestClaims(authorisationRequestJwt.AcrValueSupported)
-                                { sharing_duration = authorisationRequestJwt.SharingDuration, cdr_arrangement_id = authorisationRequestJwt.CdrArrangementId })
+                                { Sharing_duration = authorisationRequestJwt.SharingDuration, Cdr_arrangement_id = authorisationRequestJwt.CdrArrangementId })
                 },
             };
 
@@ -127,9 +127,9 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string scope,
             string responseType = "code")
         {
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(BuildAuthorisationRequestUri)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.BuildAuthorisationRequestUri)}.");
 
-            var config = (await GetOidcDiscovery(infosecBaseUri)).Data;
+            var config = (await this.GetOidcDiscovery(infosecBaseUri)).Data;
 
             string authRequestUri = config.AuthorizationEndpoint
                 .AppendQueryString("client_id", clientId)
@@ -142,9 +142,9 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
         public async Task<Response<Token>> GetAccessToken(AccessToken accessToken)
         {
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(GetAccessToken)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.GetAccessToken)}.");
 
-            return await _accessTokenService.GetAccessToken(accessToken);
+            return await this._accessTokenService.GetAccessToken(accessToken);
         }
 
         public async Task<Response<Token>> RefreshAccessToken(
@@ -158,10 +158,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var tokenResponse = new Response<Token>();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(RefreshAccessToken)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.RefreshAccessToken)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = this.GetHttpClient(clientCertificate);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("refresh_token", refreshToken);
@@ -175,7 +175,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 scope: scope,
                 grantType: TokenTypes.REFRESH_TOKEN,
                 additionalFormFields: formFields,
-                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
+                enforceHttpsEndpoint: this.ServiceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -202,10 +202,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var revocationResponse = new Response();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(RevokeToken)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.RevokeToken)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = this.GetHttpClient(clientCertificate);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("token", token);
@@ -218,7 +218,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 clientId: clientId,
                 scope: string.Empty,
                 additionalFormFields: formFields,
-                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
+                enforceHttpsEndpoint: this.ServiceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -241,10 +241,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var introspectionResponse = new Response<Introspection>();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(Introspect)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.Introspect)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = this.GetHttpClient(clientCertificate);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("token", refreshToken);
@@ -257,7 +257,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 clientId: clientId,
                 scope: string.Empty,
                 additionalFormFields: formFields,
-                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
+                enforceHttpsEndpoint: this.ServiceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -282,12 +282,12 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var userInfoResponse = new Response<Models.UserInfo>();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(UserInfo)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.UserInfo)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken);
+            var client = this.GetHttpClient(clientCertificate, accessToken);
 
-            var response = await client.GetAsync(EnsureValidEndpoint(userInfoEndpoint));
+            var response = await client.GetAsync(this.EnsureValidEndpoint(userInfoEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
             userInfoResponse.StatusCode = response.StatusCode;
@@ -313,10 +313,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var revocationResponse = new Response();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(RevokeCdrArrangement)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.RevokeCdrArrangement)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = this.GetHttpClient(clientCertificate);
 
             var formFields = new Dictionary<string, string>();
             formFields.Add("cdr_arrangement_id", cdrArrangementId);
@@ -328,7 +328,7 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
                 clientId: clientId,
                 scope: string.Empty,
                 additionalFormFields: formFields,
-                enforceHttpsEndpoint: _serviceConfiguration.EnforceHttpsEndpoints);
+                enforceHttpsEndpoint: this.ServiceConfiguration.EnforceHttpsEndpoints);
 
             var body = await response.Content.ReadAsStringAsync();
 
@@ -349,12 +349,12 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
         {
             var parResponse = new Response<Models.UserInfo>();
 
-            _logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(PushedAuthorizationRequest)}.");
+            this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.PushedAuthorizationRequest)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken);
+            var client = this.GetHttpClient(clientCertificate, accessToken);
 
-            var response = await client.GetAsync(EnsureValidEndpoint(parEndpoint));
+            var response = await client.GetAsync(this.EnsureValidEndpoint(parEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
             parResponse.StatusCode = response.StatusCode;

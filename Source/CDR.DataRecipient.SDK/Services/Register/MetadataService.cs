@@ -28,15 +28,15 @@ namespace CDR.DataRecipient.SDK.Services.Register
             int? page = null,
             int? pageSize = null)
         {
-            _logger.LogDebug($"Request received to {nameof(MetadataService)}.{nameof(GetDataHolderBrands)}.");
+            this.Logger.LogDebug($"Request received to {nameof(MetadataService)}.{nameof(this.GetDataHolderBrands)}.");
 
             // Setup the request to the get data holder brands endpoint.
             var endpoint = $"{registerMtlsBaseUri.TrimEnd('/')}/cdr-register/v1/{industry.ToPath()}/data-holders/brands";
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken, version);
+            var client = this.GetHttpClient(clientCertificate, accessToken, version);
 
-            _logger.LogDebug("Requesting data holder brands from Register: {Endpoint}.  Client Certificate: {Thumbprint}", endpoint, clientCertificate.Thumbprint);
+            this.Logger.LogDebug("Requesting data holder brands from Register: {Endpoint}.  Client Certificate: {Thumbprint}", endpoint, clientCertificate.Thumbprint);
 
             // Add the query parameters.
             if (page.HasValue)
@@ -50,10 +50,10 @@ namespace CDR.DataRecipient.SDK.Services.Register
             }
 
             // Make the request to the get data holder brands endpoint.
-            var response = await client.GetAsync(EnsureValidEndpoint(endpoint));
+            var response = await client.GetAsync(this.EnsureValidEndpoint(endpoint));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Get Data Holder Brands Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
+            this.Logger.LogDebug("Get Data Holder Brands Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return (body, response.StatusCode, response.ReasonPhrase.ToString());
         }
@@ -63,21 +63,21 @@ namespace CDR.DataRecipient.SDK.Services.Register
             string version,
             Industry industry)
         {
-            _logger.LogDebug($"Request received to {nameof(MetadataService)}.{nameof(GetDataRecipients)}.");
+            this.Logger.LogDebug($"Request received to {nameof(MetadataService)}.{nameof(this.GetDataRecipients)}.");
 
             // Setup the request to the get data recipients endpoint.
             var endpoint = $"{registerTlsBaseUri.TrimEnd('/')}/cdr-register/v1/{industry.ToPath()}/data-recipients";
 
             // Setup the http client.
-            var client = GetHttpClient(version: version);
+            var client = this.GetHttpClient(version: version);
 
-            _logger.LogDebug("Requesting data recipients from Register: {Endpoint}.", endpoint);
+            this.Logger.LogDebug("Requesting data recipients from Register: {Endpoint}.", endpoint);
 
             // Make the request to the get data recipients endpoint.
-            var response = await client.GetAsync(EnsureValidEndpoint(endpoint));
+            var response = await client.GetAsync(this.EnsureValidEndpoint(endpoint));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Get Data Recipients Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
+            this.Logger.LogDebug("Get Data Recipients Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return (body, response.StatusCode, response.ReasonPhrase.ToString());
         }

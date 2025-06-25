@@ -1,4 +1,4 @@
-﻿using CDR.DataRecipient.SDK;
+﻿using System.Threading.Tasks;
 using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.Register;
 using CDR.DataRecipient.Web.Caching;
@@ -8,7 +8,6 @@ using CDR.DataRecipient.Web.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
@@ -27,79 +26,26 @@ namespace CDR.DataRecipient.Web.Controllers
             ICacheManager cacheManager,
             ISsaService ssaService)
         {
-            _config = config;
-            _infosecService = infosecService;
-            _cacheManager = cacheManager;
-            _ssaService = ssaService;
+            this._config = config;
+            this._infosecService = infosecService;
+            this._cacheManager = cacheManager;
+            this._ssaService = ssaService;
         }
 
         [HttpGet]
         public IActionResult Index()
         {
             var model = new SsaModel();
-            PopulateModel(model);
-            return View(model);
+            this.PopulateModel(model);
+            return this.View(model);
         }
 
         [HttpPost]
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index(SsaModel model)
         {
-            await GetSSA(model);
-            return View(model);
-        }
-
-        private async Task GetSSA(SsaModel model)
-        {
-            var reg = _config.GetRegisterConfig();
-            var sp = _config.GetSoftwareProductConfig();
-            var tokenEndpoint = await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
-
-            // Get the access token from the Register.
-            var tokenResponse = await _infosecService.GetAccessToken(
-                tokenEndpoint,
-                model.SoftwareProductId,
-                sp.ClientCertificate.X509Certificate,
-                sp.SigningCertificate.X509Certificate);
-
-            if (!tokenResponse.IsSuccessful)
-            {
-                model.Messages = $"{tokenResponse.StatusCode} - {tokenResponse.Message}";
-                PopulateModel(model);
-                return;
-            }
-
-            var ssaResponse = await _ssaService.GetSoftwareStatementAssertion(
-                reg.MtlsBaseUri,
-                model.Version,
-                tokenResponse.Data.AccessToken,
-                sp.ClientCertificate.X509Certificate,
-                model.BrandId,
-                model.SoftwareProductId,
-                model.Industry);
-
-            model.StatusCode = ssaResponse.StatusCode;
-            model.Messages = $"{ssaResponse.StatusCode} - {ssaResponse.Message}";
-            model.SSA = ssaResponse.Data;
-            PopulateModel(model);
-        }
-
-        private void PopulateModel(SsaModel model)
-        {
-            var reg = _config.GetRegisterConfig();
-            var sp = _config.GetSoftwareProductConfig();
-
-            SetDefaults(model, sp);
-
-            // Populate the view
-            model.SSARequest = new HttpRequestModel()
-            {
-                Method = "GET",
-                RequiresAccessToken = true,
-                RequiresClientCertificate = true,
-                SupportsVersion = true,
-                Url = reg.GetSsaEndpoint,
-            };
+            await this.GetSSA(model);
+            return this.View(model);
         }
 
         private static void SetDefaults(SsaModel model, SoftwareProduct sp)
@@ -123,6 +69,59 @@ namespace CDR.DataRecipient.Web.Controllers
             {
                 model.Messages = "Waiting...";
             }
+        }
+
+        private async Task GetSSA(SsaModel model)
+        {
+            var reg = this._config.GetRegisterConfig();
+            var sp = this._config.GetSoftwareProductConfig();
+            var tokenEndpoint = await this._cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
+
+            // Get the access token from the Register.
+            var tokenResponse = await this._infosecService.GetAccessToken(
+                tokenEndpoint,
+                model.SoftwareProductId,
+                sp.ClientCertificate.X509Certificate,
+                sp.SigningCertificate.X509Certificate);
+
+            if (!tokenResponse.IsSuccessful)
+            {
+                model.Messages = $"{tokenResponse.StatusCode} - {tokenResponse.Message}";
+                this.PopulateModel(model);
+                return;
+            }
+
+            var ssaResponse = await this._ssaService.GetSoftwareStatementAssertion(
+                reg.MtlsBaseUri,
+                model.Version,
+                tokenResponse.Data.AccessToken,
+                sp.ClientCertificate.X509Certificate,
+                model.BrandId,
+                model.SoftwareProductId,
+                model.Industry);
+
+            model.StatusCode = ssaResponse.StatusCode;
+            model.Messages = $"{ssaResponse.StatusCode} - {ssaResponse.Message}";
+            model.SSA = ssaResponse.Data;
+            this.PopulateModel(model);
+        }
+
+        private void PopulateModel(SsaModel model)
+        {
+            var reg = this._config.GetRegisterConfig();
+            var sp = this._config.GetSoftwareProductConfig();
+
+            SetDefaults(model, sp);
+
+            // Populate the view
+            model.SSARequest = new HttpRequestModel()
+            {
+                Method = "GET",
+                RequiresAccessToken = true,
+                RequiresClientCertificate = true,
+                SupportsVersion = true,
+                Url = reg.GetSsaEndpoint,
+            };
         }
     }
 }

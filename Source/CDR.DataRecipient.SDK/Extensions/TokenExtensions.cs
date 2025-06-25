@@ -1,7 +1,4 @@
-﻿using Jose;
-using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
@@ -9,6 +6,10 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Jose;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CDR.DataRecipient.SDK.Extensions
 {
@@ -84,10 +85,7 @@ namespace CDR.DataRecipient.SDK.Extensions
             bool enforceHttpsEndpoint = false)
         {
             var clientHandler = new HttpClientHandler();
-            if (acceptAnyServerCertificate)
-            {
-                clientHandler.ServerCertificateCustomValidationCallback += (sender, cert, chain, sslPolicyErrors) => true;
-            }
+            clientHandler.SetServerCertificateValidation(acceptAnyServerCertificate);
 
             var jwksClient = new HttpClient(clientHandler);
             var jwksResponse = await jwksClient.GetAsync(jwksEndpoint.ValidateEndpoint(enforceHttpsEndpoint));

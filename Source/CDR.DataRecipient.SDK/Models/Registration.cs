@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
+using Newtonsoft.Json;
 
 namespace CDR.DataRecipient.SDK.Models
 {
@@ -93,11 +93,6 @@ namespace CDR.DataRecipient.SDK.Models
         [JsonProperty("scope")]
         public string Scope { get; set; }
 
-        public string GetRegistrationId()
-        {
-            return $"{ClientId}{IdDelimeter}{DataHolderBrandId}";
-        }
-
         public static (string ClientId, string DataHolderBrandId) SplitRegistrationId(string id)
         {
             var idParts = id?.Split(IdDelimeter);
@@ -112,6 +107,11 @@ namespace CDR.DataRecipient.SDK.Models
             }
 
             return (idParts[0], idParts[1]);
+        }
+
+        public string GetRegistrationId()
+        {
+            return $"{this.ClientId}{IdDelimeter}{this.DataHolderBrandId}";
         }
     }
 }

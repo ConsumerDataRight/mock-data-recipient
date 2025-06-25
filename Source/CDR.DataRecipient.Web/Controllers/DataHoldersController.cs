@@ -1,5 +1,6 @@
-﻿using CDR.DataRecipient.Repository;
-using CDR.DataRecipient.SDK;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using CDR.DataRecipient.Repository;
 using CDR.DataRecipient.SDK.Models;
 using CDR.DataRecipient.SDK.Services.Register;
 using CDR.DataRecipient.Web.Caching;
@@ -12,8 +13,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.FeatureManagement;
 using Microsoft.FeatureManagement.Mvc;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Controllers
 {
@@ -36,12 +35,12 @@ namespace CDR.DataRecipient.Web.Controllers
             IDataHoldersRepository repository,
             IFeatureManager featureManager)
         {
-            _config = config;
-            _infosecService = infosecService;
-            _cacheManager = cacheManager;
-            _metadataService = metadataService;
-            _repository = repository;
-            _featureManager = featureManager;
+            this._config = config;
+            this._infosecService = infosecService;
+            this._cacheManager = cacheManager;
+            this._metadataService = metadataService;
+            this._repository = repository;
+            this._featureManager = featureManager;
         }
 
         [HttpGet]
@@ -49,8 +48,8 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> Index()
         {
             var model = new DataHoldersModel();
-            await PopulateModel(model);
-            return View(model);
+            await this.PopulateModel(model);
+            return this.View(model);
         }
 
         [FeatureGate(nameof(Feature.AllowDataHolderRefresh))]
@@ -58,19 +57,29 @@ namespace CDR.DataRecipient.Web.Controllers
         [ServiceFilter(typeof(LogActionEntryAttribute))]
         public async Task<IActionResult> Index(DataHoldersModel model)
         {
-            await GetDataHolderBrands(model);
-            await PopulateModel(model);
-            return View(model);
+            await this.GetDataHolderBrands(model);
+            await this.PopulateModel(model);
+            return this.View(model);
+        }
+
+        [FeatureGate(nameof(Feature.AllowDataHolderRefresh))]
+        [HttpPost]
+        [Route("reset/dataholderbrands")]
+        [ServiceFilter(typeof(LogActionEntryAttribute))]
+        public async Task<IActionResult> ResetDataHolderBrands()
+        {
+            await this._repository.DataHolderBrandsDelete();
+            return this.Json(this.Url.Action("Index"));
         }
 
         private async Task GetDataHolderBrands(DataHoldersModel model)
         {
-            var reg = _config.GetRegisterConfig();
-            var sp = _config.GetSoftwareProductConfig();
-            var tokenEndpoint = await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
+            var reg = this._config.GetRegisterConfig();
+            var sp = this._config.GetSoftwareProductConfig();
+            var tokenEndpoint = await this._cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
 
             // Get the access token from the Register.
-            var tokenResponse = await _infosecService.GetAccessToken(
+            var tokenResponse = await this._infosecService.GetAccessToken(
                 tokenEndpoint,
                 sp.SoftwareProductId,
                 sp.ClientCertificate.X509Certificate,
@@ -83,14 +92,14 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             // Using the access token, make a request to Get Data Holder Brands.
-            (string respBody, System.Net.HttpStatusCode statusCode, string reason) = await _metadataService.GetDataHolderBrands(
+            (string respBody, System.Net.HttpStatusCode statusCode, string reason) = await this._metadataService.GetDataHolderBrands(
                 reg.MtlsBaseUri,
                 model.Version,
                 tokenResponse.Data.AccessToken,
                 sp.ClientCertificate.X509Certificate,
                 sp.SoftwareProductId,
                 model.Industry,
-                pageSize: _config.GetDefaultPageSize());
+                pageSize: this._config.GetDefaultPageSize());
 
             if (statusCode != System.Net.HttpStatusCode.OK)
             {
@@ -108,27 +117,17 @@ namespace CDR.DataRecipient.Web.Controllers
 
             // Save the data holder brands
             Response<IList<DataHolderBrand>> dhResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<Response<IList<DataHolderBrand>>>(respBody);
-            (int inserted, int updated) = await _repository.AggregateDataHolderBrands(dhResponse.Data);
+            (int inserted, int updated) = await this._repository.AggregateDataHolderBrands(dhResponse.Data);
 
             model.Messages = $"{statusCode}: {inserted} data holder brands added.  {updated} data holder brands updated.";
         }
 
-        [FeatureGate(nameof(Feature.AllowDataHolderRefresh))]
-        [HttpPost]
-        [Route("reset/dataholderbrands")]
-        [ServiceFilter(typeof(LogActionEntryAttribute))]
-        public async Task<IActionResult> ResetDataHolderBrands()
-        {
-            await _repository.DataHolderBrandsDelete();
-            return Json(Url.Action("Index"));
-        }
-
         private async Task PopulateModel(DataHoldersModel model)
         {
-            var reg = _config.GetRegisterConfig();
-            var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDataHolderRefresh));
+            var reg = this._config.GetRegisterConfig();
+            var allowDataHolderRefresh = await this._featureManager.IsEnabledAsync(nameof(Feature.AllowDataHolderRefresh));
 
-            model.DataHolders = (await _repository.GetDataHolderBrands()).OrderByMockDataHolders(allowDataHolderRefresh);
+            model.DataHolders = (await this._repository.GetDataHolderBrands()).OrderByMockDataHolders(allowDataHolderRefresh);
 
             // Populate the view
             model.RefreshRequest = new HttpRequestModel()
@@ -139,12 +138,12 @@ namespace CDR.DataRecipient.Web.Controllers
                 RequiresAccessToken = true,
                 SupportsVersion = true,
             };
-            SetDefaults(model);
+            this.SetDefaults(model);
         }
 
         private void SetDefaults(DataHoldersModel model)
         {
-            var defaultPageSize = _config.GetDefaultPageSize();
+            var defaultPageSize = this._config.GetDefaultPageSize();
             if (defaultPageSize.HasValue)
             {
                 model.RefreshRequest.QueryParameters.Add("page-size", defaultPageSize.ToString());

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace CDR.DataRecipient.Web.Models
 {
@@ -6,7 +6,7 @@ namespace CDR.DataRecipient.Web.Models
     {
         public string RequestId { get; set; }
 
-        public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+        public bool ShowRequestId => !string.IsNullOrEmpty(this.RequestId);
 
         public string Name { get; set; }
 
@@ -14,6 +14,6 @@ namespace CDR.DataRecipient.Web.Models
 
         public string Message { get; set; }
 
-        public bool ShowMessage => !string.IsNullOrEmpty(Message);
+        public bool ShowMessage => !string.IsNullOrEmpty(this.Message);
     }
 }

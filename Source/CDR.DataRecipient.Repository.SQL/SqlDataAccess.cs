@@ -1,4 +1,9 @@
-﻿using CDR.DataRecipient.Infrastructure;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.Models;
 using CDR.DataRecipient.SDK.Enum;
 using CDR.DataRecipient.SDK.Models;
@@ -6,37 +11,31 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Repository.SQL
 {
     public class SqlDataAccess : ISqlDataAccess
     {
-        public IConfiguration Config { get; }
-
-        public string DbConn { get; set; }
-
         public SqlDataAccess(IConfiguration configuration, RecipientDatabaseContext recipientDatabaseContext)
         {
-            Config = configuration;
-            DbConn = Config.GetConnectionString(DbConstants.ConnectionStringNames.Default);
+            this.Config = configuration;
+            this.DbConn = this.Config.GetConnectionString(DbConstants.ConnectionStringNames.Default);
         }
 
         public SqlDataAccess(string connString)
         {
-            DbConn = connString;
+            this.DbConn = connString;
         }
 
-        #region CdrArragements
+        public IConfiguration Config { get; }
+
+        public string DbConn { get; set; }
+
         public async Task<ConsentArrangement> GetConsentByArrangement(string cdrArrangementId)
         {
             try
             {
-                using (SqlConnection db = new(DbConn))
+                using (SqlConnection db = new(this.DbConn))
                 {
                     await db.OpenAsync();
 
@@ -66,7 +65,7 @@ namespace CDR.DataRecipient.Repository.SQL
         public async Task<IEnumerable<ConsentArrangement>> GetConsents(string clientId, string dataHolderBrandId, string userId)
         {
             List<ConsentArrangement> cdrArrangements = new();
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -107,7 +106,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 {
                     foreach (var arr in cdrArrangements)
                     {
-                        arr.BrandName = await GetDataHolderBrandName(arr.DataHolderBrandId);
+                        arr.BrandName = await this.GetDataHolderBrandName(arr.DataHolderBrandId);
                     }
                 }
 
@@ -117,7 +116,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task InsertCdrArrangement(ConsentArrangement consentArrangement)
         {
-            using SqlConnection db = new(DbConn);
+            using SqlConnection db = new(this.DbConn);
             await db.OpenAsync();
 
             var jsonDocument = JsonConvert.SerializeObject(consentArrangement);
@@ -152,7 +151,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task UpdateCdrArrangement(ConsentArrangement consentArrangement)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -174,7 +173,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task DeleteCdrArrangementData()
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.CdrArrangement";
@@ -187,7 +186,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task DeleteCdrArrangementData(string clientId)
         {
-            using (SqlConnection db = new SqlConnection(DbConn))
+            using (SqlConnection db = new SqlConnection(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.CdrArrangement WHERE ClientId = @clientId";
@@ -201,7 +200,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task DeleteRegistrationData()
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.Registration";
@@ -214,7 +213,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task DeleteConsent(string cdrArrangementId)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "DELETE FROM dbo.CdrArrangement WHERE CdrArrangementId=@id";
@@ -227,10 +226,6 @@ namespace CDR.DataRecipient.Repository.SQL
             }
         }
 
-        #endregion
-
-        #region CrdRegistrations
-
         /// <summary>
         /// Get the Registrations for this Data Holders.
         /// </summary>
@@ -241,7 +236,7 @@ namespace CDR.DataRecipient.Repository.SQL
         /// <returns>[true|false].</returns>
         public async Task<bool> CheckRegistrationExist(string dhBrandId)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 using var sqlCommand = new SqlCommand("SELECT [DataHolderBrandId] FROM [Registration] WHERE [DataHolderBrandId] = @id", db);
@@ -273,7 +268,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             List<DataHolderBrand> dhBrandsIns = new List<DataHolderBrand>();
 
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 foreach (var dh in newDhBrands)
                 {
@@ -304,7 +299,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task<Registration> GetRegistration(string clientId, string dataHolderBrandId)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -340,7 +335,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             var clientId = string.Empty;
 
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -364,7 +359,7 @@ namespace CDR.DataRecipient.Repository.SQL
         public async Task<IEnumerable<Registration>> GetRegistrations()
         {
             List<Registration> registrations = new();
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 using var sqlCommand = new SqlCommand("SELECT ClientId, JsonDocument FROM dbo.Registration", db);
@@ -382,7 +377,7 @@ namespace CDR.DataRecipient.Repository.SQL
                 {
                     foreach (var reg in registrations)
                     {
-                        reg.BrandName = await GetDataHolderBrandName(reg.DataHolderBrandId);
+                        reg.BrandName = await this.GetDataHolderBrandName(reg.DataHolderBrandId);
                     }
                 }
 
@@ -392,7 +387,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task DeleteRegistration(string clientId, string dataHolderBrandId)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlCommand = "DELETE FROM dbo.Registration WHERE [ClientId] = @clientId AND [DataHolderBrandId] = @dataHolderBrandId";
@@ -410,7 +405,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using (SqlConnection db = new(DbConn))
+                using (SqlConnection db = new(this.DbConn))
                 {
                     await db.OpenAsync();
                     var dhBrandId = new Guid(registration.DataHolderBrandId);
@@ -442,7 +437,7 @@ namespace CDR.DataRecipient.Repository.SQL
         public async Task<IEnumerable<Registration>> GetDcrMessageRegistrations()
         {
             List<Registration> registrations = new();
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "SELECT [ClientId],[DataHolderBrandId],[BrandName],[MessageState],[LastUpdated] FROM [dbo].[DcrMessage] WHERE [MessageState] != @msgState";
@@ -455,9 +450,9 @@ namespace CDR.DataRecipient.Repository.SQL
                     {
                         var registration = new Registration
                         {
-                            ClientId = reader.IsDBNull(0) ? string.Empty : reader.GetString(0),
+                            ClientId = await reader.IsDBNullAsync(0) ? string.Empty : await reader.GetFieldValueAsync<string>(0),
                             DataHolderBrandId = Convert.ToString(reader.GetGuid(1)),
-                            BrandName = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
+                            BrandName = await reader.IsDBNullAsync(2) ? string.Empty : await reader.GetFieldValueAsync<string>(2),
                             MessageState = reader.GetString(3),
                             LastUpdated = reader.GetDateTime(4),
                         };
@@ -484,7 +479,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using (SqlConnection db = new(DbConn))
+                using (SqlConnection db = new(this.DbConn))
                 {
                     await db.OpenAsync();
                     var dhBrandId = new Guid(dcrDHBrandId);
@@ -507,7 +502,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task UpdateRegistration(Registration registration)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -524,13 +519,9 @@ namespace CDR.DataRecipient.Repository.SQL
             }
         }
 
-        #endregion
-
-        #region DataHolderBrand
-
         public async Task<DataHolderBrand> GetDataHolderBrand(string brandId)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -554,7 +545,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task<string> GetDataHolderBrandName(string brandId)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 using var sqlCommand = new SqlCommand("SELECT JsonDocument FROM dbo.DataHolderBrand WHERE DataHolderBrandId = @id", db);
@@ -578,7 +569,7 @@ namespace CDR.DataRecipient.Repository.SQL
         public async Task<IEnumerable<DataHolderBrand>> GetDataHolderBrands()
         {
             List<DataHolderBrand> dataHolderBrands = new();
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -605,7 +596,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task DataHolderBrandsDelete()
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -627,7 +618,7 @@ namespace CDR.DataRecipient.Repository.SQL
             List<DataHolderBrand> dhBrandsIns = [];
             List<DataHolderBrand> dhBrandsUpd = [];
 
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -662,12 +653,12 @@ namespace CDR.DataRecipient.Repository.SQL
 
                     if (dhBrandsIns.Count > 0)
                     {
-                        dhBrandsIns.ToList().ForEach(async dataholder => await InsertDataHolder(dataholder));
+                        dhBrandsIns.ToList().ForEach(async dataholder => await this.InsertDataHolder(dataholder));
                     }
 
                     if (dhBrandsUpd.Count > 0)
                     {
-                        dhBrandsUpd.ToList().ForEach(async dataholder => await UpdateDataHolder(dataholder));
+                        dhBrandsUpd.ToList().ForEach(async dataholder => await this.UpdateDataHolder(dataholder));
                     }
                 }
                 else
@@ -676,7 +667,7 @@ namespace CDR.DataRecipient.Repository.SQL
                     if (dhBrandsNew.Count > 0)
                     {
                         dhBrandsIns = dhBrandsNew.ToList();
-                        dhBrandsNew.ToList().ForEach(async dataholder => await InsertDataHolder(dataholder));
+                        dhBrandsNew.ToList().ForEach(async dataholder => await this.InsertDataHolder(dataholder));
                     }
                 }
             }
@@ -697,7 +688,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using (SqlConnection db = new(DbConn))
+                using (SqlConnection db = new(this.DbConn))
                 {
                     await db.OpenAsync();
                     var jsonDocument = System.Text.Json.JsonSerializer.Serialize(dataholder);
@@ -730,7 +721,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using (SqlConnection db = new(DbConn))
+                using (SqlConnection db = new(this.DbConn))
                 {
                     await db.OpenAsync();
 
@@ -765,7 +756,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using (SqlConnection db = new(DbConn))
+                using (SqlConnection db = new(this.DbConn))
                 {
                     await db.OpenAsync();
 
@@ -815,7 +806,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
         public async Task PersistDataHolderBrands(IEnumerable<DataHolderBrand> dataHolderBrands)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -826,7 +817,7 @@ namespace CDR.DataRecipient.Repository.SQL
 
                 if (dataHolderBrands.Any())
                 {
-                    dataHolderBrands.ToList().ForEach(async dataholder => await InsertDataHolder(dataholder));
+                    dataHolderBrands.ToList().ForEach(async dataholder => await this.InsertDataHolder(dataholder));
                 }
             }
         }
@@ -835,7 +826,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             List<DataRecipientViewModel> rtnList = new();
 
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -865,7 +856,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             if (dataRecipients.Any())
             {
-                using (SqlConnection db = new(DbConn))
+                using (SqlConnection db = new(this.DbConn))
                 {
                     await db.OpenAsync();
                     var sqlQuery = "DELETE FROM SoftwareProduct";
@@ -873,46 +864,8 @@ namespace CDR.DataRecipient.Repository.SQL
                     await sqlCommand.ExecuteNonQueryAsync();
                     await db.CloseAsync();
 
-                    dataRecipients.ToList().ForEach(async dataRecipient => await InsertSoftwareProduct(dataRecipient.DataRecipientBrands));
+                    dataRecipients.ToList().ForEach(async dataRecipient => await this.InsertSoftwareProduct(dataRecipient.DataRecipientBrands));
                 }
-            }
-        }
-
-        private async Task InsertSoftwareProduct(IEnumerable<DRBrand> drBrands)
-        {
-            if (drBrands == null || !drBrands.Any())
-            {
-                // Nothing to insert.
-                return;
-            }
-
-            using (SqlConnection db = new(DbConn))
-            {
-                await db.OpenAsync();
-                foreach (var brand in drBrands)
-                {
-                    if (brand.SoftwareProducts != null && brand.SoftwareProducts.Count > 0)
-                    {
-                        foreach (var swProduct in brand.SoftwareProducts)
-                        {
-                            var sqlQuery = "INSERT INTO SoftwareProduct (SoftwareProductId, BrandId, SoftwareProductName, SoftwareProductDescription, LogoUri, RecipientBaseUri, RedirectUri, Scope, Status) " +
-                                "VALUES (@softwareProductId, @dataRecipientBrandId, @softwareProductName, @softwareProductDescription, @logoUri, @recipientBaseUri, @redirectUri, @scope, @status)";
-                            using var sqlCommand = new SqlCommand(sqlQuery, db);
-                            sqlCommand.Parameters.AddWithValue("@softwareProductId", swProduct.SoftwareProductId);
-                            sqlCommand.Parameters.AddWithValue("@dataRecipientBrandId", brand.DataRecipientBrandId);
-                            sqlCommand.Parameters.AddWithValue("@softwareProductName", swProduct.SoftwareProductName);
-                            sqlCommand.Parameters.AddWithValue("@softwareProductDescription", swProduct.SoftwareProductDescription);
-                            sqlCommand.Parameters.AddWithValue("@logoUri", swProduct.LogoUri);
-                            sqlCommand.Parameters.AddWithValue("@recipientBaseUri", swProduct.RecipientBaseUri);
-                            sqlCommand.Parameters.AddWithValue("@redirectUri", swProduct.RedirectUri);
-                            sqlCommand.Parameters.AddWithValue("@scope", swProduct.Scope);
-                            sqlCommand.Parameters.AddWithValue("@status", swProduct.Status);
-                            await sqlCommand.ExecuteNonQueryAsync();
-                        }
-                    }
-                }
-
-                await db.CloseAsync();
             }
         }
 
@@ -927,7 +880,7 @@ namespace CDR.DataRecipient.Repository.SQL
         public async Task<DataHolderBrand> GetDHBrandById(string dhBrandId)
         {
             DataHolderBrand dh = new DataHolderBrand();
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -966,7 +919,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             string msgId = string.Empty;
             string msgState = string.Empty;
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -1001,7 +954,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             string msgId = string.Empty;
             string msgState = string.Empty;
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -1036,7 +989,7 @@ namespace CDR.DataRecipient.Repository.SQL
         {
             try
             {
-                using SqlConnection db = new(DbConn);
+                using SqlConnection db = new(this.DbConn);
                 await db.OpenAsync();
                 var sqlQuery = "INSERT INTO [DcrMessage] ([DataHolderBrandId], [MessageId], [MessageState], [MessageError], [LastUpdated], [ClientId], [BrandName], [Created], [InfosecBaseUri]) VALUES (@dhBrandId, @msgId, @msgState, @msgErr, GETUTCDATE(), @clientId, @brandName, GETUTCDATE(), @infosecBaseUri)";
                 using var sqlCommand = new SqlCommand(sqlQuery, db);
@@ -1065,9 +1018,10 @@ namespace CDR.DataRecipient.Repository.SQL
         /// <remarks>
         /// This is called from Azure Functions DCR.
         /// </remarks>
+        /// <returns>Task result representing the asynchronous operation.</returns>
         public async Task UpdateDcrMsgByDHBrandId(DcrMessage dcrMessage)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
 
@@ -1093,9 +1047,10 @@ namespace CDR.DataRecipient.Repository.SQL
         /// <remarks>
         /// This is called from Azure Functions DCR.
         /// </remarks>
+        /// <returns>Task representing the asynchronous operation.</returns>
         public async Task UpdateDcrMsgByMessageId(DcrMessage dcrMessage)
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "UPDATE [DcrMessage] SET [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE() WHERE [MessageId] = @id";
@@ -1112,13 +1067,15 @@ namespace CDR.DataRecipient.Repository.SQL
         /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId.
         /// </summary>
         /// <param name="dcrMessage">The message object to be updated.</param>
+        /// <param name="replacementMsgId">The replacementMsgId.</param>
         /// This is called from Azure DCR Functions
         /// <remarks>
         /// BrandName not available when DCR.
         /// </remarks>
+        /// <returns>Task representing the asynchronous operation.</returns>
         public async Task UpdateDcrMsgReplaceMessageIdWithoutBrand(DcrMessage dcrMessage, string replacementMsgId = "")
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "UPDATE [DcrMessage] SET [MessageId] = @replaceMsgId, [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE() WHERE [MessageId] = @id";
@@ -1136,13 +1093,15 @@ namespace CDR.DataRecipient.Repository.SQL
         /// Update the DcrMessage MessageId (new added queue item id), MessageState and MessageError by the Queue MessageId.
         /// </summary>
         /// <param name="dcrMessage">The message object to be updated.</param>
+        /// <param name="replacementMsgId">The replacementMsgId.</param>
         /// Update BrandName for Discovery Data Holder
         /// <remarks>
         /// This is called from Azure DiscoverDataHolders.
         /// </remarks>
+        /// <returns>Task representing the asynchronous operation.</returns>
         public async Task UpdateDcrMsgReplaceMessageId(DcrMessage dcrMessage, string replacementMsgId = "")
         {
-            using (SqlConnection db = new(DbConn))
+            using (SqlConnection db = new(this.DbConn))
             {
                 await db.OpenAsync();
                 var sqlQuery = "UPDATE [DcrMessage] SET [MessageId] = @replaceMsgId, [BrandName] = @brandName, [InfosecBaseUri] = @infosecBaseUri, [MessageState] = @msgState, [MessageError] = @msgErr, [LastUpdated] = GETUTCDATE() WHERE [MessageId] = @id";
@@ -1158,7 +1117,42 @@ namespace CDR.DataRecipient.Repository.SQL
             }
         }
 
-        #endregion
+        private async Task InsertSoftwareProduct(IEnumerable<DRBrand> drBrands)
+        {
+            if (drBrands == null || !drBrands.Any())
+            {
+                // Nothing to insert.
+                return;
+            }
 
+            using (SqlConnection db = new(this.DbConn))
+            {
+                await db.OpenAsync();
+                foreach (var brand in drBrands)
+                {
+                    if (brand.SoftwareProducts != null && brand.SoftwareProducts.Count > 0)
+                    {
+                        foreach (var swProduct in brand.SoftwareProducts)
+                        {
+                            var sqlQuery = "INSERT INTO SoftwareProduct (SoftwareProductId, BrandId, SoftwareProductName, SoftwareProductDescription, LogoUri, RecipientBaseUri, RedirectUri, Scope, Status) " +
+                                "VALUES (@softwareProductId, @dataRecipientBrandId, @softwareProductName, @softwareProductDescription, @logoUri, @recipientBaseUri, @redirectUri, @scope, @status)";
+                            using var sqlCommand = new SqlCommand(sqlQuery, db);
+                            sqlCommand.Parameters.AddWithValue("@softwareProductId", swProduct.SoftwareProductId);
+                            sqlCommand.Parameters.AddWithValue("@dataRecipientBrandId", brand.DataRecipientBrandId);
+                            sqlCommand.Parameters.AddWithValue("@softwareProductName", swProduct.SoftwareProductName);
+                            sqlCommand.Parameters.AddWithValue("@softwareProductDescription", swProduct.SoftwareProductDescription);
+                            sqlCommand.Parameters.AddWithValue("@logoUri", swProduct.LogoUri);
+                            sqlCommand.Parameters.AddWithValue("@recipientBaseUri", swProduct.RecipientBaseUri);
+                            sqlCommand.Parameters.AddWithValue("@redirectUri", swProduct.RedirectUri);
+                            sqlCommand.Parameters.AddWithValue("@scope", swProduct.Scope);
+                            sqlCommand.Parameters.AddWithValue("@status", swProduct.Status);
+                            await sqlCommand.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
+
+                await db.CloseAsync();
+            }
+        }
     }
 }

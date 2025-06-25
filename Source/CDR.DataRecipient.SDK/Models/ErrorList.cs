@@ -4,16 +4,9 @@ namespace CDR.DataRecipient.SDK.Models
 {
     public class ErrorList
     {
-        public List<Error> Errors { get; set; }
-
-        public bool HasErrors()
-        {
-            return Errors != null && Errors.Count > 0;
-        }
-
         public ErrorList()
         {
-            this.Errors = new List<Error>();
+            this.Errors = [];
         }
 
         public ErrorList(Error error)
@@ -25,6 +18,13 @@ namespace CDR.DataRecipient.SDK.Models
         {
             var error = new Error(errorCode, errorTitle, errorDetail);
             this.Errors = new List<Error>() { error };
+        }
+
+        public List<Error> Errors { get; set; }
+
+        public bool HasErrors()
+        {
+            return this.Errors != null && this.Errors.Count > 0;
         }
     }
 }
