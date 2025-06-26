@@ -1,11 +1,10 @@
-﻿using CDR.DataRecipient.SDK.Extensions;
+﻿using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.SDK.Services.DataHolder
 {
@@ -25,19 +24,19 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string accessToken,
             string clientId)
         {
-            _logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(DeleteRegistration)}.");
+            this.Logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(this.DeleteRegistration)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken);
+            var client = this.GetHttpClient(clientCertificate, accessToken);
 
-            _logger.LogDebug("Deleting registration from Data Holder: {RegistrationEndpoint}.  Client ID: {ClientId}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
+            this.Logger.LogDebug("Deleting registration from Data Holder: {RegistrationEndpoint}.  Client ID: {ClientId}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
 
             // Make the request to the data holder's registration endpoint.
             var uri = string.Concat(registrationEndpoint.TrimEnd('/'), "/", clientId);
-            var response = await client.DeleteAsync(EnsureValidEndpoint(uri));
+            var response = await client.DeleteAsync(this.EnsureValidEndpoint(uri));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
+            this.Logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse
             {
@@ -53,17 +52,17 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string accessToken,
             string clientId)
         {
-            _logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(GetRegistration)}.");
+            this.Logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(this.GetRegistration)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken);
+            var client = this.GetHttpClient(clientCertificate, accessToken);
 
             // Make the request to the data holder's registration endpoint.
             var uri = string.Concat(registrationEndpoint.TrimEnd('/'), "/", clientId);
-            var response = await client.GetAsync(EnsureValidEndpoint(uri));
+            var response = await client.GetAsync(this.EnsureValidEndpoint(uri));
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
+            this.Logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse()
             {
@@ -78,22 +77,22 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             X509Certificate2 clientCertificate,
             string payload)
         {
-            _logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(Register)}.");
+            this.Logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(this.Register)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate);
+            var client = this.GetHttpClient(clientCertificate);
 
-            _logger.LogDebug("Registering with Data Holder: {RegistrationEndpoint}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientCertificate.Thumbprint);
+            this.Logger.LogDebug("Registering with Data Holder: {RegistrationEndpoint}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientCertificate.Thumbprint);
 
             // Create the post content.
             var content = new StringContent(payload);
             content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/jwt");
 
             // Make the request to the data holder's registration endpoint.
-            var response = await client.PostAsync(EnsureValidEndpoint(registrationEndpoint), content);
+            var response = await client.PostAsync(this.EnsureValidEndpoint(registrationEndpoint), content);
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
+            this.Logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse()
             {
@@ -111,12 +110,12 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
             string clientId,
             string payload)
         {
-            _logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(UpdateRegistration)}.");
+            this.Logger.LogDebug($"Request received to {nameof(DynamicClientRegistrationService)}.{nameof(this.UpdateRegistration)}.");
 
             // Setup the http client.
-            var client = GetHttpClient(clientCertificate, accessToken);
+            var client = this.GetHttpClient(clientCertificate, accessToken);
 
-            _logger.LogDebug("Updating registration with Data Holder: {RegistrationEndpoint}.  Client ID: {ClientId}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
+            this.Logger.LogDebug("Updating registration with Data Holder: {RegistrationEndpoint}.  Client ID: {ClientId}.  Client Certificate: {Thumbprint}", registrationEndpoint, clientId, clientCertificate.Thumbprint);
 
             // Create the put content.
             var content = new StringContent(payload);
@@ -124,10 +123,10 @@ namespace CDR.DataRecipient.SDK.Services.DataHolder
 
             // Make the request to the data holder's registration endpoint.
             var uri = string.Concat(registrationEndpoint.TrimEnd('/'), "/", clientId);
-            var response = await client.PutAsync(EnsureValidEndpoint(uri), content);
+            var response = await client.PutAsync(this.EnsureValidEndpoint(uri), content);
             var body = await response.Content.ReadAsStringAsync();
 
-            _logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
+            this.Logger.LogDebug("Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             return new DcrResponse()
             {

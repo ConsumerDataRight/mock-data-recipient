@@ -18,21 +18,33 @@ namespace CDR.DataRecipient.Web.Controllers
         [HttpGet]
         public IActionResult RemoteError([FromQuery(Name = "error_message")] string errMsg)
         {
-            return View("Error", new ErrorViewModel { ErrorTitle = "Remote Error", Message = ProcessMessage(errMsg) });
+            return this.View("Error", new ErrorViewModel { ErrorTitle = "Remote Error", Message = ProcessMessage(errMsg) });
         }
 
         [Route("autherror")]
         [HttpGet]
         public IActionResult AuthError([FromQuery(Name = "error_message")] string errMsg)
         {
-            return View("Error", new ErrorViewModel { ErrorTitle = "Authentication Error", Message = ProcessMessage(errMsg) });
+            return this.View("Error", new ErrorViewModel { ErrorTitle = "Authentication Error", Message = ProcessMessage(errMsg) });
         }
 
         [Route("accesserror")]
         [HttpGet]
         public IActionResult AccessError([FromQuery(Name = "error_message")] string errMsg)
         {
-            return View("Error", new ErrorViewModel { ErrorTitle = "Access Error", Message = ProcessMessage(errMsg) });
+            return this.View("Error", new ErrorViewModel { ErrorTitle = "Access Error", Message = ProcessMessage(errMsg) });
+        }
+
+        [Route("logout")]
+        [HttpGet]
+        public async Task Logout()
+        {
+            await this.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            var prop = new AuthenticationProperties()
+            {
+                RedirectUri = "/",
+            };
+            await this.HttpContext.SignOutAsync("OpenIdConnect", prop);
         }
 
         private static string ProcessMessage(string errMsg)
@@ -49,18 +61,6 @@ namespace CDR.DataRecipient.Web.Controllers
             }
 
             return msg;
-        }
-
-        [Route("logout")]
-        [HttpGet]
-        public async Task Logout()
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            var prop = new AuthenticationProperties()
-            {
-                RedirectUri = "/",
-            };
-            await HttpContext.SignOutAsync("OpenIdConnect", prop);
         }
     }
 }

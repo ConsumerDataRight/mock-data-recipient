@@ -23,9 +23,4 @@ namespace CDR.DataRecipient.SDK.Models
 
         public ErrorList Errors { get; set; }
     }
-
-    public class Response<T> : Response
-    {
-        public T Data { get; set; }
-    }
 }

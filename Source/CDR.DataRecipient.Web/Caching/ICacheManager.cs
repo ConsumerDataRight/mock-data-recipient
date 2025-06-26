@@ -1,5 +1,4 @@
-﻿using CDR.DataRecipient.SDK.Models;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace CDR.DataRecipient.Web.Caching
 {

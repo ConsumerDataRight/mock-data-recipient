@@ -1,7 +1,10 @@
-﻿namespace CDR.DataRecipient.SDK.Models
+﻿using Newtonsoft.Json;
+
+namespace CDR.DataRecipient.SDK.Models
 {
     public class JsonWebKeySet
     {
-        public JsonWebKey[] keys { get; set; }
+        [JsonProperty("keys")]
+        public JsonWebKey[] Keys { get; set; }
     }
 }

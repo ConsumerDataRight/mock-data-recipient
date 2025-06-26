@@ -1,5 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
-using System;
+﻿using System;
+using Microsoft.Data.SqlClient;
 
 namespace CDR.DataRecipient.Repository.SQL.Extensions
 {
@@ -8,6 +8,8 @@ namespace CDR.DataRecipient.Repository.SQL.Extensions
         /// <summary>
         /// Execute scalar command and return result as Int32. Throw error if no results or conversion error.
         /// </summary>
+        /// <param name="command"> sql command.</param>
+        /// <returns>integer result.</returns>
         public static int ExecuteScalarInt32(this SqlCommand command)
         {
             var res = command.ExecuteScalar();
@@ -23,6 +25,8 @@ namespace CDR.DataRecipient.Repository.SQL.Extensions
         /// <summary>
         /// Execute scalar command and return result as string. Throw error if no results or conversion error.
         /// </summary>
+        /// <param name="command"> sql command.</param>
+        /// <returns>string result.</returns>
         public static string ExecuteScalarString(this SqlCommand command)
         {
             var res = command.ExecuteScalar();

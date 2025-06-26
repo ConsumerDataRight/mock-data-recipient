@@ -15,6 +15,18 @@ namespace CDR.DataRecipient.Web.Controllers
     {
         private const string PATH = "data-sharing-energy";
 
+        public DataSharingEnergyController(
+            IConfiguration config,
+            IDistributedCache cache,
+            IConsentsRepository consentsRepository,
+            IDataHoldersRepository dhRepository,
+            IInfosecService infosecService,
+            ILogger<DataSharingEnergyController> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(config, cache, consentsRepository, dhRepository, infosecService, logger, httpClientFactory)
+        {
+        }
+
         protected override string BasePath
         {
             get
@@ -37,20 +49,8 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             get
             {
-                return _config["ConsumerDataStandardsSwaggerEnergy"];
+                return this.Config["ConsumerDataStandardsSwaggerEnergy"];
             }
-        }
-
-        public DataSharingEnergyController(
-            IConfiguration config,
-            IDistributedCache cache,
-            IConsentsRepository consentsRepository,
-            IDataHoldersRepository dhRepository,
-            IInfosecService infosecService,
-            ILogger<DataSharingEnergyController> logger,
-            IHttpClientFactory httpClientFactory)
-            : base(config, cache, consentsRepository, dhRepository, infosecService, logger, httpClientFactory)
-        {
         }
 
         protected override JObject PrepareSwaggerJson(JObject json, Uri uri)
@@ -63,7 +63,7 @@ namespace CDR.DataRecipient.Web.Controllers
         /// Determine if the target request is for a public endpoint, or a resource endpoint.
         /// </summary>
         /// <param name="requestPath">Request Path.</param>
-        /// <returns>True if the request is for the /discovery or /banking/products endpoints, otherwise false</returns>
+        /// <returns>True if the request is for the /discovery or /banking/products endpoints, otherwise false.</returns>
         protected override bool IsPublic(string requestPath)
         {
             return requestPath.Contains("/cds-au/v1/discovery", StringComparison.OrdinalIgnoreCase)

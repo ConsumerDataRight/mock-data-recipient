@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using CDR.DataRecipient.Models;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Newtonsoft.Json;
 
 namespace CDR.DataRecipient.Web.Models
 {
@@ -23,7 +24,7 @@ namespace CDR.DataRecipient.Web.Models
         {
             get
             {
-                return Registration.SplitRegistrationId(RegistrationId).ClientId;
+                return Registration.SplitRegistrationId(this.RegistrationId).ClientId;
             }
         }
 
@@ -31,7 +32,7 @@ namespace CDR.DataRecipient.Web.Models
         {
             get
             {
-                return Registration.SplitRegistrationId(RegistrationId).DataHolderBrandId;
+                return Registration.SplitRegistrationId(this.RegistrationId).DataHolderBrandId;
             }
         }
 
@@ -46,6 +47,7 @@ namespace CDR.DataRecipient.Web.Models
         public string Scope { get; set; }
 
         [Display(Name = "Use PKCE")]
+        [JsonProperty(Required = Required.Always)]
         public bool UsePkce { get; set; }
 
         [Display(Name = "Response Type")]

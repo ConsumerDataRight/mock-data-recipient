@@ -23,8 +23,8 @@ namespace CDR.DataRecipient.Web.Controllers
             IConfiguration config,
             ICacheManager cacheManager)
         {
-            _config = config;
-            _cacheManager = cacheManager;
+            this._config = config;
+            this._cacheManager = cacheManager;
         }
 
         [HttpGet]
@@ -33,8 +33,8 @@ namespace CDR.DataRecipient.Web.Controllers
         public async Task<IActionResult> PrivateKeyJwt()
         {
             var model = new PrivateKeyJwtModel();
-            await SetDefaults(model);
-            return View(model);
+            await this.SetDefaults(model);
+            return this.View(model);
         }
 
         [HttpPost]
@@ -47,14 +47,14 @@ namespace CDR.DataRecipient.Web.Controllers
             model.ClientAssertion = privateKeyJwt.Generate(model.Issuer, model.Audience, model.Jti, model.ExpiryMinutes, model.Kid);
             model.ClientAssertionClaims = model.ClientAssertion.GetTokenClaims();
 
-            return View(model);
+            return this.View(model);
         }
 
         private async Task SetDefaults(PrivateKeyJwtModel model)
         {
-            var sp = _config.GetSoftwareProductConfig();
-            var reg = _config.GetRegisterConfig();
-            var tokenEndpoint = await _cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
+            var sp = this._config.GetSoftwareProductConfig();
+            var reg = this._config.GetRegisterConfig();
+            var tokenEndpoint = await this._cacheManager.GetRegisterTokenEndpoint(reg.OidcDiscoveryUri);
 
             model.Issuer = sp.SoftwareProductId;
             model.Audience = tokenEndpoint;

@@ -16,6 +16,18 @@ namespace CDR.DataRecipient.Web.Controllers
     {
         private const string PATH = "data-sharing-common";
 
+        public DataSharingCommonController(
+            IConfiguration config,
+            IDistributedCache cache,
+            IConsentsRepository consentsRepository,
+            IDataHoldersRepository dhRepository,
+            IInfosecService infosecService,
+            ILogger<DataSharingCommonController> logger,
+            IHttpClientFactory httpClientFactory)
+            : base(config, cache, consentsRepository, dhRepository, infosecService, logger, httpClientFactory)
+        {
+        }
+
         protected override string BasePath
         {
             get
@@ -38,20 +50,8 @@ namespace CDR.DataRecipient.Web.Controllers
         {
             get
             {
-                return _config["ConsumerDataStandardsSwaggerCommon"];
+                return this.Config["ConsumerDataStandardsSwaggerCommon"];
             }
-        }
-
-        public DataSharingCommonController(
-            IConfiguration config,
-            IDistributedCache cache,
-            IConsentsRepository consentsRepository,
-            IDataHoldersRepository dhRepository,
-            IInfosecService infosecService,
-            ILogger<DataSharingCommonController> logger,
-            IHttpClientFactory httpClientFactory)
-            : base(config, cache, consentsRepository, dhRepository, infosecService, logger, httpClientFactory)
-        {
         }
 
         protected override JObject PrepareSwaggerJson(JObject json, Uri uri)

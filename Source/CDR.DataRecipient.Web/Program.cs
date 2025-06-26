@@ -1,13 +1,12 @@
-﻿using CDR.DataRecipient.Web.Common;
+﻿using System;
+using System.IO;
+using System.Security.Authentication;
+using CDR.DataRecipient.Web.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Events;
 using Serilog.Settings.Configuration;
-using System;
-using System.IO;
-using System.Security.Authentication;
 
 namespace CDR.DataRecipient.Web
 {
@@ -48,33 +47,6 @@ namespace CDR.DataRecipient.Web
             {
                 Log.CloseAndFlush();
             }
-        }
-
-        private static IConfigurationRoot BuildConfiguration(string[] args, IConfigurationBuilder builder = null)
-        {
-            var configurationCommandLine = new ConfigurationBuilder()
-                .AddCommandLine(args).Build();
-
-            builder ??= new ConfigurationBuilder();
-
-            builder.AddCommandLine(args)
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json")
-                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? configurationCommandLine.GetValue<string>("environment")}.json", true)
-                .AddEnvironmentVariables();
-
-            var configuration = builder.Build();
-            var secretVolume = configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.SecretVolumePath);
-
-            // if the volume mount configured add this as well to the configuration to look for secrets.
-            if (Directory.Exists(secretVolume))
-            {
-                var path = Path.Combine(Directory.GetCurrentDirectory(), secretVolume);
-                builder.AddKeyPerFile(path, optional: true, true);
-                configuration = builder.Build();
-            }
-
-            return configuration;
         }
 
         /// <summary>
@@ -127,5 +99,32 @@ namespace CDR.DataRecipient.Web
                     });
                     webBuilder.UseStartup<Startup>();
                 });
+
+        private static IConfigurationRoot BuildConfiguration(string[] args, IConfigurationBuilder builder = null)
+        {
+            var configurationCommandLine = new ConfigurationBuilder()
+                .AddCommandLine(args).Build();
+
+            builder ??= new ConfigurationBuilder();
+
+            builder.AddCommandLine(args)
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? configurationCommandLine.GetValue<string>("environment")}.json", true)
+                .AddEnvironmentVariables();
+
+            var configuration = builder.Build();
+            var secretVolume = configuration.GetValue<string>(Constants.ConfigurationKeys.OidcAuthentication.SecretVolumePath);
+
+            // if the volume mount configured add this as well to the configuration to look for secrets.
+            if (Directory.Exists(secretVolume))
+            {
+                var path = Path.Combine(Directory.GetCurrentDirectory(), secretVolume);
+                builder.AddKeyPerFile(path, optional: true, true);
+                configuration = builder.Build();
+            }
+
+            return configuration;
+        }
     }
 }

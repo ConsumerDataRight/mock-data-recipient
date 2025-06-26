@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using Newtonsoft.Json;
 
 namespace CDR.DataRecipient.Web.Models
 {
@@ -24,6 +25,7 @@ namespace CDR.DataRecipient.Web.Models
 
         [Display(Name = "Expiry Minutes")]
         [Required]
+        [JsonProperty(Required = Required.Always)]
         public int ExpiryMinutes { get; set; }
 
         [Display(Name = "jti")]

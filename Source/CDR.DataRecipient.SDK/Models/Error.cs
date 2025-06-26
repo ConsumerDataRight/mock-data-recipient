@@ -31,7 +31,7 @@
         public string Detail { get; set; }
 
         /// <summary>
-        /// Optional additional data for specific error types
+        /// Optional additional data for specific error types.
         /// </summary>
         public object Meta { get; set; }
     }

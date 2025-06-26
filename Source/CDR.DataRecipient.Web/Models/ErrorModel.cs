@@ -6,16 +6,16 @@ namespace CDR.DataRecipient.Web.Models
     {
         public ErrorModel()
         {
-            Meta = null;
-            Detail = string.Empty;
+            this.Meta = null;
+            this.Detail = string.Empty;
         }
 
         public ErrorModel(string code, string title, string description)
             : this()
         {
-            Code = code;
-            Title = title;
-            Detail = description;
+            this.Code = code;
+            this.Title = title;
+            this.Detail = description;
         }
 
         [Required]

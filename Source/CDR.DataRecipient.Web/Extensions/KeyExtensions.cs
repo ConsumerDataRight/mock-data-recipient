@@ -5,8 +5,8 @@
         /// <summary>
         /// Apply formatting to the provided private key.
         /// </summary>
-        /// <param name="privateKey">Raw private key</param>
-        /// <returns>string</returns>
+        /// <param name="privateKey">Raw private key.</param>
+        /// <returns>string.</returns>
         public static string FormatPrivateKey(this string privateKey)
         {
             return privateKey

@@ -15,7 +15,7 @@
 	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.17.4" />
 	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="1.3.2" />
 	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Storage.Queues" Version="5.4.0" />
-	  <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+	  <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CDR.DataRecipient.Repository.SQL\CDR.DataRecipient.Repository.SQL.csproj" />
