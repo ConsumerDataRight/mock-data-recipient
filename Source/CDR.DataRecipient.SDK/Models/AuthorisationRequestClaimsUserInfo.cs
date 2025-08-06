@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
 {
     public class AuthorisationRequestClaimsUserInfo
     {
-        [JsonProperty("given_name")]
+        [JsonPropertyName("given_name")]
         public string Given_name { get; set; }
 
-        [JsonProperty("family_name")]
+        [JsonPropertyName("family_name")]
         public string Family_name { get; set; }
     }
 }

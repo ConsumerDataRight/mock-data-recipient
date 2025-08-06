@@ -196,3 +196,4 @@ jobs:
       with:
         name: integration-test-artifacts
         path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-register/tmp
+

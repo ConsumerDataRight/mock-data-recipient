@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
 {
@@ -9,7 +9,7 @@ namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
             this.Acr = new Acr() { Essential = true, Values = new string[] { $"urn:cds.au:cdr:{supportedAcr}" } };
         }
 
-        [JsonProperty("acr")]
+        [JsonPropertyName("acr")]
         public Acr Acr { get; set; }
     }
 }

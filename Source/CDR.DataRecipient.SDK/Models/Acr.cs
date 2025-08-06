@@ -1,13 +1,13 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
 {
     public class Acr
     {
-        [JsonProperty(PropertyName = "essential")]
+        [JsonPropertyName("essential")]
         public bool Essential { get; set; }
 
-        [JsonProperty(PropertyName = "values")]
+        [JsonPropertyName("values")]
         public string[] Values { get; set; }
     }
 }

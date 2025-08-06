@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
 {
@@ -10,16 +10,16 @@ namespace CDR.DataRecipient.SDK.Models.AuthorisationRequest
             this.Id_token = new IdToken(supportedAcr);
         }
 
-        [JsonProperty("sharing_duration")]
+        [JsonPropertyName("sharing_duration")]
         public int? Sharing_duration { get; set; }
 
-        [JsonProperty("cdr_arrangement_id")]
+        [JsonPropertyName("cdr_arrangement_id")]
         public string Cdr_arrangement_id { get; set; }
 
-        [JsonProperty("userinfo")]
+        [JsonPropertyName("userinfo")]
         public AuthorisationRequestClaimsUserInfo Userinfo { get; set; }
 
-        [JsonProperty("id_token")]
+        [JsonPropertyName("id_token")]
         public IdToken Id_token { get; set; }
     }
 }
