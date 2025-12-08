@@ -48,15 +48,30 @@ namespace CDR.DataRecipient.SDK.Services.Register
 
             this.Logger.LogDebug($"Request received to {nameof(InfosecService)}.{nameof(this.GetOidcDiscovery)}.");
 
+            this.Logger.LogDebug($"Attempting register oidc config.");
+
+            this.Logger.LogDebug("Oidc uri: {Uri}.", registerOidcConfigEndpoint);
+
             var client = this.GetHttpClient();
             var configResponse = await client.GetAsync(this.EnsureValidEndpoint(registerOidcConfigEndpoint));
 
-            oidcResponse.StatusCode = configResponse.StatusCode;
+            this.Logger.LogDebug($"Oidc config call completed.");
 
-            if (configResponse.IsSuccessStatusCode)
+            if (configResponse == null)
             {
-                var body = await configResponse.Content.ReadAsStringAsync();
-                oidcResponse.Data = Newtonsoft.Json.JsonConvert.DeserializeObject<OidcDiscovery>(body);
+                this.Logger.LogDebug($"Oidc config response is null");
+            }
+
+            if (configResponse != null)
+            {
+                this.Logger.LogDebug("Oidc response: {StatusCode}.", configResponse.StatusCode);
+                oidcResponse.StatusCode = configResponse.StatusCode;
+
+                if (configResponse.IsSuccessStatusCode)
+                {
+                    var body = await configResponse.Content.ReadAsStringAsync();
+                    oidcResponse.Data = Newtonsoft.Json.JsonConvert.DeserializeObject<OidcDiscovery>(body);
+                }
             }
 
             return oidcResponse;
