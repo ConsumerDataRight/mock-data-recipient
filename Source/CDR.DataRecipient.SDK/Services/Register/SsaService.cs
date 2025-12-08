@@ -45,6 +45,8 @@ namespace CDR.DataRecipient.SDK.Services.Register
             var response = await client.GetAsync(this.EnsureValidEndpoint(ssaEndpoint));
             var body = await response.Content.ReadAsStringAsync();
 
+            body = body.Replace("\"", string.Empty);
+
             this.Logger.LogDebug("Get SSA Response: {StatusCode}.  Body: {Body}", response.StatusCode, body);
 
             ssaResponse.StatusCode = response.StatusCode;
