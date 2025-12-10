@@ -4,7 +4,6 @@
     {
         public string DataRecipient_DB_ConnectionString { get; set; }
         public string DataRecipient_Logging_DB_ConnectionString { get; set; }
-        public string AzureWebJobsStorage { get; set; }
         public string StorageConnectionString { get; set; }
         public string FUNCTIONS_WORKER_RUNTIME { get; set; }
         public string Register_Token_Endpoint { get; set; }

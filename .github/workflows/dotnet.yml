@@ -38,7 +38,7 @@ jobs:
 
     steps:
     - name: Checkout Data Recipient
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         path: ./mock-data-recipient
 
@@ -196,4 +196,3 @@ jobs:
       with:
         name: integration-test-artifacts
         path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-register/tmp
-

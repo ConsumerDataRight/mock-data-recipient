@@ -10,9 +10,12 @@ trigger:
   - develop
   - main
   - releases/*  
-  
+
+variables:
+  - group: PT-Pipeline-Common
+
 pool:
-  vmImage: windows-latest
+  vmImage: $(Pipeline_Host_Image)
 
 steps:
   - task: UseDotNet@2
