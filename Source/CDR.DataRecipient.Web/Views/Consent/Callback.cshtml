@@ -35,12 +35,9 @@
         <strong>Could not retrieve token from Data Holder</strong>
         <div>@Model.Messages</div>
         <ul>
-            @foreach (var error in Model.ErrorList.Errors)
+            @foreach (var error in Model.ErrorList.Errors.Where(e => !string.IsNullOrEmpty(e.Title)))
             {
-                @if (!string.IsNullOrEmpty(@error.Title))
-                {
-                    <li>@error.Title (@error.Code): @error.Detail</li>    
-                }                
+                <li>@error.Title (@error.Code): @error.Detail</li>
             }
         </ul>
     }
