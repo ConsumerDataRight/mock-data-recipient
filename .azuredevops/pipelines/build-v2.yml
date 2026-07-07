@@ -18,9 +18,20 @@ parameters:
     type: string
     default: ' ' # default value; if no default, then the parameter MUST be given by the user at runtime
 
-variables:  
-  baseSourceDirectory: $(Build.SourcesDirectory)/Source
-  dockerComposeDirectory: $(baseSourceDirectory)/DockerCompose
+resources:
+  repositories: 
+    - repository: shared-code-scanning
+      type: git
+      name: Common/shared-code-scanning
+      ref: refs/heads/main
+      trigger: none
+
+variables:
+- name: baseSourceDirectory
+  value: $(Build.SourcesDirectory)/Source
+- name: dockerComposeDirectory
+  value: $(baseSourceDirectory)/DockerCompose
+- group: PT-Pipeline-Common
 
 trigger:
   - develop
@@ -28,7 +39,9 @@ trigger:
   - releases/*
 
 pool:
-  vmImage: ubuntu-latest
+ name: mdp-mgmt-shared
+ demands:
+   - ImageOverride -equals $(PipelineHostLinuxImage)
   
 jobs:
 - job: Build
@@ -65,6 +78,11 @@ jobs:
         buildContext: $(baseSourceDirectory)
         repository: mock-data-recipient
         tags: latest
+
+    - template: templates/scan-image.yml@shared-code-scanning
+      parameters:
+        Repository: mock-data-recipient
+        Tag: latest
 
     # Login to Shared ACR
     - task: Docker@2
@@ -186,7 +204,7 @@ jobs:
       displayName: Publish container images
       # condition: always()  
       inputs:
-        path: $(build.artifactstagingdirectory)
+        path: $(build.artifactstagingdirectory)/mock-data-recipient.image.tar
         artifact: Container Images
 
     # Publish mock-data-recipient unit tests results
@@ -234,16 +252,10 @@ jobs:
         performMultiLevelLookup: true
 
     - task: CmdLine@2
-      displayName: 'Install dotnet-ef'
+      displayName: 'Restore dotnet tooling'
       condition: always()
       inputs:
-        script: 'dotnet tool install --version 8.0.4 --global dotnet-ef'
-
-    - task: CmdLine@2
-      displayName: 'Check dotnet-ef version'
-      condition: always()
-      inputs:
-        script: 'dotnet-ef'
+        script: 'dotnet tool restore'
 
     - script: |
         cd $(baseSourceDirectory)/CDR.DataRecipient.Repository.SQL 

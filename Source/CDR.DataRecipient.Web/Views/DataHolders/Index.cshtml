@@ -3,9 +3,7 @@
 	var allowDataHolderRefresh = await _featureManager.IsEnabledAsync(nameof(Feature.AllowDataHolderRefresh));
 }
 @using CDR.DataRecipient.SDK.Enumerations
-@using CDR.DataRecipient.Web.Extensions
 @using CDR.DataRecipient.Web.Features
-@using Microsoft.AspNetCore.Http
 @using Microsoft.Extensions.Configuration
 @using Microsoft.FeatureManagement
 @inject IConfiguration _config
@@ -84,7 +82,7 @@ else
 			<h5 class="card-header">@(allowDataHolderRefresh ? "Current Data Holders" : "Data Holder Brands")</h5>
 			<div class="card-body" style="max-height: 400px; overflow-y: scroll;">
 				<p class="card-text">
-					@if (@Model.DataHolders.Count() > 0)
+					@if (@Model.DataHolders.Any())
 					{
 						<table class="table table-striped table-hover table-bordered">
 							<caption>CDR Data Holders</caption>

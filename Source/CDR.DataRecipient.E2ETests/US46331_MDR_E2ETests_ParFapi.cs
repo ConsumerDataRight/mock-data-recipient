@@ -30,7 +30,7 @@ namespace CDR.DataRecipient.E2ETests
                 string? dhClientId = null;
                 await ArrangeAsync(testName, async (page) =>
                 {
-
+                    await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     var responseTypeForRegCreation = useDefaultResponseTypeForDCR != null && useDefaultResponseTypeForDCR == true ? "code" : responseType;
 
                     dhClientId = await ClientRegistration_Create(page, dhBrandId, responseTypes: responseTypeForRegCreation)

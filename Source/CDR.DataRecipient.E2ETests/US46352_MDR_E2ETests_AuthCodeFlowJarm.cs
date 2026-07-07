@@ -42,6 +42,7 @@ namespace CDR.DataRecipient.E2ETests
                 string? dhClientId = null;
                 await ArrangeAsync(testName, async (page) =>
                 {
+                    await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     dhClientId = await ClientRegistration_Create(page, dhBrandId, jarmSigningAlgo: jarmSigningAlgo, jarmEncrypAlg: jarmEncryptAlg, jarmEncryptEnc: jarmEncryptEnc, responseTypes: "code")
                         ?? throw new NullReferenceException(nameof(dhClientId));
                 });
@@ -249,10 +250,10 @@ namespace CDR.DataRecipient.E2ETests
         }
 
         [Theory]
-        [InlineData("Iss_Missing", null, "USE_VALID_AUD", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10211):  Unable to validate issuer. The 'issuer' parameter is null or whitespace", "'iss' is blank in simulated callback.")]
+        [InlineData("Iss_Missing", null, "USE_VALID_AUD", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10211): Issuer validation failed. Unable to validate issuer. The 'issuer' parameter is null or whitespace", "'iss' is blank in simulated callback.")]
         [InlineData("Iss_Mismatch", "foo", "USE_VALID_AUD", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10205):  Issuer validation failed. Issuer: 'foo'.", "'iss' is different to the expected client Id in simulated callback.")]
         [InlineData("Aud_Missing", "USE_VALID_ISS", null, DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10206):  Unable to validate audience. The 'audiences' parameter is empty.", "'aud' is blank in simulated callback.")]
-        [InlineData("Aud_Mismatch", "USE_VALID_ISS", "foo", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10214):  Audience validation failed. Audiences: 'foo'.", "'aud' is different to the expected uri in simulated callback..")]
+        [InlineData("Aud_Mismatch", "USE_VALID_ISS", "foo", DEFAULT_JWT_EXP_IN_SECONDS, "Token Validation Failed (IDX10214): Audience validation failed.", "'aud' is different to the expected uri in simulated callback..")]
         [InlineData("missing_Exp", "USE_VALID_ISS", "USE_VALID_AUD", null, "Token Validation Failed (IDX10225):  Lifetime validation failed. The token is missing an Expiration Time.", "'exp' is blank in simulated callback.")]
         [InlineData("Expired_Token", "USE_VALID_ISS", "USE_VALID_AUD", "-500", "Token Validation Failed (IDX10223):  Lifetime validation failed. The token is expired.", "JWT has expired. (now - 500 seconds)")]
         public async Task AC12_AC13_AC14_AC15_Jwt_Missing_And_Mismatch_Metadata(string testSuffix, string? issuer, string? audience, string? jwtExpiry, string expectedError, string becauseText)
@@ -263,6 +264,7 @@ namespace CDR.DataRecipient.E2ETests
                 string? dhClientId = null;
                 await ArrangeAsync(testName, async (page) =>
                 {
+                    await DataHolders_Discover(page, "ALL", "2", -1); // get all dh brands
                     dhClientId = await CreateBankingRegistration(page, "code");
                 });
 
