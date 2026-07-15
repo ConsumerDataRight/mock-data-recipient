@@ -2,21 +2,22 @@
   <PropertyGroup>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <_FunctionsSkipCleanOutput>true</_FunctionsSkipCleanOutput>
-	<TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
-	<Version>$(Version)</Version>
-	<FileVersion>$(Version)</FileVersion>
-	<AssemblyVersion>$(Version)</AssemblyVersion>
+    <TargetFramework>$(TargetFrameworkVersion)</TargetFramework>
+    <Version>$(Version)</Version>
+    <FileVersion>$(Version)</FileVersion>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enabled</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
-	  <PackageReference Include="Azure.Storage.Queues" Version="12.24.0" />
-	  <PackageReference Include="Microsoft.Azure.Functions.Worker" Version="1.22.0" />
-	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="1.17.4" />
-	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="1.3.2" />
-	  <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" Version="4.3.1" />
-	  <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.2" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Azure.Storage.Queues" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" />
+    <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Timer" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.Extensions.Logging"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CDR.DataRecipient.Repository.SQL\CDR.DataRecipient.Repository.SQL.csproj" />

@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [3.0.5] - 2026-07-08
+### Changed
+- Updated nuget package versions
+### Fixed
+- Fixed multiple E2E tests by making them independent, also fixed some minor issues.
+ 
+## [3.0.4] - 2026-03-18
+### Fixed
+- Upgrade packages to address vulnerabilities
 ## [3.0.3] - 2025-12-03
 ### Fixed
 - Upgrade multiple packages to address vulnerabilities

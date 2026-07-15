@@ -94,6 +94,7 @@ namespace CDR.DataRecipient.E2ETests
         [Fact]
         public async Task AC02_01_DiscoverDataHolders_Banking()
         {
+            PurgeMDR();
             await TestAsync($"{nameof(US23863_MDR_E2ETests)} - {nameof(AC02_01_DiscoverDataHolders_Banking)}", async (page) =>
             {
                 await DataHolders_Discover(page, "BANKING", "2", 30);
@@ -128,15 +129,15 @@ namespace CDR.DataRecipient.E2ETests
         }
 
         [Theory]
-        [InlineData("ALL", "3", null, "NotAcceptable - Not Acceptable")]
+        [InlineData("ALL", "4", null, "NotAcceptable - Not Acceptable")]
         [InlineData("ALL", "foo", null, "BadRequest - Bad Request")]
-        [InlineData("BANKING", "3", null, "NotAcceptable - Not Acceptable")]
+        [InlineData("BANKING", "4", null, "NotAcceptable - Not Acceptable")]
         [InlineData("BANKING", "foo", null, "BadRequest - Bad Request")]
-        [InlineData("ENERGY", "3", null, "NotAcceptable - Not Acceptable")]
+        [InlineData("ENERGY", "4", null, "NotAcceptable - Not Acceptable")]
         [InlineData("ENERGY", "foo", null, "BadRequest - Bad Request")]
-        [InlineData("TELCO", "3", null, "NotAcceptable - Not Acceptable")]
+        [InlineData("TELCO", "4", null, "NotAcceptable - Not Acceptable")]
         [InlineData("TELCO", "foo", null, "BadRequest - Bad Request")]
-        public async Task AC02_99_DiscoverDataHolders(string industry = "ALL", string version = "2", int? expectedRecords = 32, string? expectedError = null)
+        public async Task AC02_99_DiscoverDataHolders(string industry = "ALL", string version = "3", int? expectedRecords = 32, string? expectedError = null)
         {
             await TestAsync($"{nameof(US23863_MDR_E2ETests)} - {nameof(AC02_99_DiscoverDataHolders)} - Industry={industry} - Version={version}", async (page) =>
             {
@@ -148,7 +149,8 @@ namespace CDR.DataRecipient.E2ETests
         [InlineData("BANKING", "1", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
         [InlineData("BANKING", "2", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
         [InlineData("BANKING", "3", DR_BRANDID, DR_SOFTWAREPRODUCTID, "OK - SSA Generated")]
-        [InlineData("BANKING", "4", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
+        [InlineData("ALL", "4", DR_BRANDID, DR_SOFTWAREPRODUCTID, "OK - SSA Generated")]
+        [InlineData("BANKING", "5", DR_BRANDID, DR_SOFTWAREPRODUCTID, "NotAcceptable")]
         public async Task AC03_GetSSA(string industry, string version, string drBrandId, string drSoftwareProductId, string expectedMessage)
         {
             await TestAsync($"{nameof(US23863_MDR_E2ETests)} - {nameof(AC03_GetSSA)} - Version={version} - DR_BrandId={drBrandId} - DR_SoftwareProductId={drSoftwareProductId}", async (page) =>

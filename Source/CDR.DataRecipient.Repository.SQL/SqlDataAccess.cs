@@ -89,9 +89,8 @@ namespace CDR.DataRecipient.Repository.SQL
                 SqlDataReader reader = await sqlCommand.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    var cdrArrangement = new ConsentArrangement();
                     var jsonDocument = Convert.ToString(reader.GetString(2));
-                    cdrArrangement = JsonConvert.DeserializeObject<ConsentArrangement>(jsonDocument, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                    var cdrArrangement = JsonConvert.DeserializeObject<ConsentArrangement>(jsonDocument, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
                     // Check if the arrangement belongs to the same data holder.
                     if (string.IsNullOrEmpty(dataHolderBrandId) || cdrArrangement.DataHolderBrandId.Equals(dataHolderBrandId, StringComparison.OrdinalIgnoreCase))

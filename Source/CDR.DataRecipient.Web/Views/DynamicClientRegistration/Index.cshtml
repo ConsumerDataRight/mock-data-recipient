@@ -13,7 +13,6 @@
 @using CDR.DataRecipient.SDK.Extensions
 @using CDR.DataRecipient.Web.Extensions
 @using CDR.DataRecipient.Web.Features
-@using Microsoft.AspNetCore.Http
 @using Microsoft.Extensions.Configuration
 @using Microsoft.FeatureManagement
 @inject IConfiguration _config
@@ -230,7 +229,7 @@ else
             <h5 class="card-header">Current Dynamic Client Registrations</h5>
             <div class="card-body" style="max-height: 400px; overflow-y: scroll;">
                 <p class="card-text">
-                    @if (@Model.Registrations.Count() > 0)
+                    @if (@Model.Registrations.Any())
                     {
                         <table class="table table-sm table-striped table-hover table-bordered">
                             <caption>CDR Current Registrations</caption>
@@ -303,7 +302,7 @@ else
                 <h5 class="card-header">Failed Dynamic Client Registrations</h5>
                 <div class="card-body" style="max-height: 400px; overflow-y: scroll;">
                     <p class="card-text">
-                        @if (@Model.FailedDCRMessages.Count() > 0)
+                        @if (@Model.FailedDCRMessages.Any())
                         {
                             <table class="table table-sm table-striped table-hover table-bordered">
                                 <caption>CDR Failed Registrations</caption>

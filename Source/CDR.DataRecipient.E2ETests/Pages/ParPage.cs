@@ -139,8 +139,8 @@ namespace CDR.DataRecipient.E2ETests.Pages
         {
             try
             {
-                var element = await _page.WaitForSelectorAsync($"//*[contains(.,\"{errorToCheckFor}\")]");
-                return await element.IsVisibleAsync();
+                var isVisible = await _page.GetByText(errorToCheckFor).IsVisibleAsync();
+                return isVisible;
             }
             catch (TimeoutException) { }
             {
