@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -51,7 +51,7 @@ namespace CDR.DataRecipient.IntegrationTests
                 Assert_HasContentType_ApplicationJson(response.Content);
 
                 // Assert - Check JWKS
-                var actualJson = await response.Content.ReadAsStringAsync();
+                var actualJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
                 var actual = JsonConvert.DeserializeObject<Jwks_Expected>(actualJson);
                 actual.Keys.Length.Should().Be(3);
                 var sigKey = actual.Keys.FirstOrDefault(k => k.use == "sig");
