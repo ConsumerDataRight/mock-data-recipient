@@ -16,7 +16,7 @@ namespace CDR.DCR
             logger.LogInformation("Loading the client certificate...");
 
             byte[] clientCertBytes = Convert.FromBase64String(dcrOptions.Client_Certificate);
-            X509Certificate2 clientCertificate = new(clientCertBytes, dcrOptions.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            X509Certificate2 clientCertificate = X509CertificateLoader.LoadPkcs12(clientCertBytes, dcrOptions.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
             logger.LogInformation("Client certificate loaded: {thumbprint}", clientCertificate.Thumbprint);
 
 

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Headers;
+using System.Threading;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -130,7 +131,7 @@ namespace CDR.DataRecipient.API.Logger
             {
                 context.Request.EnableBuffering();
                 await using var requestStream = this._recyclableMemoryStreamManager.GetStream();
-                await context.Request.Body.CopyToAsync(requestStream);
+                await context.Request.Body.CopyToAsync(requestStream, context.RequestAborted);
 
                 this._requestBody = this.ReadStreamInChunks(requestStream);
                 context.Request.Body.Position = 0;
@@ -227,7 +228,7 @@ namespace CDR.DataRecipient.API.Logger
                 this._elapsedTime = sw.ElapsedMilliseconds.ToString();
 
                 responseBody.Seek(0, SeekOrigin.Begin);
-                this._responseBody = await new StreamReader(responseBody).ReadToEndAsync();
+                this._responseBody = await new StreamReader(responseBody).ReadToEndAsync(CancellationToken.None);
                 responseBody.Seek(0, SeekOrigin.Begin);
 
                 IEnumerable<string> keyValues = httpContext.Response.Headers.Keys.Select(key => key + ": " + string.Join(",", httpContext.Response.Headers[key].ToArray()));
@@ -240,7 +241,7 @@ namespace CDR.DataRecipient.API.Logger
                 // This is for middleware hooked before us to see our changes.
                 // Otherwise the original stream would be seen which cannot be read again.
                 // The middleware that sends the response to the client is affected as well.
-                await responseBody.CopyToAsync(originalBodyStream);
+                await responseBody.CopyToAsync(originalBodyStream, CancellationToken.None);
             }
         }
 
