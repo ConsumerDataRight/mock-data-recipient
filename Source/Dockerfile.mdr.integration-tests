@@ -10,7 +10,7 @@ WORKDIR /src
 
 COPY . ./
 
-dotnet dev-certs https
+RUN dotnet dev-certs https
 
 FROM build AS publish
 COPY ./Directory.Packages.props /app/Directory.Packages.props
