@@ -28,6 +28,7 @@ env:
   buildRuntime: 'linux-x64'
   runEnvironment: 'Release'
   ASPNETCORE_ENVIRONMENT: 'Release'
+  DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_SKIPSERVERCERTIFICATEVALIDATION: 'true'
   
 jobs:
   build-and-test:
