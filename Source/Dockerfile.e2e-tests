@@ -15,7 +15,7 @@ ENV ASPNETCORE_ENVIRONMENT=Release
 COPY . ./
 
 # Install developer certificate
-RUN dotnet dev-certs https --trust
+RUN dotnet dev-certs https
 
 # Build tests
 WORKDIR /src/CDR.DataRecipient.E2ETests
