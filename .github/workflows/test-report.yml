@@ -7,6 +7,7 @@ on:
       - completed
 
 jobs:
+  # Disabling the unit test report trx generator as well.
   # unit-test-report:
   #   runs-on: ubuntu-latest
 
