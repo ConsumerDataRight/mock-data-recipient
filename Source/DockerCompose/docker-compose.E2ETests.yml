@@ -27,6 +27,8 @@ services:
 
   mock-data-recipient:
     container_name: mock-data-recipient-mdr-e2e
+    environment:
+      - AllowSpecificOrigins=*
     extends:
       file: docker-compose.TestsBase.yml
       service: mock-data-recipient
