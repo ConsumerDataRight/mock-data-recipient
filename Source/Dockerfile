@@ -13,6 +13,8 @@ WORKDIR /src
 
 COPY . ./
 
+RUN dotnet dev-certs https 
+
 FROM build AS publish
 COPY ./Directory.Packages.props /app/Directory.Packages.props
 COPY ./Directory.Build.props /app/Directory.Build.props
