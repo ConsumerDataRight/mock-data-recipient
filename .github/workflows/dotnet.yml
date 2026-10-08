@@ -25,7 +25,7 @@ on:
     
 env:
   buildConfiguration: 'Release'
-  buildRuntime: 'win-x64'
+  buildRuntime: 'linux-x64'
   runEnvironment: 'Release'
   ASPNETCORE_ENVIRONMENT: 'Release'
   
