@@ -10,7 +10,7 @@ ENV ASPNETCORE_ENVIRONMENT=Release
 COPY . ./
 
 # Install developer certificate
-RUN dotnet dev-certs https --trust
+RUN dotnet dev-certs https
 
 # Install ca certificate
 RUN apt-get update && apt-get install -y sudo
