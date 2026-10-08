@@ -10,7 +10,7 @@ namespace CDR.DataRecipient.E2ETests
         [Fact]
         public async Task ShouldDisplayGoogleHomePage()
         {
-            await Task.Delay(10000, TestContext.Current.CancellationToken); // NOTE - This test sometimes just fails in build pipeline with error about google hanging up the connection, maybe just need to give the network a little extra time to get ready?
+            await Task.Delay(20000, TestContext.Current.CancellationToken); // NOTE - This test sometimes just fails in build pipeline with error about google hanging up the connection, maybe just need to give the network a little extra time to get ready?
 
             await TestAsync($"{nameof(AATestPlaywrightInstallation)} - {nameof(ShouldDisplayGoogleHomePage)}", async (page) =>
             {
