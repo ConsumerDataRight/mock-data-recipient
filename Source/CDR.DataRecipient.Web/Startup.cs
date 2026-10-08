@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using CDR.DataRecipient.API.Logger;
 using CDR.DataRecipient.Infrastructure;
@@ -419,7 +420,8 @@ namespace CDR.DataRecipient.Web
                     value = e.Value.Status.ToString(),
                 }),
             });
-            return context.Response.WriteAsync(result);
+
+            return context.Response.WriteAsync(result, CancellationToken.None);
         }
 
         private bool UseDistributedCache()

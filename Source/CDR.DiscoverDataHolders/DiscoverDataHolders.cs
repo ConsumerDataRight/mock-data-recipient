@@ -35,12 +35,12 @@ namespace CDR.DiscoverDataHolders
             _options = options.Value;
 
             byte[] clientCertBytes = Convert.FromBase64String(_options.Client_Certificate);
-            X509Certificate2 clientCertificate = new(clientCertBytes, _options.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            X509Certificate2 clientCertificate = X509CertificateLoader.LoadPkcs12(clientCertBytes, _options.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
             _logger.LogInformation("Client certificate loaded: {thumbprint}", clientCertificate.Thumbprint);
 
             _logger.LogInformation("Loading the signing certificate...");
             byte[] signCertBytes = Convert.FromBase64String(_options.Signing_Certificate);
-            _signCertificate = new(signCertBytes, _options.Signing_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            _signCertificate = X509CertificateLoader.LoadPkcs12(signCertBytes, _options.Signing_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
             _logger.LogInformation("Signing certificate loaded: {thumbprint}", _signCertificate.Thumbprint);
             _httpClientFactory = httpClientFactory;
         }

@@ -1,6 +1,6 @@
 # Dockerfile for running unit tests
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Default ASPNETCORE_ENVIRONMENT to Release
@@ -20,5 +20,9 @@ RUN sudo update-ca-certificates
 WORKDIR /src
 RUN dotnet build --configuration Release
 
+RUN dotnet tool install --global PowerShell
+ENV PATH="$PATH:/root/.dotnet/tools"
+RUN pwsh CDR.DataRecipient.E2ETests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
 # Run tests
-ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--filter", "UnitTests", "--no-build", "--logger", "trx;verbosity=detailed", "--results-directory", "/testresults"]
+ENTRYPOINT ["dotnet", "test", "--configuration", "Release", "--no-build", "--no-launch-profile", "--report-trx", "--results-directory", "/testresults"]

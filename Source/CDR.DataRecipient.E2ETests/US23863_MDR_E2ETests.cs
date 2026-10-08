@@ -809,7 +809,7 @@ namespace CDR.DataRecipient.E2ETests
                     await iFrame.ClickAsync("text=Try it out");
 
                     // Arrange - Set x-v
-                    await iFrame.FillAsync("[placeholder=\"x-v\"]", "1");
+                    await iFrame.FillAsync("[placeholder=\"x-v\"]", "2");
 
                     // Act - Click Execute
                     await iFrame.ClickAsync("text=Execute");
