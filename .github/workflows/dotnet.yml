@@ -131,10 +131,10 @@ jobs:
       run: |
         docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.E2ETests.yml' down
         
-    # Build mock-data-recipient-unit-tests image
-    - name: Build the mock-data-recipient-unit-tests image
-      run: |
-        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.unit-tests --tag mock-data-recipient-unit-tests:latest
+    # # Build mock-data-recipient-unit-tests image
+    # - name: Build the mock-data-recipient-unit-tests image
+    #   run: |
+    #     docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.unit-tests --tag mock-data-recipient-unit-tests:latest
         
     # Run unit tests
     # - name: Run unit tests

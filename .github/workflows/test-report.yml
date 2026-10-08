@@ -7,19 +7,19 @@ on:
       - completed
 
 jobs:
-  unit-test-report:
-    runs-on: ubuntu-latest
+  # unit-test-report:
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
     
-    - name: Publish Unit Test Report
-      uses: dorny/test-reporter@v1
-      with:
-        artifact: unit-test-results
-        name: Unit Tests
-        path: '*.trx'
-        reporter: dotnet-trx
+  #   - name: Publish Unit Test Report
+  #     uses: dorny/test-reporter@v1
+  #     with:
+  #       artifact: unit-test-results
+  #       name: Unit Tests
+  #       path: '*.trx'
+  #       reporter: dotnet-trx
 
   integration-test-report:
     runs-on: ubuntu-latest
