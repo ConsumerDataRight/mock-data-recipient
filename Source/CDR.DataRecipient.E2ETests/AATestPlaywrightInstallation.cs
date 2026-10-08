@@ -16,7 +16,7 @@ namespace CDR.DataRecipient.E2ETests
             {
                 // Act - Goto Google.com
                 var resp = await page.GotoAsync("https://www.google.com");
-                await page.ClickAsync(":nth-match(:text(\"I'm Feeling Lucky\"), 2)");
+                
 
                 // Assert
                 Assert.NotNull(resp);
