@@ -37,6 +37,11 @@ jobs:
     ##  This workflow will checkout the ConsumerDataRight/mock-register project
 
     steps:
+    - name: Setup .NET SDK (Pin stable version to bypass dev-certs bug)
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.102' # Forces the runner to use the working SDK version
+        
     - name: Checkout Data Recipient
       uses: actions/checkout@v4
       with:
