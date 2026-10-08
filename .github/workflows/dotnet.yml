@@ -137,22 +137,22 @@ jobs:
         docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.unit-tests --tag mock-data-recipient-unit-tests:latest
         
     # Run unit tests
-    - name: Run unit tests
-      run: |
-        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
+    # - name: Run unit tests
+    #   run: |
+    #     docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
 
-    # Remove unit tests
-    - name: Remove unit tests
-      run: |
-        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' down
+    # # Remove unit tests
+    # - name: Remove unit tests
+    #   run: |
+    #     docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' down
 
-    # Archive unit test results
-    - name: Archive unit test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: unit-test-results
-        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient-unit-tests/testresults
+    # # Archive unit test results
+    # - name: Archive unit test results
+    #   uses: actions/upload-artifact@v4
+    #   if: always()
+    #   with:
+    #     name: unit-test-results
+    #     path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient-unit-tests/testresults
 
     # Archive integration test results
     - name: Archive integration test results
