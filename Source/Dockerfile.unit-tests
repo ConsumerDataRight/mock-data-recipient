@@ -9,6 +9,8 @@ ENV ASPNETCORE_ENVIRONMENT=Release
 # Copy source
 COPY . ./
 
+dotnet dev-certs https --trust
+
 # Install ca certificate
 RUN apt-get update && apt-get install -y sudo
 RUN sudo cp ./CDR.DataRecipient.Web/Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
