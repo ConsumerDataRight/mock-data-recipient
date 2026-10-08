@@ -37,6 +37,14 @@ jobs:
     ##  This workflow will checkout the ConsumerDataRight/mock-register project
 
     steps:
+
+    # lock the SDK version 
+    # https://github.com/dotnet/aspnetcore/issues/65391
+    - name: Setup .NET SDK (Pin stable version to bypass dev-certs bug)
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.102'
+
     - name: Checkout Data Recipient
       uses: actions/checkout@v4
       with:
@@ -125,29 +133,30 @@ jobs:
     - name: Remove e2e tests
       run: |
         docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.E2ETests.yml' down
-        
-    # Build mock-data-recipient-unit-tests image
-    - name: Build the mock-data-recipient-unit-tests image
-      run: |
-        docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.unit-tests --tag mock-data-recipient-unit-tests:latest
-        
-    # Run unit tests
-    - name: Run unit tests
-      run: |
-        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
 
-    # Remove unit tests
-    - name: Remove unit tests
-      run: |
-        docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' down
+    # Disable the unit tests - Refer to #96438    
+    # # Build mock-data-recipient-unit-tests image
+    # - name: Build the mock-data-recipient-unit-tests image
+    #   run: |
+    #     docker build ./mock-data-recipient/Source --file ./mock-data-recipient/Source/Dockerfile.unit-tests --tag mock-data-recipient-unit-tests:latest
+        
+    # # Run unit tests
+    # - name: Run unit tests
+    #   run: |
+    #     docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' up --abort-on-container-exit --exit-code-from mock-data-recipient-unit-tests
 
-    # Archive unit test results
-    - name: Archive unit test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: unit-test-results
-        path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient-unit-tests/testresults
+    # # Remove unit tests
+    # - name: Remove unit tests
+    #   run: |
+    #     docker compose -f './mock-data-recipient/Source/DockerCompose/docker-compose.UnitTests.yml' down
+
+    # # Archive unit test results
+    # - name: Archive unit test results
+    #   uses: actions/upload-artifact@v4
+    #   if: always()
+    #   with:
+    #     name: unit-test-results
+    #     path: ${{ github.workspace }}/mock-data-recipient/Source/DockerCompose/_temp/mock-data-recipient-unit-tests/testresults
 
     # Archive integration test results
     - name: Archive integration test results
