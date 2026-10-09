@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
@@ -29,7 +29,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
                 { JwtHeaderParameterNames.Kid, kid },
             };
 
-            var cert = new X509Certificate2(certificateFilename, certificatePassword);
+            var cert = X509CertificateLoader.LoadPkcs12FromFile(certificateFilename, certificatePassword);
 
             var jwt = Jose.JWT.Encode(payload, cert.GetRSAPrivateKey(), JwsAlgorithm.PS256, jwtHeader);
 
@@ -75,7 +75,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         /// </summary>
         static private byte[] GetRSAPrivateKeyBytes(string certificateFilename, string certificatePassword)
         {
-            var certificate = new X509Certificate2(certificateFilename, certificatePassword, X509KeyStorageFlags.Exportable);
+            var certificate = X509CertificateLoader.LoadPkcs12FromFile(certificateFilename, certificatePassword, X509KeyStorageFlags.Exportable);
 
             var rsa = certificate.GetRSAPrivateKey();
             if (rsa == null)

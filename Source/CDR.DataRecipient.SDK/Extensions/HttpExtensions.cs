@@ -12,7 +12,7 @@ namespace CDR.DataRecipient.SDK.Extensions
     {
         public static void SetClientCertificate(this HttpClientHandler clientHandler, string certificateFileName, string certificatePassword)
         {
-            clientHandler.ClientCertificates.Add(new X509Certificate2(certificateFileName, certificatePassword, X509KeyStorageFlags.Exportable));
+            clientHandler.ClientCertificates.Add(X509CertificateLoader.LoadPkcs12FromFile(certificateFileName, certificatePassword, X509KeyStorageFlags.Exportable));
         }
 
         public static bool IsSuccessful(this HttpStatusCode statusCode)

@@ -39,13 +39,13 @@ namespace CDR.DCR
             //get the certs
             _logger.LogInformation("Loading the client certificate...");
             byte[] clientCertBytes = Convert.FromBase64String(_options.Client_Certificate);
-            X509Certificate2 cclientCertificate = new(clientCertBytes, _options.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            X509Certificate2 cclientCertificate = X509CertificateLoader.LoadPkcs12(clientCertBytes, _options.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
             _logger.LogInformation("Client certificate loaded: {thumbprint}", cclientCertificate.Thumbprint);
 
 
             _logger.LogInformation("Loading the signing certificate...");
             byte[] signCertBytes = Convert.FromBase64String(_options.Signing_Certificate);
-            _signingCertificate = new(signCertBytes, _options.Signing_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            _signingCertificate = X509CertificateLoader.LoadPkcs12(signCertBytes, _options.Signing_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
             _logger.LogInformation("Signing certificate loaded: {thumbprint}", _signingCertificate.Thumbprint);
         }
 

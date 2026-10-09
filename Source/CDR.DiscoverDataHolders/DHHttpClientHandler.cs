@@ -16,7 +16,7 @@ namespace CDR.DiscoverDataHolders
             logger.LogInformation("Loading the client certificate...");
 
             byte[] clientCertBytes = Convert.FromBase64String(dhOptions.Client_Certificate);
-            X509Certificate2 clientCertificate = new(clientCertBytes, dhOptions.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
+            X509Certificate2 clientCertificate = X509CertificateLoader.LoadPkcs12(clientCertBytes, dhOptions.Client_Certificate_Password, X509KeyStorageFlags.MachineKeySet);
             logger.LogInformation("Client certificate loaded: {thumbprint}", clientCertificate.Thumbprint);
 
             ClientCertificates.Add(clientCertificate);

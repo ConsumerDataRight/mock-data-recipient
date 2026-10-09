@@ -11,6 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using CDR.DataRecipient.E2ETests.Pages;
+using CDR.DataRecipient.E2ETests.XUnit.Orderers;
 using FluentAssertions;
 using FluentAssertions.Execution;
 using Microsoft.Data.SqlClient;
@@ -26,7 +27,7 @@ namespace CDR.DataRecipient.E2ETests
 {
     // Put all tests in same collection because we need them to run sequentially since some tests are mutating DB.
     [Collection("E2ETests")]
-    [TestCaseOrderer("CDR.DataRecipient.E2ETests.XUnit.Orderers.AlphabeticalOrderer", "CDR.DataRecipient.E2ETests")]
+    [TestMethodOrderer(typeof(AlphabeticalOrderer))]
     [DisplayTestMethodName]
     public class BaseTest
     {
