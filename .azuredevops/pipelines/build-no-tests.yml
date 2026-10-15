@@ -60,11 +60,11 @@ steps:
     artifact: Container Images
 
 - task: UseDotNet@2
-  displayName: 'Use .NET 6 sdk'
+  displayName: 'Use .NET 10 sdk'
   condition: always()
   inputs:
     packageType: sdk
-    version: '8.0.x'
+    version: '10.0.x'
     performMultiLevelLookup: true
 
 - task: CmdLine@2

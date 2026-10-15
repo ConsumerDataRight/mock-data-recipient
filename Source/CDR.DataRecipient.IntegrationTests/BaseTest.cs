@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -8,11 +8,13 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using CDR.DataRecipient.IntegrationTests.Extensions;
+using CdrAuthServer.GetDataRecipients.IntegrationTests.XUnit.Orderers;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Sdk;
+using Xunit.v3;
 
 #nullable enable
 
@@ -22,19 +24,19 @@ namespace CDR.DataRecipient.IntegrationTests
     {
         static int count = 0;
 
-        public override void Before(MethodInfo methodUnderTest)
+        public override void Before(MethodInfo methodUnderTest, IXunitTest test)
         {
             Console.WriteLine($"Test #{++count} - {methodUnderTest.DeclaringType?.Name}.{methodUnderTest.Name}");
         }
 
-        public override void After(MethodInfo methodUnderTest)
+        public override void After(MethodInfo methodUnderTest, IXunitTest test)
         {
         }
     }
 
     // Put all tests in same collection because we need them to run sequentially since some tests are mutating DB.
     [Collection("IntegrationTests")]
-    [TestCaseOrderer("CDR.DataRecipient.IntegrationTests.XUnit.Orderers.AlphabeticalOrderer", "CDR.DataRecipient.IntegrationTests")]
+    [TestCaseOrderer(typeof(AlphabeticalOrderer))]
     [DisplayTestMethodName]
     abstract public class BaseTest
     {

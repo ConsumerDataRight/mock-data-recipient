@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Xunit;
 
 #nullable enable
@@ -10,7 +10,7 @@ namespace CDR.DataRecipient.E2ETests
         private static readonly string[] installArguments = ["install"];
         private static readonly string[] installDepsArguments = ["install-deeps"];
 
-        public Task InitializeAsync()
+        public ValueTask InitializeAsync()
         {
             // Only install Playwright if not running in container, since Dockerfile.e2e-tests already installed Playwright
             if (!BaseTest.RUNNING_IN_CONTAINER)
@@ -20,12 +20,12 @@ namespace CDR.DataRecipient.E2ETests
                 Microsoft.Playwright.Program.Main(installDepsArguments);
             }
 
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
-        public Task DisposeAsync()
+        public ValueTask DisposeAsync()
         {
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
     }
 }

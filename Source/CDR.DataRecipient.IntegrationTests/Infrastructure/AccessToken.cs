@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -109,7 +109,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
             // Attach client certificate to handler
             if (CertificateFilename != null)
             {
-                var clientCertificate = new X509Certificate2(CertificateFilename, CertificatePassword, X509KeyStorageFlags.Exportable);
+                var clientCertificate = X509CertificateLoader.LoadPkcs12FromFile(CertificateFilename, CertificatePassword, X509KeyStorageFlags.Exportable);
                 _clientHandler.ClientCertificates.Add(clientCertificate);
             }
 

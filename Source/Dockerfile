@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 9001
 
@@ -8,7 +8,7 @@ ENV ASPNETCORE_ENVIRONMENT=Release
 # https://liupeirong.github.io/dynamicReloadConfigK8s/
 ENV DOTNET_USE_POLLING_FILE_WATCHER true
 
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY . ./
@@ -44,16 +44,8 @@ RUN apt-get update && apt-get install -y wget && rm -rf /var/lib/apt/lists/*
 RUN sudo cp ./web/Certificates/ca.crt /usr/local/share/ca-certificates/ca.crt
 RUN sudo update-ca-certificates
 
-RUN addgroup --group appgroup --gid 2000 \
-&& adduser \    
-    --uid 1000 \
-    --gid 2000 \
-    "appuser" 
-
-RUN chown -R appuser:appgroup /app
-RUN chown -R appuser:appgroup /usr/bin/
-RUN chown -R appuser:appgroup /tmp
-USER appuser:appgroup 
+RUN chown -R app:app /app
+USER app
 
 ENV ASPNETCORE_URLS=https://+:9001
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.conf", "-u", "1000"]
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/app/supervisord.conf"]

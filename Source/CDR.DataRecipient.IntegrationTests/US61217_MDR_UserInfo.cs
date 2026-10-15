@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using Xunit;
 using System.Linq;
 using CDR.DataRecipient.SDK.Models;
@@ -14,7 +14,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using CDR.DataRecipient.SDK.Services.Tokens;
 using System;
-using Xunit.Abstractions;
 using Newtonsoft.Json;
 
 namespace CDR.DataRecipient.IntegrationTests

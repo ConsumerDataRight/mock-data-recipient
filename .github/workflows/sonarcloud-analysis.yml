@@ -32,12 +32,12 @@ jobs:
     
     steps:
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v6
         if: ${{ env.sonarSecret != 0 }} # Only run scan if secret use is allowed - requires secrets to run successfully
         with:
           java-version: 17
           distribution: 'zulu' # Alternative distribution options are available.
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         if: ${{ env.sonarSecret != 0 }} # Only run scan if secret use is allowed - requires secrets to run successfully
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
@@ -50,7 +50,7 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
       - name: Cache SonarCloud scanner
         id: cache-sonar-scanner
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         if: ${{ env.sonarSecret != 0 }} # Only run scan if secret use is allowed - requires secrets to run successfully
         with:
           path: .\.sonar\scanner
@@ -70,5 +70,5 @@ jobs:
         shell: powershell
         run: |
           .\.sonar\scanner\dotnet-sonarscanner begin /k:"ConsumerDataRight_mock-data-recipient" /o:"consumerdataright" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io"
-          dotnet build .\source\DataRecipient.sln
+          dotnet build .\source\DataRecipient.slnx
           .\.sonar\scanner\dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"

@@ -1,0 +1,34 @@
+<Solution>
+  <Folder Name="/Functions/">
+    <Project Path="CDR.DCR/CDR.DCR.csproj" />
+    <Project Path="CDR.DiscoverDataHolders/CDR.DiscoverDataHolders.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="docker-compose.E2ETests.yml" />
+    <File Path="docker-compose.IntegrationTests.yml" />
+    <File Path="docker-compose.UnitTests.yml" />
+    <File Path="Dockerfile" />
+    <File Path="Dockerfile.container" />
+    <File Path="Dockerfile.e2e-tests" />
+    <File Path="Dockerfile.integration-tests" />
+    <File Path="Dockerfile.unit-tests" />
+    <File Path="run-e2e-tests.ps1" />
+    <File Path="run-integration-tests.ps1" />
+    <File Path="run-unit-tests.ps1" />
+    <File Path="supervisord.conf" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="CDR.DataRecipient.E2ETests/CDR.DataRecipient.E2ETests.csproj" />
+    <Project Path="CDR.DataRecipient.IntegrationTests/CDR.DataRecipient.IntegrationTests.csproj" />
+  </Folder>
+  <Project Path="CDR.DataRecipient.API.Logger/CDR.DataRecipient.API.Logger.csproj" />
+  <Project Path="CDR.DataRecipient.Repository.SQL.UnitTests/CDR.DataRecipient.Repository.SQL.UnitTests.csproj" />
+  <Project Path="CDR.DataRecipient.Repository.SQL/CDR.DataRecipient.Repository.SQL.csproj" />
+  <Project Path="CDR.DataRecipient.SDK/CDR.DataRecipient.SDK.csproj" />
+  <Project Path="CDR.DataRecipient.Web/CDR.DataRecipient.Web.csproj" />
+  <Project Path="CDR.DataRecipient/CDR.DataRecipient.csproj" />
+</Solution>

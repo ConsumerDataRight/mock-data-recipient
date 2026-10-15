@@ -29,12 +29,12 @@ namespace CDR.DataRecipient.SDK.Models
 
                 if (!string.IsNullOrEmpty(this.Path) && !string.IsNullOrEmpty(this.Password))
                 {
-                    this._certificate = new X509Certificate2(this.Path, this.Password, X509KeyStorageFlags.Exportable);
+                    this._certificate = X509CertificateLoader.LoadPkcs12FromFile(this.Path, this.Password, X509KeyStorageFlags.Exportable);
                 }
                 else if (!string.IsNullOrEmpty(this.Url) && !string.IsNullOrEmpty(this.Password))
                 {
                     // Retrieve the raw bytes from the URL value.
-                    this._certificate = new X509Certificate2(DownloadData(this.Url), this.Password, X509KeyStorageFlags.Exportable);
+                    this._certificate = X509CertificateLoader.LoadPkcs12(DownloadData(this.Url), this.Password, X509KeyStorageFlags.Exportable);
                 }
                 else if (!string.IsNullOrEmpty(this.KVSecretsStorePath))
                 {
@@ -43,7 +43,7 @@ namespace CDR.DataRecipient.SDK.Models
                     // The cert loaded into the volume by secrets-store-csi-driver-provider-azure is in base64
                     var certBytes = Convert.FromBase64String(certString);
 
-                    this._certificate = new X509Certificate2(certBytes, string.Empty, X509KeyStorageFlags.Exportable);
+                    this._certificate = X509CertificateLoader.LoadPkcs12(certBytes, string.Empty, X509KeyStorageFlags.Exportable);
                 }
 
                 return this._certificate;

@@ -1,4 +1,4 @@
-using System.Security.Cryptography.X509Certificates;
+﻿using System.Security.Cryptography.X509Certificates;
 using System.Collections.Generic;
 using System;
 using Microsoft.IdentityModel.Tokens;
@@ -30,7 +30,7 @@ namespace CDR.DataRecipient.IntegrationTests
 
         private string Generate(IEnumerable<Claim> claims, DateTime expires)
         {
-            var certificate = new X509Certificate2(CertificateFilename, CertificatePassword, X509KeyStorageFlags.Exportable);
+            var certificate = X509CertificateLoader.LoadPkcs12FromFile(CertificateFilename, CertificatePassword, X509KeyStorageFlags.Exportable);
 
             var x509SigningCredentials = new X509SigningCredentials(certificate, SecurityAlgorithms.RsaSsaPssSha256);
 

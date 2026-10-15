@@ -1,4 +1,4 @@
-using CDR.DataRecipient.Infrastructure;
+﻿using CDR.DataRecipient.Infrastructure;
 using CDR.DataRecipient.Models;
 using CDR.DataRecipient.SDK.Models;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,8 +27,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var dataHoldersRepository = _serviceProvider.GetRequiredService<IDataHoldersRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
             var data = await dataHoldersRepository.GetDataHolderBrand("cf217aba-e00d-48d5-9c3d-03af0b91cb80");
@@ -43,8 +43,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var dataHoldersRepository = _serviceProvider.GetRequiredService<IDataHoldersRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
             var dataHolders = await dataHoldersRepository.GetDataHolderBrands();
@@ -59,8 +59,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var dataHoldersRepository = _serviceProvider.GetRequiredService<IDataHoldersRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
             var dataHolders = await dataHoldersRepository.GetDataHolderBrands();
@@ -78,8 +78,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var consentRepository = _serviceProvider.GetRequiredService<IConsentsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
             var data = await consentRepository.GetConsentByArrangement("92d260c1-a625-41e2-a777-c0af1912a74a");
@@ -95,8 +95,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var consentRepository = _serviceProvider.GetRequiredService<IConsentsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
             var data = await consentRepository.GetConsents("","","mdr-user");
@@ -135,8 +135,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var consentRepository = _serviceProvider.GetRequiredService<IConsentsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act            
             var data = await consentRepository.GetConsentByArrangement("92d260c1-a625-41e2-a777-c0af1912a74a");             
@@ -157,8 +157,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var consentRepository = _serviceProvider.GetRequiredService<IConsentsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
             var cdrArrangementId = "92d260c1-a625-41e2-a777-c0af1912a74a";
 
             //Act            
@@ -178,8 +178,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var consentRepository = _serviceProvider.GetRequiredService<IConsentsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
             var cdrArrangementId = "92d260c1-a625-41e2-a777-c0af1912a74a";
 
             //Act                        
@@ -195,8 +195,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var consentRepository = _serviceProvider.GetRequiredService<IConsentsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act            
             var data = await consentRepository.GetConsentByArrangement("92d260c1-a625-41e2-a777-c0af1912a74a");
@@ -215,8 +215,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var registrationRepository = _serviceProvider.GetRequiredService<IRegistrationsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
             var data = await registrationRepository.GetRegistration("bad06794-39e2-400c-9e1b-f15a0bb67f46", "804fc2fb-18a7-4235-9a49-2af393d18bc7");
@@ -235,8 +235,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var registrationRepository = _serviceProvider.GetRequiredService<IRegistrationsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act
             var data = await registrationRepository.GetRegistrations();
@@ -251,8 +251,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var registrationRepository = _serviceProvider.GetRequiredService<IRegistrationsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act                        
             var ClientId = "bad06794-39e2-400c-9e1b-f15a0bb67f46";
@@ -298,8 +298,8 @@ namespace CDR.DataRecipient.Repository.SQL.UnitTests
         {
             //Arrange
             var registrationRepository = _serviceProvider.GetRequiredService<IRegistrationsRepository>();
-            var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
-            sqliteDataAccess.RecreateDatabaseWithForTests();
+            ////var sqliteDataAccess = _serviceProvider.GetRequiredService<ISqlDataAccess>();
+            ////sqliteDataAccess.RecreateDatabaseWithForTests();
 
             //Act             
             var ClientId = "bad06794-39e2-400c-9e1b-f15a0bb67f46";

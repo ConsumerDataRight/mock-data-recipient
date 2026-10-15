@@ -47,7 +47,7 @@ namespace CDR.DataRecipient.IntegrationTests.Infrastructure
         /// <param name="pwd">The password of the certificate.</param>
         public PrivateKeyJwt(string certFilePath, string pwd)
         {
-            var cert = new X509Certificate2(certFilePath, pwd, X509KeyStorageFlags.Exportable);
+            var cert = X509CertificateLoader.LoadPkcs12FromFile(certFilePath, pwd, X509KeyStorageFlags.Exportable);
             var rsa = cert.GetRSAPrivateKey();
             var pvtKeyBytes = rsa.ExportPkcs8PrivateKey();
             this.PrivateKeyBase64 = Convert.ToBase64String(pvtKeyBytes);

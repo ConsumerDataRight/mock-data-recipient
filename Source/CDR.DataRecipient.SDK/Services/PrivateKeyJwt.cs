@@ -21,7 +21,7 @@ namespace CDR.DataRecipient.SDK.Register
         /// <param name="certFilePath">The path to the certificate.</param>
         /// <param name="pwd">The password of the certificate.</param>
         public PrivateKeyJwt(string certFilePath, string pwd)
-            : this(new X509Certificate2(certFilePath, pwd, X509KeyStorageFlags.Exportable))
+            : this(X509CertificateLoader.LoadPkcs12FromFile(certFilePath, pwd, X509KeyStorageFlags.Exportable))
         {
         }
 
